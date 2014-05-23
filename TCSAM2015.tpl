@@ -1,4 +1,4 @@
-//TCSAM2014: Bering Sea Tanner crab model
+//TCSAM2015: Bering Sea Tanner crab model
 //
 // Author: William Stockhausen (william.stockhausen@noaa.gov)
 //
@@ -9,6 +9,7 @@
 //
 // History:
 //  2014-02-11: created
+//  2014-05-23: renamed TCSAM2015
 // =============================================================================
 // =============================================================================
 GLOBALS_SECTION
@@ -17,7 +18,7 @@ GLOBALS_SECTION
     #include <admodel.h>
     #include "TCSAM.hpp"
     
-    adstring model  = "TCSAM2014";
+    adstring model  = "TCSAM2015";
     adstring modVer = "01.01"; 
     
     time_t start,finish;
@@ -103,14 +104,14 @@ DATA_SECTION
     int on = 0;
     int flg = 0;
     //configFile
-    fnConfigFile = "TCSAM2013_ModelConfig.dat";//default model config filename
+    fnConfigFile = "TCSAM2015_ModelConfig.dat";//default model config filename
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-configFile"))>-1) {
         fnConfigFile = ad_comm::argv[on+1];
         rpt::echo<<"#config file changed to '"<<fnConfigFile<<"'"<<endl;
         flg=1;
     }
     //resultsFile
-    fnResultFile = "TCSAM2013_ResultFile";//default results file name
+    fnResultFile = "TCSAM2015_ResultFile";//default results file name
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-resultsFile"))>-1) {
         fnResultFile = ad_comm::argv[on+1];
         rpt::echo<<"#results file changed to '"<<fnResultFile<<"'"<<endl;
