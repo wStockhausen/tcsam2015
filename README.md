@@ -1,4 +1,4 @@
-TannerCrabAssMod
-================
+wtsTCSAM2015
+============
 
-EBS Tanner crab stock  assessment model.
+Stock assessment model under development for the 2015 BSAI Tanner crab stock assessment.
