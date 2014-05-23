@@ -1,0 +1,136 @@
+/* 
+ * File:   ModelSelectivities.hpp
+ * Author: William.Stockhausen
+ *
+ * Created on August 13, 2012, 9:22 AM
+ */
+
+#ifndef MODELSELECTIVITIES_HPP
+    #define	MODELSELECTIVITIES_HPP
+
+    #include <admodel.h>
+
+//--------------------------------------------------------------------------------
+//          SelFcns
+//  Encapsulates selectivity functions
+//--------------------------------------------------------------------------------
+    class SelFcns {
+        public:
+            static int debug;
+        protected:
+            adstring_array stdNames;//names of standard inputs
+            adstring_array parNames;//parameter names
+            adstring_array xtrNames;//names of extra inputs
+
+        public:
+            int nSel;        //number of selectivity functions defined
+            adstring_array selNames;
+            adstring_array typNames;
+            imatrix paramIndexInfo;
+            dmatrix xtrInfo;
+        public:
+            SelFcns();
+            ~SelFcns();
+            
+            int static getSelFcnID(adstring str);
+            adstring static getSelFcnID(int i);
+            
+            dvar_vector static calcSelFcn(int id, dvector& z, dvar_vector& params, double fsZ);
+            
+        public:
+            const static int ID_ASCLOGISTIC    =1; const static adstring STR_ASCLOGISTIC; 
+            const static int ID_ASCLOGISTIC5095=2; const static adstring STR_ASCLOGISTIC5095; 
+            const static int ID_ASCLOGISTICLN50=3; const static adstring STR_ASCLOGISTICLN50; 
+            const static int ID_DBLLOGISTIC    =4; const static adstring STR_DBLLOGISTIC; 
+            const static int ID_DBLLOGISTIC5095=5; const static adstring STR_DBLLOGISTIC5095; 
+            const static int ID_DBLNORMAL      =6; const static adstring STR_DBLNORMAL; 
+
+            /**
+             * Calculates ascending logistic function parameterized by 
+             *      params[1]: size at 50% selected (z50)
+             *      params[2]: slope
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static asclogistic(    dvector& z, dvar_vector& params, double fsZ);       
+            
+            /**
+             * Calculates ascending logistic function parameterized by 
+             *      params[1]: size at 50% selected (z50)
+             *      params[2]: increment from z50 to z95
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static asclogistic5095(dvector& z, dvar_vector& params, double fsZ);
+
+            /**
+             * Calculates ascending logistic function parameterized by 
+             *      params[1]: ln-scale size at 50% selected (ln(z50))
+             *      params[2]: slope
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static asclogisticLn50(dvector& z, dvar_vector& params, double fsZ);       
+            
+            /**
+             * Calculates double logistic function parameterized by 
+             *      params[1]: size where ascending limb = 0.5  (z50)
+             *      params[2]: ascending limb rate parameter    (slope)
+             *      params[3]: size where descending limb = 0.5 (z50)
+             *      params[4]: descending limb rate parameter   (slope)
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static dbllogistic(    dvector& z, dvar_vector& params, double fsZ);
+            
+            /**
+             * Calculates double logistic function parameterized by 
+             *      params[1]: size where ascending limb = 0.5 (z50) 
+             *      params[2]: increment from z50 to z95 on ascending limb
+             *      params[3]: size where descending limb = 0.5 (z50) 
+             *      params[4]: increment from z95 to z50 on descending limb
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static dbllogistic5095(dvector& z, dvar_vector& params, double fsZ);
+            
+            /**
+             * Calculates double normal function parameterized by 
+             *      params[1]: 
+             *      params[2]: 
+             *      params[3]:
+             *      params[4]:
+             *      params[5]:
+             *      params[6]:
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static dblnormal(dvector& z, dvar_vector& params, double fsZ);
+    };
+    
+#endif	/* MODELSELECTIVITIES_HPP */
+
