@@ -3,6 +3,9 @@
  * Author: william.stockhausen
  *
  * Created on March 12, 2013, 7:12 AM
+ * 
+ * History:
+ * 20140605: added tcsam::dgbAll, dbgPriors
  */
 
 #pragma once
@@ -16,6 +19,10 @@ class rpt{
 };
     
 namespace tcsam{    
+    /* minimum debugging level that will print ALL debug info */
+    const int dbgAll = 100;
+    const int dbgPriors = 30;
+    
     /* Model dimension name for sex */
     const adstring STR_SEX = "SEX";
     /* Model dimension name for maturity state */

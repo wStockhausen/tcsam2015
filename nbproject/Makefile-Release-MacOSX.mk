@@ -23,7 +23,7 @@ AS=as
 # Macros
 CND_PLATFORM=CLang-MacOSX
 CND_DLIB_EXT=dylib
-CND_CONF=Release-MAC
+CND_CONF=Release-MacOSX
 CND_DISTDIR=dist
 CND_BUILDDIR=build
 
@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/TCSAM2015.o \
 	${OBJECTDIR}/src/CatchData.o \
 	${OBJECTDIR}/src/ModelConfiguration.o \
 	${OBJECTDIR}/src/ModelConstants.o \
@@ -46,8 +47,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/ModelParameterInfoTypes.o \
 	${OBJECTDIR}/src/ModelParametersInfo.o \
 	${OBJECTDIR}/src/ModelSelectivities.o \
-	${OBJECTDIR}/src/SummaryFunctions.o \
-	${OBJECTDIR}/src/TCSAM2015.o
+	${OBJECTDIR}/src/SummaryFunctions.o
 
 
 # C Compiler Flags
@@ -73,6 +73,11 @@ LDLIBSOPTIONS=
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/tcsam2015: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/tcsam2015 ${OBJECTFILES} ${LDLIBSOPTIONS}
+
+${OBJECTDIR}/TCSAM2015.o: TCSAM2015.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TCSAM2015.o TCSAM2015.cpp
 
 ${OBJECTDIR}/src/CatchData.o: src/CatchData.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -133,11 +138,6 @@ ${OBJECTDIR}/src/SummaryFunctions.o: src/SummaryFunctions.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/SummaryFunctions.o src/SummaryFunctions.cpp
-
-${OBJECTDIR}/src/TCSAM2015.o: src/TCSAM2015.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/TCSAM2015.o src/TCSAM2015.cpp
 
 # Subprojects
 .build-subprojects:

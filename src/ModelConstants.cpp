@@ -2,6 +2,7 @@
 #include "ModelConstants.hpp"
 
 using namespace tcsam;
+
 std::ofstream rpt::echo("EchoData.dat",std::ios::trunc);
 
 int tcsam::getMaturityType(adstring s){

@@ -1,22 +1,3 @@
-//TCSAM2015: Bering Sea Tanner crab model
-//
-// Author: William Stockhausen (william.stockhausen@noaa.gov)
-//
-// Model units (unless otherwise noted):
-//  Individual crab weights are in KG (kilograms).
-//  Abundance (numbers) is in MILLIONS (10^6's) of crabs.
-//  Biomass (weight) is in 1000's MT (metric tons).
-//
-// History:
-//  2014-02-11: created
-//  2014-05-23: renamed TCSAM2015
-//  2014-06-05: 1. moved setInitVals(...) functions to tcsam::setInitVals(...) in ModelParameterFunctions.hpp/cpp
-//              2. moved setDevs() to ) to tcsam::setDevs() in ModelParameterFunctions.hpp/cpp
-//              3. moved calcPriors(...) to tcsam::calcPriors(...) in ModelParameterFunctions.hpp/cpp
-//
-// =============================================================================
-// =============================================================================
-GLOBALS_SECTION
     #include <math.h>
     #include <time.h>
     #include <admodel.h>
@@ -47,7 +28,6 @@ GLOBALS_SECTION
     
     int iSeed = 999;//default random number generator seed
     random_number_generator rng(iSeed);//random number generator
-
     //debug flags
     int debugModelConfig     = 0;
     int debugModelDatasets   = 0;
@@ -91,20 +71,20 @@ GLOBALS_SECTION
     
     double smlVal = 0.00001;//small value to keep things > 0
     
-// =============================================================================
-// =============================================================================
-DATA_SECTION
+#include <admodel.h>
+#include <contrib.h>
 
- LOCAL_CALCS
-//    rpt::echo.open("EchoOut.dat", ios::trunc);//global "echo" file in tcsam namespace
+  extern "C"  {
+    void ad_boundf(int i);
+  }
+#include <TCSAM2015.htp>
+
+model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
+{
     rpt::echo<<"#Starting "<<model<<" (ver "<<modVer<<") Code"<<endl;
     rpt::echo<<"#Starting DATA_SECTION"<<endl;
     cout<<"#Starting "<<model<<" (ver "<<modVer<<") Code"<<endl;
     cout<<"#Starting DATA_SECTION"<<endl;
- END_CALCS
-
- //Set commandline options
- LOCAL_CALCS
     int on = 0;
     int flg = 0;
     //configFile
@@ -247,25 +227,12 @@ DATA_SECTION
         rpt::echo<<"#debugMCMC turned ON"<<endl;
         flg = 1;
     }
- END_CALCS
- 
-    int nZBs;  //number of model size bins
-    int mnYr;  //min model year
-    int mxYr;  //max model year
-    int mxYrp1;//max model year + 1
-    int nSel;  //number of selectivity functions
-    int nFsh;  //number of fisheries
-    int nSrv;  //number of surveys
- LOCAL_CALCS
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#Reading configuration file '"<<fnConfigFile<<"'"<<endl;
     ad_comm::change_datafile_name(fnConfigFile);
     ptrMC = new ModelConfiguration();
     ptrMC->read(*(ad_comm::global_datafile));
-//    rpt::echo<<"#------------------ModelConfiguration-----------------"<<endl;
-//    rpt::echo<<(*ptrMC);
-//    rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#----finished model configuration---"<<endl;
     rpt::echo<<"#-----------------------------------"<<endl;
     if (debugDATA_SECTION){
@@ -285,12 +252,8 @@ DATA_SECTION
     nFsh   = ptrMC->nFsh;
     nSrv   = ptrMC->nSrv;
     nZBs   = ptrMC->nZBs;
- END_CALCS   
-    vector zBs(1,nZBs)
-    !!zBs  = ptrMC->zMidPts;
-    
-    //read model parameters info
- LOCAL_CALCS
+  zBs.allocate(1,nZBs);
+zBs  = ptrMC->zMidPts;
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#Reading parameters info file '"<<ptrMC->fnMPI<<"'"<<endl;
     if (debugModelParamsInfo) ModelParametersInfo::debug=1;
@@ -303,10 +266,6 @@ DATA_SECTION
         if (debugModelParamsInfo<0) exit(1);
         ModelParametersInfo::debug=debugModelParamsInfo;
     }
-//    rpt::echo<<"#------------------ModelParametersInfo-----------------"<<endl;
-//    rpt::echo<<(*ptrMPI);
-//    rpt::echo<<"#------------------ModelParametersInfo-----------------"<<endl;
-//    ptrMPI->writeToR(rpt::echo);rpt::echo<<endl;
     rpt::echo<<"#----finished model parameters info---"<<endl;
     if (debugDATA_SECTION){
         cout<<"#------------------ModelParametersInfo-----------------"<<endl;
@@ -316,10 +275,6 @@ DATA_SECTION
         cin>>debugDATA_SECTION;
         if (debugDATA_SECTION<0) exit(1);
     }
- END_CALCS
-        
-    //read model data
- LOCAL_CALCS
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#Reading datasets file '"<<ptrMC->fnMDS<<"'"<<endl;
     if (debugModelDatasets) {
@@ -347,20 +302,12 @@ DATA_SECTION
         cin>>debugDATA_SECTION;
         if (debugDATA_SECTION<0) exit(1);
     }
- END_CALCS
-    
-    //read model data again to create SimMDS object
- LOCAL_CALCS
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#Reading datasets file again to create SimMDS object '"<<ptrMC->fnMDS<<"'"<<endl;
     ptrSimMDS = new ModelDatasets(ptrMC);
     ad_comm::change_datafile_name(ptrMC->fnMDS);
     ptrSimMDS->read(*(ad_comm::global_datafile));
     rpt::echo<<"#finished SimMDS object"<<endl;
- END_CALCS   
-    
-    //read model options
- LOCAL_CALCS
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#Reading model options file '"<<ptrMC->fnMOs<<"'"<<endl;
     if (debugModelParamsInfo) ModelOptions::debug=1;
@@ -373,8 +320,6 @@ DATA_SECTION
         if (debugModelParamsInfo<0) exit(1);
         ModelOptions::debug=debugModelParamsInfo;
     }
-//    rpt::echo<<"#------------------ModelOptions-----------------"<<endl;
-//    rpt::echo<<(*ptrMOs);
     rpt::echo<<"#----finished model options---"<<endl;
     if (debugDATA_SECTION){
         cout<<"#------------------ModelOptions-----------------"<<endl;
@@ -384,12 +329,8 @@ DATA_SECTION
         cin>>debugDATA_SECTION;
         if (debugDATA_SECTION<0) exit(1);
     }
- END_CALCS
-        
-    //Match up model fisheries with fisheries data
-    ivector mapD2MFsh(1,nFsh);
-    ivector mapM2DFsh(1,nFsh);
- LOCAL_CALCS
+  mapD2MFsh.allocate(1,nFsh);
+  mapM2DFsh.allocate(1,nFsh);
     {
      int idx;
      for (int f=1;f<=nFsh;f++){
@@ -400,12 +341,8 @@ DATA_SECTION
      rpt::echo<<"model fisheries map to fishery data objects: "<<mapM2DFsh<<endl;
      cout<<"model fisheries map to fishery data objects: "<<mapM2DFsh<<endl;
     }
- END_CALCS
-        
-    //Match up model surveys with surveys data
-    ivector mapD2MSrv(1,nSrv);
-    ivector mapM2DSrv(1,nSrv);
- LOCAL_CALCS
+  mapD2MSrv.allocate(1,nSrv);
+  mapM2DSrv.allocate(1,nSrv);
     {
      int idx;
      for (int v=1;v<=nSrv;v++){
@@ -416,315 +353,465 @@ DATA_SECTION
      rpt::echo<<"model surveys map to survey data objects: "<<mapM2DSrv<<endl;
      cout<<"model surveys map to survey data objects: "<<mapM2DSrv<<endl;
     }
- END_CALCS
- 
-    //Extract parameter information
-    //recruitment parameters
-    int npLnR; ivector phsLnR; vector lbLnR; vector ubLnR;
-    !!tcsam::setParameterInfo(ptrMPI->ptrRec->pLnR,npLnR,lbLnR,ubLnR,phsLnR,rpt::echo);
-    
-    int npLnRCV; ivector phsLnRCV; vector lbLnRCV; vector ubLnRCV;
-    !!tcsam::setParameterInfo(ptrMPI->ptrRec->pLnRCV,npLnRCV,lbLnRCV,ubLnRCV,phsLnRCV,rpt::echo);
-    
-    int npLgtRX; ivector phsLgtRX; vector lbLgtRX; vector ubLgtRX;
-    !!tcsam::setParameterInfo(ptrMPI->ptrRec->pLgtRX,npLgtRX,lbLgtRX,ubLgtRX,phsLgtRX,rpt::echo);
-    
-    int npLnRa; ivector phsLnRa; vector lbLnRa; vector ubLnRa;
-    !!tcsam::setParameterInfo(ptrMPI->ptrRec->pLnRa,npLnRa,lbLnRa,ubLnRa,phsLnRa,rpt::echo);
-    
-    int npLnRb; ivector phsLnRb; vector lbLnRb; vector ubLnRb;
-    !!tcsam::setParameterInfo(ptrMPI->ptrRec->pLnRb,npLnRb,lbLnRb,ubLnRb,phsLnRb,rpt::echo);
-    
-    int npDevsLnR; ivector mniDevsLnR; ivector mxiDevsLnR; imatrix idxsDevsLnR;
-    vector lbDevsLnR; vector ubDevsLnR; ivector phsDevsLnR;
-    !!tcsam::setParameterInfo(ptrMPI->ptrRec->pDevsLnR,npDevsLnR,mniDevsLnR,mxiDevsLnR,idxsDevsLnR,lbDevsLnR,ubDevsLnR,phsDevsLnR,rpt::echo);
-    
-    //natural mortality parameters
-    int npLnM; ivector phsLnM; vector lbLnM; vector ubLnM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrNM->pLnM,npLnM,lbLnM,ubLnM,phsLnM,rpt::echo);
-    
-    int npLnDMT; ivector phsLnDMT; vector lbLnDMT; vector ubLnDMT;
-    !!tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMT,npLnDMT,lbLnDMT,ubLnDMT,phsLnDMT,rpt::echo);
-    
-    int npLnDMX; ivector phsLnDMX; vector lbLnDMX; vector ubLnDMX;
-    !!tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMX,npLnDMX,lbLnDMX,ubLnDMX,phsLnDMX,rpt::echo);
-    
-    int npLnDMM; ivector phsLnDMM; vector lbLnDMM; vector ubLnDMM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMM,npLnDMM,lbLnDMM,ubLnDMM,phsLnDMM,rpt::echo);
-    
-    int npLnDMXM; ivector phsLnDMXM; vector lbLnDMXM; vector ubLnDMXM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMXM,npLnDMXM,lbLnDMXM,ubLnDMXM,phsLnDMXM,rpt::echo);
-    
-    number zMref;
-    !!zMref = ptrMPI->ptrNM->zRef;
-    
-    //maturity parameters
-    int npLgtPrMat; ivector mniLgtPrMat; ivector mxiLgtPrMat; imatrix idxsLgtPrMat;
-    vector lbLgtPrMat; vector ubLgtPrMat; ivector phsLgtPrMat;
-    !!tcsam::setParameterInfo(ptrMPI->ptrMat->pLgtPrMat,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,idxsLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat,rpt::echo);
- 
-    //growth parameters
-    int npLnGrA; ivector phsLnGrA; vector lbLnGrA; vector ubLnGrA;
-    !!tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrA,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA,rpt::echo);
-    
-    int npLnGrB; ivector phsLnGrB; vector lbLnGrB; vector ubLnGrB;
-    !!tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrB,npLnGrB,lbLnGrB,ubLnGrB,phsLnGrB,rpt::echo);
-    
-    int npLnGrBeta; ivector phsLnGrBeta; vector lbLnGrBeta; vector ubLnGrBeta;
-    !!tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrBeta,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta,rpt::echo);
-    
-    //selectivity parameters
-    !!nSel = ptrMPI->ptrSel->nPCs;//number of selectivity functions defined
-    int npS1; ivector phsS1; vector lbS1; vector ubS1;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pS1,npS1,lbS1,ubS1,phsS1,rpt::echo);
-    int npS2; ivector phsS2; vector lbS2; vector ubS2;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pS2,npS2,lbS2,ubS2,phsS2,rpt::echo);
-    int npS3; ivector phsS3; vector lbS3; vector ubS3;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pS3,npS3,lbS3,ubS3,phsS3,rpt::echo);
-    int npS4; ivector phsS4; vector lbS4; vector ubS4;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pS4,npS4,lbS4,ubS4,phsS4,rpt::echo);
-    int npS5; ivector phsS5; vector lbS5; vector ubS5;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pS5,npS5,lbS5,ubS5,phsS5,rpt::echo);
-    int npS6; ivector phsS6; vector lbS6; vector ubS6;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pS6,npS6,lbS6,ubS6,phsS6,rpt::echo);
-    
-    int npDevsS1; ivector mniDevsS1; ivector mxiDevsS1;  imatrix idxsDevsS1;
-    vector lbDevsS1; vector ubDevsS1; ivector phsDevsS1;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS1,npDevsS1,mniDevsS1,mxiDevsS1,idxsDevsS1,lbDevsS1,ubDevsS1,phsDevsS1,rpt::echo);
-    int npDevsS2; ivector mniDevsS2; ivector mxiDevsS2;  imatrix idxsDevsS2;
-    vector lbDevsS2; vector ubDevsS2; ivector phsDevsS2;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS2,npDevsS2,mniDevsS2,mxiDevsS2,idxsDevsS2,lbDevsS2,ubDevsS2,phsDevsS2,rpt::echo);
-    int npDevsS3; ivector mniDevsS3; ivector mxiDevsS3;  imatrix idxsDevsS3;
-    vector lbDevsS3; vector ubDevsS3; ivector phsDevsS3;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS3,npDevsS3,mniDevsS3,mxiDevsS3,idxsDevsS3,lbDevsS3,ubDevsS3,phsDevsS3,rpt::echo);
-    int npDevsS4; ivector mniDevsS4; ivector mxiDevsS4;  imatrix idxsDevsS4;
-    vector lbDevsS4; vector ubDevsS4; ivector phsDevsS4;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS4,npDevsS4,mniDevsS4,mxiDevsS4,idxsDevsS4,lbDevsS4,ubDevsS4,phsDevsS4,rpt::echo);
-    int npDevsS5; ivector mniDevsS5; ivector mxiDevsS5;  imatrix idxsDevsS5;
-    vector lbDevsS5; vector ubDevsS5; ivector phsDevsS5;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS5,npDevsS5,mniDevsS5,mxiDevsS5,idxsDevsS5,lbDevsS5,ubDevsS5,phsDevsS5,rpt::echo);
-    int npDevsS6; ivector mniDevsS6; ivector mxiDevsS6;  imatrix idxsDevsS6;
-    vector lbDevsS6; vector ubDevsS6; ivector phsDevsS6;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS6,npDevsS6,mniDevsS6,mxiDevsS6,idxsDevsS6,lbDevsS6,ubDevsS6,phsDevsS6,rpt::echo);
-    
-        
-    //fisheries parameters
-    int npHM; ivector phsHM; vector lbHM; vector ubHM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pHM,npHM,lbHM,ubHM,phsHM,rpt::echo);
-    
-    int npLnC; ivector phsLnC; vector lbLnC; vector ubLnC;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnC,npLnC,lbLnC,ubLnC,phsLnC,rpt::echo);
-    
-    int npLnDCT; ivector phsLnDCT; vector lbLnDCT; vector ubLnDCT;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCT,npLnDCT,lbLnDCT,ubLnDCT,phsLnDCT,rpt::echo);
-    
-    int npLnDCX; ivector phsLnDCX; vector lbLnDCX; vector ubLnDCX;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCX,npLnDCX,lbLnDCX,ubLnDCX,phsLnDCX,rpt::echo);
-    
-    int npLnDCM; ivector phsLnDCM; vector lbLnDCM; vector ubLnDCM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCM,npLnDCM,lbLnDCM,ubLnDCM,phsLnDCM,rpt::echo);
-    
-    int npLnDCXM; ivector phsLnDCXM; vector lbLnDCXM; vector ubLnDCXM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCXM,npLnDCXM,lbLnDCXM,ubLnDCXM,phsLnDCXM,rpt::echo);
-    
-    int npDevsLnC; ivector mniDevsLnC; ivector mxiDevsLnC; imatrix idxsDevsLnC;
-    vector lbDevsLnC; vector ubDevsLnC; ivector phsDevsLnC;
-    !!tcsam::setParameterInfo(ptrMPI->ptrFsh->pDevsLnC,npDevsLnC,mniDevsLnC,mxiDevsLnC,idxsDevsLnC,lbDevsLnC,ubDevsLnC,phsDevsLnC,rpt::echo);
-    
-    //surveys parameters
-    int npLnQ; ivector phsLnQ; vector lbLnQ; vector ubLnQ;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnQ,npLnQ,lbLnQ,ubLnQ,phsLnQ,rpt::echo);
-    
-    int npLnDQT; ivector phsLnDQT; vector lbLnDQT; vector ubLnDQT;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQT,npLnDQT,lbLnDQT,ubLnDQT,phsLnDQT,rpt::echo);
-    
-    int npLnDQX; ivector phsLnDQX; vector lbLnDQX; vector ubLnDQX;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQX,npLnDQX,lbLnDQX,ubLnDQX,phsLnDQX,rpt::echo);
-    
-    int npLnDQM; ivector phsLnDQM; vector lbLnDQM; vector ubLnDQM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQM,npLnDQM,lbLnDQM,ubLnDQM,phsLnDQM,rpt::echo);
-    
-    int npLnDQXM; ivector phsLnDQXM; vector lbLnDQXM; vector ubLnDQXM;
-    !!tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQXM,npLnDQXM,lbLnDQXM,ubLnDQXM,phsLnDQXM,rpt::echo);
-
-    //other data
-    vector dtF(mnYr,mxYr);//timing of midpoint of fishing season (by year)
-    !!dtF = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
-    vector dtM(mnYr,mxYr);//timing of mating (by year))
-    !!dtM = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
-
-    ivector optsFcAvg(1,nFsh);//option flags for fishery capture rate averaging
-    !!optsFcAvg = ptrMOs->optsFcAvg;
-    vector avgEff(1,nFsh);//average effort over fishery-specific time period
-
-    //number of parameter combinations for various processes
-    int npcRec;
-    !!npcRec = ptrMPI->ptrRec->nPCs;
-    int npcNM;
-    !!npcNM = ptrMPI->ptrNM->nPCs;
-    int npcMat;
-    !!npcMat = ptrMPI->ptrMat->nPCs;
-    int npcGr;
-    !!npcGr = ptrMPI->ptrGr->nPCs;
-    int npcSel;
-    !!npcSel = ptrMPI->ptrSel->nPCs;
-    int npcFsh;
-    !!npcFsh = ptrMPI->ptrFsh->nPCs;
-    int npcSrv;
-    !!npcSrv = ptrMPI->ptrSrv->nPCs;
-    
-    
- LOCAL_CALCS
+  phsLnR.allocate();
+  lbLnR.allocate();
+  ubLnR.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrRec->pLnR,npLnR,lbLnR,ubLnR,phsLnR,rpt::echo);
+  phsLnRCV.allocate();
+  lbLnRCV.allocate();
+  ubLnRCV.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrRec->pLnRCV,npLnRCV,lbLnRCV,ubLnRCV,phsLnRCV,rpt::echo);
+  phsLgtRX.allocate();
+  lbLgtRX.allocate();
+  ubLgtRX.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrRec->pLgtRX,npLgtRX,lbLgtRX,ubLgtRX,phsLgtRX,rpt::echo);
+  phsLnRa.allocate();
+  lbLnRa.allocate();
+  ubLnRa.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrRec->pLnRa,npLnRa,lbLnRa,ubLnRa,phsLnRa,rpt::echo);
+  phsLnRb.allocate();
+  lbLnRb.allocate();
+  ubLnRb.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrRec->pLnRb,npLnRb,lbLnRb,ubLnRb,phsLnRb,rpt::echo);
+  mniDevsLnR.allocate();
+  mxiDevsLnR.allocate();
+  idxsDevsLnR.allocate();
+  lbDevsLnR.allocate();
+  ubDevsLnR.allocate();
+  phsDevsLnR.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrRec->pDevsLnR,npDevsLnR,mniDevsLnR,mxiDevsLnR,idxsDevsLnR,lbDevsLnR,ubDevsLnR,phsDevsLnR,rpt::echo);
+  phsLnM.allocate();
+  lbLnM.allocate();
+  ubLnM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrNM->pLnM,npLnM,lbLnM,ubLnM,phsLnM,rpt::echo);
+  phsLnDMT.allocate();
+  lbLnDMT.allocate();
+  ubLnDMT.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMT,npLnDMT,lbLnDMT,ubLnDMT,phsLnDMT,rpt::echo);
+  phsLnDMX.allocate();
+  lbLnDMX.allocate();
+  ubLnDMX.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMX,npLnDMX,lbLnDMX,ubLnDMX,phsLnDMX,rpt::echo);
+  phsLnDMM.allocate();
+  lbLnDMM.allocate();
+  ubLnDMM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMM,npLnDMM,lbLnDMM,ubLnDMM,phsLnDMM,rpt::echo);
+  phsLnDMXM.allocate();
+  lbLnDMXM.allocate();
+  ubLnDMXM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrNM->pLnDMXM,npLnDMXM,lbLnDMXM,ubLnDMXM,phsLnDMXM,rpt::echo);
+zMref = ptrMPI->ptrNM->zRef;
+  mniLgtPrMat.allocate();
+  mxiLgtPrMat.allocate();
+  idxsLgtPrMat.allocate();
+  lbLgtPrMat.allocate();
+  ubLgtPrMat.allocate();
+  phsLgtPrMat.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrMat->pLgtPrMat,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,idxsLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat,rpt::echo);
+  phsLnGrA.allocate();
+  lbLnGrA.allocate();
+  ubLnGrA.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrA,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA,rpt::echo);
+  phsLnGrB.allocate();
+  lbLnGrB.allocate();
+  ubLnGrB.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrB,npLnGrB,lbLnGrB,ubLnGrB,phsLnGrB,rpt::echo);
+  phsLnGrBeta.allocate();
+  lbLnGrBeta.allocate();
+  ubLnGrBeta.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrBeta,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta,rpt::echo);
+nSel = ptrMPI->ptrSel->nPCs;//number of selectivity functions defined
+  phsS1.allocate();
+  lbS1.allocate();
+  ubS1.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pS1,npS1,lbS1,ubS1,phsS1,rpt::echo);
+  phsS2.allocate();
+  lbS2.allocate();
+  ubS2.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pS2,npS2,lbS2,ubS2,phsS2,rpt::echo);
+  phsS3.allocate();
+  lbS3.allocate();
+  ubS3.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pS3,npS3,lbS3,ubS3,phsS3,rpt::echo);
+  phsS4.allocate();
+  lbS4.allocate();
+  ubS4.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pS4,npS4,lbS4,ubS4,phsS4,rpt::echo);
+  phsS5.allocate();
+  lbS5.allocate();
+  ubS5.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pS5,npS5,lbS5,ubS5,phsS5,rpt::echo);
+  phsS6.allocate();
+  lbS6.allocate();
+  ubS6.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pS6,npS6,lbS6,ubS6,phsS6,rpt::echo);
+  mniDevsS1.allocate();
+  mxiDevsS1.allocate();
+  idxsDevsS1.allocate();
+  lbDevsS1.allocate();
+  ubDevsS1.allocate();
+  phsDevsS1.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS1,npDevsS1,mniDevsS1,mxiDevsS1,idxsDevsS1,lbDevsS1,ubDevsS1,phsDevsS1,rpt::echo);
+  mniDevsS2.allocate();
+  mxiDevsS2.allocate();
+  idxsDevsS2.allocate();
+  lbDevsS2.allocate();
+  ubDevsS2.allocate();
+  phsDevsS2.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS2,npDevsS2,mniDevsS2,mxiDevsS2,idxsDevsS2,lbDevsS2,ubDevsS2,phsDevsS2,rpt::echo);
+  mniDevsS3.allocate();
+  mxiDevsS3.allocate();
+  idxsDevsS3.allocate();
+  lbDevsS3.allocate();
+  ubDevsS3.allocate();
+  phsDevsS3.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS3,npDevsS3,mniDevsS3,mxiDevsS3,idxsDevsS3,lbDevsS3,ubDevsS3,phsDevsS3,rpt::echo);
+  mniDevsS4.allocate();
+  mxiDevsS4.allocate();
+  idxsDevsS4.allocate();
+  lbDevsS4.allocate();
+  ubDevsS4.allocate();
+  phsDevsS4.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS4,npDevsS4,mniDevsS4,mxiDevsS4,idxsDevsS4,lbDevsS4,ubDevsS4,phsDevsS4,rpt::echo);
+  mniDevsS5.allocate();
+  mxiDevsS5.allocate();
+  idxsDevsS5.allocate();
+  lbDevsS5.allocate();
+  ubDevsS5.allocate();
+  phsDevsS5.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS5,npDevsS5,mniDevsS5,mxiDevsS5,idxsDevsS5,lbDevsS5,ubDevsS5,phsDevsS5,rpt::echo);
+  mniDevsS6.allocate();
+  mxiDevsS6.allocate();
+  idxsDevsS6.allocate();
+  lbDevsS6.allocate();
+  ubDevsS6.allocate();
+  phsDevsS6.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSel->pDevsS6,npDevsS6,mniDevsS6,mxiDevsS6,idxsDevsS6,lbDevsS6,ubDevsS6,phsDevsS6,rpt::echo);
+  phsHM.allocate();
+  lbHM.allocate();
+  ubHM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pHM,npHM,lbHM,ubHM,phsHM,rpt::echo);
+  phsLnC.allocate();
+  lbLnC.allocate();
+  ubLnC.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnC,npLnC,lbLnC,ubLnC,phsLnC,rpt::echo);
+  phsLnDCT.allocate();
+  lbLnDCT.allocate();
+  ubLnDCT.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCT,npLnDCT,lbLnDCT,ubLnDCT,phsLnDCT,rpt::echo);
+  phsLnDCX.allocate();
+  lbLnDCX.allocate();
+  ubLnDCX.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCX,npLnDCX,lbLnDCX,ubLnDCX,phsLnDCX,rpt::echo);
+  phsLnDCM.allocate();
+  lbLnDCM.allocate();
+  ubLnDCM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCM,npLnDCM,lbLnDCM,ubLnDCM,phsLnDCM,rpt::echo);
+  phsLnDCXM.allocate();
+  lbLnDCXM.allocate();
+  ubLnDCXM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pLnDCXM,npLnDCXM,lbLnDCXM,ubLnDCXM,phsLnDCXM,rpt::echo);
+  mniDevsLnC.allocate();
+  mxiDevsLnC.allocate();
+  idxsDevsLnC.allocate();
+  lbDevsLnC.allocate();
+  ubDevsLnC.allocate();
+  phsDevsLnC.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrFsh->pDevsLnC,npDevsLnC,mniDevsLnC,mxiDevsLnC,idxsDevsLnC,lbDevsLnC,ubDevsLnC,phsDevsLnC,rpt::echo);
+  phsLnQ.allocate();
+  lbLnQ.allocate();
+  ubLnQ.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnQ,npLnQ,lbLnQ,ubLnQ,phsLnQ,rpt::echo);
+  phsLnDQT.allocate();
+  lbLnDQT.allocate();
+  ubLnDQT.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQT,npLnDQT,lbLnDQT,ubLnDQT,phsLnDQT,rpt::echo);
+  phsLnDQX.allocate();
+  lbLnDQX.allocate();
+  ubLnDQX.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQX,npLnDQX,lbLnDQX,ubLnDQX,phsLnDQX,rpt::echo);
+  phsLnDQM.allocate();
+  lbLnDQM.allocate();
+  ubLnDQM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQM,npLnDQM,lbLnDQM,ubLnDQM,phsLnDQM,rpt::echo);
+  phsLnDQXM.allocate();
+  lbLnDQXM.allocate();
+  ubLnDQXM.allocate();
+tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQXM,npLnDQXM,lbLnDQXM,ubLnDQXM,phsLnDQXM,rpt::echo);
+  dtF.allocate(mnYr,mxYr);
+dtF = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
+  dtM.allocate(mnYr,mxYr);
+dtM = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
+  optsFcAvg.allocate(1,nFsh);
+optsFcAvg = ptrMOs->optsFcAvg;
+  avgEff.allocate(1,nFsh);
+npcRec = ptrMPI->ptrRec->nPCs;
+npcNM = ptrMPI->ptrNM->nPCs;
+npcMat = ptrMPI->ptrMat->nPCs;
+npcGr = ptrMPI->ptrGr->nPCs;
+npcSel = ptrMPI->ptrSel->nPCs;
+npcFsh = ptrMPI->ptrFsh->nPCs;
+npcSrv = ptrMPI->ptrSrv->nPCs;
     rpt::echo<<"#finished DATA_SECTION"<<endl;
     cout<<"#finished DATA_SECTION"<<endl;
-//    exit(1);
- END_CALCS
-// =============================================================================
-// =============================================================================
-INITIALIZATION_SECTION
+}
 
-// =============================================================================
-// =============================================================================
-PARAMETER_SECTION
-    !!rpt::echo<<"#Starting PARAMETER_SECTION"<<endl;
-    !!cout<<"#Starting PARAMETER_SECTION"<<endl;
- 
-    //recruitment parameters TODO: implement devs
-    init_bounded_number_vector pLnR(1,npLnR,lbLnR,ubLnR,phsLnR);              //mean ln-scale recruitment
-    init_bounded_number_vector pLnRCV(1,npLnRCV,lbLnRCV,ubLnRCV,phsLnRCV);    //ln-scale recruitment cv
-    init_bounded_number_vector pLgtRX(1,npLgtRX,lbLgtRX,ubLgtRX,phsLgtRX);    //logit-scale male sex ratio
-    init_bounded_number_vector pLnRa(1,npLnRa,lbLnRa,ubLnRa,phsLnRa);         //size distribution parameter
-    init_bounded_number_vector pLnRb(1,npLnRb,lbLnRb,ubLnRb,phsLnRb);         //size distribution parameter
-    init_bounded_vector_vector pDevsLnR(1,npDevsLnR,mniDevsLnR,mxiDevsLnR,lbDevsLnR,ubDevsLnR,phsDevsLnR);//ln-scale rec devs
-    matrix devsLnR(1,npDevsLnR,mniDevsLnR,mxiDevsLnR+1);
-   
-    //natural mortality parameters
-    init_bounded_number_vector pLnM(1,npLnM,lbLnM,ubLnM,phsLnM);               //base
-    init_bounded_number_vector pLnDMT(1,npLnDMT,lbLnDMT,ubLnDMT,phsLnDMT);     //main temporal offsets
-    init_bounded_number_vector pLnDMX(1,npLnDMX,lbLnDMX,ubLnDMX,phsLnDMX);     //female offsets
-    init_bounded_number_vector pLnDMM(1,npLnDMM,lbLnDMM,ubLnDMM,phsLnDMM);     //immature offsets
-    init_bounded_number_vector pLnDMXM(1,npLnDMXM,lbLnDMXM,ubLnDMXM,phsLnDMXM);//female-immature offsets
-    
-    //growth parameters
-    init_bounded_number_vector pLnGrA(1,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA); //ln-scale mean growth coefficient "a"
-    init_bounded_number_vector pLnGrB(1,npLnGrB,lbLnGrB,ubLnGrB,phsLnGrB); //ln-scale mean growth coefficient "b"
-    init_bounded_number_vector pLnGrBeta(1,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta);//ln-scale growth scale parameter
-    
-    //maturity parameters
-    init_bounded_vector_vector pLgtPrMat(1,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat);//logit-scale maturity ogive parameters
-    
-    //selectivity parameters
-    init_bounded_number_vector pS1(1,npS1,lbS1,ubS1,phsS1);
-    init_bounded_number_vector pS2(1,npS2,lbS2,ubS2,phsS2);
-    init_bounded_number_vector pS3(1,npS3,lbS3,ubS3,phsS3);
-    init_bounded_number_vector pS4(1,npS4,lbS4,ubS4,phsS4);
-    init_bounded_number_vector pS5(1,npS5,lbS5,ubS5,phsS5);
-    init_bounded_number_vector pS6(1,npS6,lbS6,ubS6,phsS6);
-    init_bounded_vector_vector pDevsS1(1,npDevsS1,mniDevsS1,mxiDevsS1,lbDevsS1,ubDevsS1,phsDevsS1);
-    init_bounded_vector_vector pDevsS2(1,npDevsS2,mniDevsS2,mxiDevsS2,lbDevsS2,ubDevsS2,phsDevsS2);
-    init_bounded_vector_vector pDevsS3(1,npDevsS3,mniDevsS3,mxiDevsS3,lbDevsS3,ubDevsS3,phsDevsS3);
-    init_bounded_vector_vector pDevsS4(1,npDevsS4,mniDevsS4,mxiDevsS4,lbDevsS4,ubDevsS4,phsDevsS4);
-    init_bounded_vector_vector pDevsS5(1,npDevsS5,mniDevsS5,mxiDevsS5,lbDevsS5,ubDevsS5,phsDevsS5);
-    init_bounded_vector_vector pDevsS6(1,npDevsS6,mniDevsS6,mxiDevsS6,lbDevsS6,ubDevsS6,phsDevsS6);
-    matrix devsS1(1,npDevsS1,mniDevsS1,mxiDevsS1+1);
-    matrix devsS2(1,npDevsS2,mniDevsS2,mxiDevsS2+1);
-    matrix devsS3(1,npDevsS3,mniDevsS3,mxiDevsS3+1);
-    matrix devsS4(1,npDevsS4,mniDevsS4,mxiDevsS4+1);
-    matrix devsS5(1,npDevsS5,mniDevsS5,mxiDevsS5+1);
-    matrix devsS6(1,npDevsS6,mniDevsS6,mxiDevsS6+1);
-    
-    //fishing capture rate parameters
-    init_bounded_number_vector pHM(1,npHM,lbHM,ubHM,phsHM);                    //handling mortality
-    init_bounded_number_vector pLnC(1,npLnC,lbLnC,ubLnC,phsLnC);               //ln-scale base fishing mortality (mature males)
-    init_bounded_number_vector pLnDCT(1,npLnDCT,lbLnDCT,ubLnDCT,phsLnDCT);     //ln-scale year-block offsets
-    init_bounded_number_vector pLnDCX(1,npLnDCX,lbLnDCX,ubLnDCX,phsLnDCX);     //female offsets
-    init_bounded_number_vector pLnDCM(1,npLnDCM,lbLnDCM,ubLnDCM,phsLnDCM);     //immature offsets
-    init_bounded_number_vector pLnDCXM(1,npLnDCXM,lbLnDCXM,ubLnDCXM,phsLnDCXM);//female-immature offsets
-    init_bounded_vector_vector pDevsLnC(1,npDevsLnC,mniDevsLnC,mxiDevsLnC,lbDevsLnC,ubDevsLnC,phsDevsLnC);//ln-scale deviations
-    matrix devsLnC(1,npDevsLnC,mniDevsLnC,mxiDevsLnC+1);
-    
-    //survey catchbility parameters
-    init_bounded_number_vector pLnQ(1,npLnQ,lbLnQ,ubLnQ,phsLnQ);               //base (mature male))
-    init_bounded_number_vector pLnDQT(1,npLnDQT,lbLnDQT,ubLnDQT,phsLnDQT);     //main temporal offsets
-    init_bounded_number_vector pLnDQX(1,npLnDQX,lbLnDQX,ubLnDQX,phsLnDQX);     //female offsets
-    init_bounded_number_vector pLnDQM(1,npLnDQM,lbLnDQM,ubLnDQM,phsLnDQM);     //immature offsets
-    init_bounded_number_vector pLnDQXM(1,npLnDQXM,lbLnDQXM,ubLnDQXM,phsLnDQXM);//female-immature offsets
-    
-    //objective function value
-    objective_function_value objFun;
-    
-    //population-related quantities
-    matrix  spb_yx(mnYr,mxYr,1,nSXs);                        //mature (spawning) biomass at mating time
-    5darray n_yxmsz(mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//numbers at size, July 1 year y
-    
-    //recruitment-related quantities
-    vector R_y(mnYr,mxYr);         //total number of recruits by year
-    vector Rx_c(1,npcRec);         //male fraction of recruits by parameter combination
-    matrix R_yx(mnYr,mxYr,1,nSXs); //sex-specific number of recruits by year
-    matrix R_cz(1,npcRec,1,nZBs);  //size distribution of recruits by parameter combination
-    matrix R_yz(mnYr,mxYr,1,nZBs); //size distribution of recruits by year
-    vector zscrDevsLnR(mnYr,mxYr); //standardized ln-scale recruitment residuals
-    
-    //natural mortality-related quantities
-    3darray M_cxm(1,npcNM,1,nSXs,1,nMSs);//natural mortality rate by parameter combination
-    4darray M_yxmz(mnYr,mxYr,1,nSXs,1,nMSs,1,nZBs);//size-specific natural mortality rate
-    
-    //maturity-related quantities
-    matrix  prMat_cz(1,npcMat,1,nZBs);         //prob. of immature crab molting to maturity by parameter combination
-    3darray  prMat_yxz(mnYr,mxYr,1,nSXs,1,nZBs);//prob. of immature crab molting to maturity given sex x, pre-molt size x
-    
-    //growth related quantities
-    3darray prGr_czz(1,npcGr,1,nZBs,1,nZBs);                  //prob of growth to z (row) from zp (col) by parameter combination
-    5darray prGr_yxmzz(mnYr,mxYr,1,nSXs,1,nMSs,1,nZBs,1,nZBs);//prob of growth to z from zp given sex and whether molt is to maturity or not
-    
-    //Selectivity (and retention) functions
-    matrix sel_cz(1,npcSel,1,nZBs);            //all selectivity functions (fisheries and surveys) by parameter combination (no devs))
-    3darray sel_iyz(1,nSel,mnYr,mxYr+1,1,nZBs);//all selectivity functions (fisheries and surveys)
-    
-    //fishery-related quantities
-    4darray avgFc(1,nFsh,1,nSXs,1,nMSs,1,nSCs);           //avg capture rate over a fishery-specific period
-    4darray avgRatioFc2Eff(1,nFsh,1,nSXs,1,nMSs,1,nSCs);  //ratio of avg capture rate to effort
-    matrix  Fhm_fy(1,nFsh,mnYr,mxYr);                               //handling mortality
-    5darray Fc_fyxms(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs);        //fully-selected fishing capture rates NOT mortality)
-    6darray Fc_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//fishing capture rate (NOT mortality) by fishery
-    6darray Fr_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//size-specific retained fishing mortality by fishery
-    6darray Fd_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//size-specific discard mortality rate  by fishery
-    5darray Ft_yxmsz(mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);        //total size-specific fishing mortality (over all fisheries))
-        
-    6darray c_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//catch at size in fishery f
-    6darray r_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//retained catch (numbers=mortality) at size in fishery f
-    6darray d_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//discard catch (numbers, NOT mortality) at size in fishery f
-    
-    //survey-related quantities
-    3darray spb_vyx(1,nSrv,mnYr,mxYr+1,1,nSXs);//mature (spawning) biomass at time of survey
-    5darray q_vyxms(1,nSrv,mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs);        //fully-selected catchability in survey v
-    6darray q_vyxmsz(1,nSrv,mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//size-specific catchability in survey v
-    6darray n_vyxmsz(1,nSrv,mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//catch at size in survey v
-    
-    //objective function penalties
-    vector fPenRecDevs(1,npDevsLnR);
-    
-    vector fPenLgtPrMat(1,npLgtPrMat);
-    
-    vector fPenDevsS1(1,npDevsS1);
-    vector fPenDevsS2(1,npDevsS2);
-    vector fPenDevsS3(1,npDevsS3);
-    vector fPenDevsS4(1,npDevsS4);
-    vector fPenDevsS5(1,npDevsS5);
-    vector fPenDevsS6(1,npDevsS6);
-    
-    vector fPenDevsLnC(1,npDevsLnC);
-    
-    //likelihood components
-    number nllRecDevs;
+void model_parameters::initializationfunction(void)
+{
+}
 
-    
-    !!cout<<"#finished PARAMETER_SECTION"<<endl;
-    !!rpt::echo<<"#finished PARAMETER_SECTION"<<endl;
-    
-// =============================================================================
-// =============================================================================
-PRELIMINARY_CALCS_SECTION
+model_parameters::model_parameters(int sz,int argc,char * argv[]) : 
+ model_data(argc,argv) , function_minimizer(sz)
+{
+  initializationfunction();
+rpt::echo<<"#Starting PARAMETER_SECTION"<<endl;
+cout<<"#Starting PARAMETER_SECTION"<<endl;
+  pLnR.allocate(1,npLnR,lbLnR,ubLnR,phsLnR,"pLnR");
+  pLnRCV.allocate(1,npLnRCV,lbLnRCV,ubLnRCV,phsLnRCV,"pLnRCV");
+  pLgtRX.allocate(1,npLgtRX,lbLgtRX,ubLgtRX,phsLgtRX,"pLgtRX");
+  pLnRa.allocate(1,npLnRa,lbLnRa,ubLnRa,phsLnRa,"pLnRa");
+  pLnRb.allocate(1,npLnRb,lbLnRb,ubLnRb,phsLnRb,"pLnRb");
+  pDevsLnR.allocate(1,npDevsLnR,mniDevsLnR,mxiDevsLnR,lbDevsLnR,ubDevsLnR,phsDevsLnR,"pDevsLnR");
+  devsLnR.allocate(1,npDevsLnR,mniDevsLnR,mxiDevsLnR+1,"devsLnR");
+  #ifndef NO_AD_INITIALIZE
+    devsLnR.initialize();
+  #endif
+  pLnM.allocate(1,npLnM,lbLnM,ubLnM,phsLnM,"pLnM");
+  pLnDMT.allocate(1,npLnDMT,lbLnDMT,ubLnDMT,phsLnDMT,"pLnDMT");
+  pLnDMX.allocate(1,npLnDMX,lbLnDMX,ubLnDMX,phsLnDMX,"pLnDMX");
+  pLnDMM.allocate(1,npLnDMM,lbLnDMM,ubLnDMM,phsLnDMM,"pLnDMM");
+  pLnDMXM.allocate(1,npLnDMXM,lbLnDMXM,ubLnDMXM,phsLnDMXM,"pLnDMXM");
+  pLnGrA.allocate(1,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA,"pLnGrA");
+  pLnGrB.allocate(1,npLnGrB,lbLnGrB,ubLnGrB,phsLnGrB,"pLnGrB");
+  pLnGrBeta.allocate(1,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta,"pLnGrBeta");
+  pLgtPrMat.allocate(1,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat,"pLgtPrMat");
+  pS1.allocate(1,npS1,lbS1,ubS1,phsS1,"pS1");
+  pS2.allocate(1,npS2,lbS2,ubS2,phsS2,"pS2");
+  pS3.allocate(1,npS3,lbS3,ubS3,phsS3,"pS3");
+  pS4.allocate(1,npS4,lbS4,ubS4,phsS4,"pS4");
+  pS5.allocate(1,npS5,lbS5,ubS5,phsS5,"pS5");
+  pS6.allocate(1,npS6,lbS6,ubS6,phsS6,"pS6");
+  pDevsS1.allocate(1,npDevsS1,mniDevsS1,mxiDevsS1,lbDevsS1,ubDevsS1,phsDevsS1,"pDevsS1");
+  pDevsS2.allocate(1,npDevsS2,mniDevsS2,mxiDevsS2,lbDevsS2,ubDevsS2,phsDevsS2,"pDevsS2");
+  pDevsS3.allocate(1,npDevsS3,mniDevsS3,mxiDevsS3,lbDevsS3,ubDevsS3,phsDevsS3,"pDevsS3");
+  pDevsS4.allocate(1,npDevsS4,mniDevsS4,mxiDevsS4,lbDevsS4,ubDevsS4,phsDevsS4,"pDevsS4");
+  pDevsS5.allocate(1,npDevsS5,mniDevsS5,mxiDevsS5,lbDevsS5,ubDevsS5,phsDevsS5,"pDevsS5");
+  pDevsS6.allocate(1,npDevsS6,mniDevsS6,mxiDevsS6,lbDevsS6,ubDevsS6,phsDevsS6,"pDevsS6");
+  devsS1.allocate(1,npDevsS1,mniDevsS1,mxiDevsS1+1,"devsS1");
+  #ifndef NO_AD_INITIALIZE
+    devsS1.initialize();
+  #endif
+  devsS2.allocate(1,npDevsS2,mniDevsS2,mxiDevsS2+1,"devsS2");
+  #ifndef NO_AD_INITIALIZE
+    devsS2.initialize();
+  #endif
+  devsS3.allocate(1,npDevsS3,mniDevsS3,mxiDevsS3+1,"devsS3");
+  #ifndef NO_AD_INITIALIZE
+    devsS3.initialize();
+  #endif
+  devsS4.allocate(1,npDevsS4,mniDevsS4,mxiDevsS4+1,"devsS4");
+  #ifndef NO_AD_INITIALIZE
+    devsS4.initialize();
+  #endif
+  devsS5.allocate(1,npDevsS5,mniDevsS5,mxiDevsS5+1,"devsS5");
+  #ifndef NO_AD_INITIALIZE
+    devsS5.initialize();
+  #endif
+  devsS6.allocate(1,npDevsS6,mniDevsS6,mxiDevsS6+1,"devsS6");
+  #ifndef NO_AD_INITIALIZE
+    devsS6.initialize();
+  #endif
+  pHM.allocate(1,npHM,lbHM,ubHM,phsHM,"pHM");
+  pLnC.allocate(1,npLnC,lbLnC,ubLnC,phsLnC,"pLnC");
+  pLnDCT.allocate(1,npLnDCT,lbLnDCT,ubLnDCT,phsLnDCT,"pLnDCT");
+  pLnDCX.allocate(1,npLnDCX,lbLnDCX,ubLnDCX,phsLnDCX,"pLnDCX");
+  pLnDCM.allocate(1,npLnDCM,lbLnDCM,ubLnDCM,phsLnDCM,"pLnDCM");
+  pLnDCXM.allocate(1,npLnDCXM,lbLnDCXM,ubLnDCXM,phsLnDCXM,"pLnDCXM");
+  pDevsLnC.allocate(1,npDevsLnC,mniDevsLnC,mxiDevsLnC,lbDevsLnC,ubDevsLnC,phsDevsLnC,"pDevsLnC");
+  devsLnC.allocate(1,npDevsLnC,mniDevsLnC,mxiDevsLnC+1,"devsLnC");
+  #ifndef NO_AD_INITIALIZE
+    devsLnC.initialize();
+  #endif
+  pLnQ.allocate(1,npLnQ,lbLnQ,ubLnQ,phsLnQ,"pLnQ");
+  pLnDQT.allocate(1,npLnDQT,lbLnDQT,ubLnDQT,phsLnDQT,"pLnDQT");
+  pLnDQX.allocate(1,npLnDQX,lbLnDQX,ubLnDQX,phsLnDQX,"pLnDQX");
+  pLnDQM.allocate(1,npLnDQM,lbLnDQM,ubLnDQM,phsLnDQM,"pLnDQM");
+  pLnDQXM.allocate(1,npLnDQXM,lbLnDQXM,ubLnDQXM,phsLnDQXM,"pLnDQXM");
+  objFun.allocate("objFun");
+  prior_function_value.allocate("prior_function_value");
+  likelihood_function_value.allocate("likelihood_function_value");
+  spb_yx.allocate(mnYr,mxYr,1,nSXs,"spb_yx");
+  #ifndef NO_AD_INITIALIZE
+    spb_yx.initialize();
+  #endif
+  n_yxmsz.allocate(mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"n_yxmsz");
+  #ifndef NO_AD_INITIALIZE
+    n_yxmsz.initialize();
+  #endif
+  R_y.allocate(mnYr,mxYr,"R_y");
+  #ifndef NO_AD_INITIALIZE
+    R_y.initialize();
+  #endif
+  Rx_c.allocate(1,npcRec,"Rx_c");
+  #ifndef NO_AD_INITIALIZE
+    Rx_c.initialize();
+  #endif
+  R_yx.allocate(mnYr,mxYr,1,nSXs,"R_yx");
+  #ifndef NO_AD_INITIALIZE
+    R_yx.initialize();
+  #endif
+  R_cz.allocate(1,npcRec,1,nZBs,"R_cz");
+  #ifndef NO_AD_INITIALIZE
+    R_cz.initialize();
+  #endif
+  R_yz.allocate(mnYr,mxYr,1,nZBs,"R_yz");
+  #ifndef NO_AD_INITIALIZE
+    R_yz.initialize();
+  #endif
+  zscrDevsLnR.allocate(mnYr,mxYr,"zscrDevsLnR");
+  #ifndef NO_AD_INITIALIZE
+    zscrDevsLnR.initialize();
+  #endif
+  M_cxm.allocate(1,npcNM,1,nSXs,1,nMSs,"M_cxm");
+  #ifndef NO_AD_INITIALIZE
+    M_cxm.initialize();
+  #endif
+  M_yxmz.allocate(mnYr,mxYr,1,nSXs,1,nMSs,1,nZBs,"M_yxmz");
+  #ifndef NO_AD_INITIALIZE
+    M_yxmz.initialize();
+  #endif
+  prMat_cz.allocate(1,npcMat,1,nZBs,"prMat_cz");
+  #ifndef NO_AD_INITIALIZE
+    prMat_cz.initialize();
+  #endif
+  prMat_yxz.allocate(mnYr,mxYr,1,nSXs,1,nZBs,"prMat_yxz");
+  #ifndef NO_AD_INITIALIZE
+    prMat_yxz.initialize();
+  #endif
+  prGr_czz.allocate(1,npcGr,1,nZBs,1,nZBs,"prGr_czz");
+  #ifndef NO_AD_INITIALIZE
+    prGr_czz.initialize();
+  #endif
+  prGr_yxmzz.allocate(mnYr,mxYr,1,nSXs,1,nMSs,1,nZBs,1,nZBs,"prGr_yxmzz");
+  #ifndef NO_AD_INITIALIZE
+    prGr_yxmzz.initialize();
+  #endif
+  sel_cz.allocate(1,npcSel,1,nZBs,"sel_cz");
+  #ifndef NO_AD_INITIALIZE
+    sel_cz.initialize();
+  #endif
+  sel_iyz.allocate(1,nSel,mnYr,mxYr+1,1,nZBs,"sel_iyz");
+  #ifndef NO_AD_INITIALIZE
+    sel_iyz.initialize();
+  #endif
+  avgFc.allocate(1,nFsh,1,nSXs,1,nMSs,1,nSCs,"avgFc");
+  #ifndef NO_AD_INITIALIZE
+    avgFc.initialize();
+  #endif
+  avgRatioFc2Eff.allocate(1,nFsh,1,nSXs,1,nMSs,1,nSCs,"avgRatioFc2Eff");
+  #ifndef NO_AD_INITIALIZE
+    avgRatioFc2Eff.initialize();
+  #endif
+  Fhm_fy.allocate(1,nFsh,mnYr,mxYr,"Fhm_fy");
+  #ifndef NO_AD_INITIALIZE
+    Fhm_fy.initialize();
+  #endif
+  Fc_fyxms.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,"Fc_fyxms");
+  #ifndef NO_AD_INITIALIZE
+    Fc_fyxms.initialize();
+  #endif
+  Fc_fyxmsz.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"Fc_fyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    Fc_fyxmsz.initialize();
+  #endif
+  Fr_fyxmsz.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"Fr_fyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    Fr_fyxmsz.initialize();
+  #endif
+  Fd_fyxmsz.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"Fd_fyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    Fd_fyxmsz.initialize();
+  #endif
+  Ft_yxmsz.allocate(mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"Ft_yxmsz");
+  #ifndef NO_AD_INITIALIZE
+    Ft_yxmsz.initialize();
+  #endif
+  c_fyxmsz.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"c_fyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    c_fyxmsz.initialize();
+  #endif
+  r_fyxmsz.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"r_fyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    r_fyxmsz.initialize();
+  #endif
+  d_fyxmsz.allocate(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"d_fyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    d_fyxmsz.initialize();
+  #endif
+  spb_vyx.allocate(1,nSrv,mnYr,mxYr+1,1,nSXs,"spb_vyx");
+  #ifndef NO_AD_INITIALIZE
+    spb_vyx.initialize();
+  #endif
+  q_vyxms.allocate(1,nSrv,mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,"q_vyxms");
+  #ifndef NO_AD_INITIALIZE
+    q_vyxms.initialize();
+  #endif
+  q_vyxmsz.allocate(1,nSrv,mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"q_vyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    q_vyxmsz.initialize();
+  #endif
+  n_vyxmsz.allocate(1,nSrv,mnYr,mxYr+1,1,nSXs,1,nMSs,1,nSCs,1,nZBs,"n_vyxmsz");
+  #ifndef NO_AD_INITIALIZE
+    n_vyxmsz.initialize();
+  #endif
+  fPenRecDevs.allocate(1,npDevsLnR,"fPenRecDevs");
+  #ifndef NO_AD_INITIALIZE
+    fPenRecDevs.initialize();
+  #endif
+  fPenLgtPrMat.allocate(1,npLgtPrMat,"fPenLgtPrMat");
+  #ifndef NO_AD_INITIALIZE
+    fPenLgtPrMat.initialize();
+  #endif
+  fPenDevsS1.allocate(1,npDevsS1,"fPenDevsS1");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsS1.initialize();
+  #endif
+  fPenDevsS2.allocate(1,npDevsS2,"fPenDevsS2");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsS2.initialize();
+  #endif
+  fPenDevsS3.allocate(1,npDevsS3,"fPenDevsS3");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsS3.initialize();
+  #endif
+  fPenDevsS4.allocate(1,npDevsS4,"fPenDevsS4");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsS4.initialize();
+  #endif
+  fPenDevsS5.allocate(1,npDevsS5,"fPenDevsS5");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsS5.initialize();
+  #endif
+  fPenDevsS6.allocate(1,npDevsS6,"fPenDevsS6");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsS6.initialize();
+  #endif
+  fPenDevsLnC.allocate(1,npDevsLnC,"fPenDevsLnC");
+  #ifndef NO_AD_INITIALIZE
+    fPenDevsLnC.initialize();
+  #endif
+  nllRecDevs.allocate("nllRecDevs");
+  #ifndef NO_AD_INITIALIZE
+  nllRecDevs.initialize();
+  #endif
+cout<<"#finished PARAMETER_SECTION"<<endl;
+rpt::echo<<"#finished PARAMETER_SECTION"<<endl;
+}
+
+void model_parameters::preliminary_calculations(void)
+{
+
+  admaster_slave_variable_interface(*this);
     rpt::echo<<"#Starting PRELIMINARY_CALCS_SECTION"<<endl;
     cout<<"#Starting PRELIMINARY_CALCS_SECTION"<<endl;
     int debug=1;
@@ -817,7 +904,6 @@ PRELIMINARY_CALCS_SECTION
     calcGrowth(0,rpt::echo);
     cout<<"testing calcMaturity():"<<endl;
     calcMaturity(0,rpt::echo);
-
     cout<<"testing calcSelectivities():"<<endl;
     calcSelectivities(dbgCalcProcs,rpt::echo);
     
@@ -876,18 +962,18 @@ PRELIMINARY_CALCS_SECTION
     cin>>tmp;
     if (tmp<0) exit(-1);
     
-// =============================================================================
-// =============================================================================
-PROCEDURE_SECTION
+}
 
+void model_parameters::userfunction(void)
+{
+  objFun =0.0;
     objFun.initialize();
-
     runPopDyMod(0,rpt::echo);
-
     calcObjFun(0,rpt::echo);
+}
 
-//******************************************************************************
-FUNCTION void createSimData(int debug, ostream& cout)
+void model_parameters::createSimData(int debug, ostream& cout)
+{
     if (debug)cout<<"simulating model results as data"<<endl;
     d6_array vn_vyxmsz = wts::value(n_vyxmsz);
     d6_array vc_fyxmsz = wts::value(c_fyxmsz);
@@ -902,8 +988,10 @@ FUNCTION void createSimData(int debug, ostream& cout)
     }
     if (debug) cout<<"finished simulating model results as data"<<endl;
      
-//******************************************************************************
-FUNCTION void writeSimData(ostream& os, int debug, ostream& cout)
+}
+
+void model_parameters::writeSimData(ostream& os, int debug, ostream& cout)
+{
     if (debug)cout<<"writing model results as data"<<endl;
     for (int v=1;v<=nSrv;v++) {
         os<<"#------------------------------------------------------------"<<endl;
@@ -916,11 +1004,12 @@ FUNCTION void writeSimData(ostream& os, int debug, ostream& cout)
     }
     if (debug) cout<<"finished writing model results as data"<<endl;
      
-//-------------------------------------------------------------------------------------
-FUNCTION void setAllDevs(int debug, ostream& cout)
+}
+
+void model_parameters::setAllDevs(int debug, ostream& cout)
+{
     if (debug>=dbgAll) cout<<"starting setAllDevs()"<<endl;
     tcsam::setDevs(devsLnR, pDevsLnR,debug,cout);
-
     tcsam::setDevs(devsS1, pDevsS1,debug,cout);
     tcsam::setDevs(devsS2, pDevsS2,debug,cout);
     tcsam::setDevs(devsS3, pDevsS3,debug,cout);
@@ -930,11 +1019,11 @@ FUNCTION void setAllDevs(int debug, ostream& cout)
     
     tcsam::setDevs(devsLnC, pDevsLnC,debug,cout);
     if (debug>=dbgAll) cout<<"finished setAllDevs()"<<endl;
-
     
-//-------------------------------------------------------------------------------------
-//TODO: finish implementation
-FUNCTION void runPopDyMod(int debug, ostream& cout)
+}
+
+void model_parameters::runPopDyMod(int debug, ostream& cout)
+{
     if (debug>=dbgPopDy) cout<<"starting runPopDyMod()"<<endl;
     //initialize population model
     initPopDyMod(debug, cout);
@@ -947,8 +1036,10 @@ FUNCTION void runPopDyMod(int debug, ostream& cout)
     
     if (debug>=dbgPopDy) cout<<"finished runPopDyMod()"<<endl;
     
-//-------------------------------------------------------------------------------------
-FUNCTION void initPopDyMod(int debug, ostream& cout)
+}
+
+void model_parameters::initPopDyMod(int debug, ostream& cout)
+{
     if (debug>=dbgPopDy) cout<<"starting initPopDyMod()"<<endl;
     
     spb_yx.initialize();
@@ -966,12 +1057,11 @@ FUNCTION void initPopDyMod(int debug, ostream& cout)
     calcSurveyQs(debug,cout);
     
     if (debug>=dbgPopDy) cout<<"finished initPopDyMod()"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//calculate surveys.
-FUNCTION void doSurveys(int y,int debug,ostream& cout)
+void model_parameters::doSurveys(int y,int debug,ostream& cout)
+{
     if (debug>=dbgPopDy) cout<<"starting doSurveys("<<y<<")"<<endl;
-
     for (int v=1;v<=nSrv;v++){
         for (int x=1;x<=nSXs;x++){
             for (int m=1;m<=nMSs;m++){
@@ -985,11 +1075,11 @@ FUNCTION void doSurveys(int y,int debug,ostream& cout)
         spb_vyx(v,y) = calcSpB(n_vyxmsz(v,y),y,debug,cout);
     }
     if (debug>=dbgPopDy) cout<<"finished doSurveys("<<y<<")"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-FUNCTION void runPopDyModOneYear(int yr, int debug, ostream& cout)
+void model_parameters::runPopDyModOneYear(int yr, int debug, ostream& cout)
+{
     if (debug>=dbgPopDy) cout<<"Starting runPopDyModOneYear("<<yr<<")"<<endl;
-
     dvar4_array n1_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
     dvar4_array n2_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
     dvar4_array n3_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
@@ -1055,8 +1145,10 @@ FUNCTION void runPopDyModOneYear(int yr, int debug, ostream& cout)
     
     if (debug>=dbgPopDy) cout<<"finished runPopDyModOneYear("<<yr<<")"<<endl;
     
-//-------------------------------------------------------------------------------------
-FUNCTION dvar_vector calcSpB(dvar4_array& n0_xmsz, int y, int debug, ostream& cout)
+}
+
+dvar_vector model_parameters::calcSpB(dvar4_array& n0_xmsz, int y, int debug, ostream& cout)
+{
     if (debug>dbgApply) cout<<"starting calcSpB("<<y<<")"<<endl;
     RETURN_ARRAYS_INCREMENT();
     dvar_vector spb(1,nSXs); spb.initialize();
@@ -1067,8 +1159,10 @@ FUNCTION dvar_vector calcSpB(dvar4_array& n0_xmsz, int y, int debug, ostream& co
     RETURN_ARRAYS_DECREMENT();
     return spb;
     
-//-------------------------------------------------------------------------------------
-FUNCTION dvar4_array applyNatMort(dvar4_array& n0_xmsz, int y, double dt, int debug, ostream& cout)
+}
+
+dvar4_array model_parameters::applyNatMort(dvar4_array& n0_xmsz, int y, double dt, int debug, ostream& cout)
+{
     if (debug>dbgApply) cout<<"starting applyNatMort("<<y<<cc<<dt<<")"<<endl;
     RETURN_ARRAYS_INCREMENT();
     dvar4_array n1_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
@@ -1083,8 +1177,10 @@ FUNCTION dvar4_array applyNatMort(dvar4_array& n0_xmsz, int y, double dt, int de
     RETURN_ARRAYS_DECREMENT();
     return n1_xmsz;
     
-//-------------------------------------------------------------------------------------
-FUNCTION dvar4_array applyFshMort(dvar4_array& n0_xmsz, int y, int debug, ostream& cout)
+}
+
+dvar4_array model_parameters::applyFshMort(dvar4_array& n0_xmsz, int y, int debug, ostream& cout)
+{
     if (debug>dbgApply) cout<<"starting applyFshMort("<<y<<")"<<endl;
     RETURN_ARRAYS_INCREMENT();
     dvar_vector tm_z(1,nZBs);
@@ -1109,9 +1205,10 @@ FUNCTION dvar4_array applyFshMort(dvar4_array& n0_xmsz, int y, int debug, ostrea
     RETURN_ARRAYS_DECREMENT();
     return n1_xmsz;
     
-//------------------------------------------------------------------------------
-//Apply molting/growth/maturity to population numbers    
-FUNCTION dvar4_array applyMGM(dvar4_array& n0_xmsz, int y, int debug, ostream& cout)
+}
+
+dvar4_array model_parameters::applyMGM(dvar4_array& n0_xmsz, int y, int debug, ostream& cout)
+{
     if (debug>dbgApply) cout<<"starting applyMGM("<<y<<")"<<endl;
     RETURN_ARRAYS_INCREMENT();
     dvar4_array n1_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
@@ -1126,11 +1223,11 @@ FUNCTION dvar4_array applyMGM(dvar4_array& n0_xmsz, int y, int debug, ostream& c
     RETURN_ARRAYS_DECREMENT();
     return n1_xmsz;
     
-//-------------------------------------------------------------------------------------
-//calculate recruitment.
-FUNCTION void calcRecruitment(int debug, ostream& cout)
-    if (debug>dbgCalcProcs) cout<<"starting calcRecruitment()"<<endl;
+}
 
+void model_parameters::calcRecruitment(int debug, ostream& cout)
+{
+    if (debug>dbgCalcProcs) cout<<"starting calcRecruitment()"<<endl;
     RecruitmentInfo* ptrRI = ptrMPI->ptrRec;
     
     R_y.initialize();
@@ -1158,7 +1255,6 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
             cout<<"lnRa  = "<<lnRa<<endl;
             cout<<"lnRb  = "<<lnRb<<endl;
         }
-
         int useDevs = pids[k]; k++;
         dvariable mdR;
         dvar_vector dvsLnR;
@@ -1178,7 +1274,6 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
         Rx_c(pc) = 1.0/(1.0+mfexp(-lgtRX));
         R_cz(pc) = elem_prod(pow(dzs,mfexp(lnRa-lnRb)-1.0),mfexp(-dzs/mfexp(lnRb)));
         R_cz(pc) /= sum(R_cz(pc));//normalize to sum to 1
-
         imatrix idxs = ptrRI->getModelIndices(pc);
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);
@@ -1207,20 +1302,10 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
         cout<<"zscr = "<<zscrDevsLnR<<endl;
         cout<<"finished calcRecruitment()"<<endl;
     }
+}
 
-//******************************************************************************
-//* Function: void calcNatMort(void)
-//* 
-//* Description: Calculates natural mortality rates for all years.
-//* 
-//* Inputs:
-//*  none
-//* Returns:
-//*  void
-//* Alters:
-//*  M_yxmz - year/sex/maturity state/size-specific natural mortality rate
-//******************************************************************************
-FUNCTION void calcNatMort(int debug, ostream& cout)  
+void model_parameters::calcNatMort(int debug, ostream& cout)
+{
     if(debug>dbgCalcProcs) cout<<"Starting calcNatMort()"<<endl;
     
     NaturalMortalityInfo* ptrNM = ptrMPI->ptrNM;
@@ -1230,7 +1315,6 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
     
     M_cxm.initialize();
     M_yxmz.initialize();
-
     int y; 
     for (int pc=1;pc<=ptrNM->nPCs;pc++){
         lnM.initialize();
@@ -1279,11 +1363,11 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
     }
     if (debug>dbgCalcProcs) cout<<"Finished calcNatMort()"<<endl;
     
-//-------------------------------------------------------------------------------------
-//calculate Pr(maturity-at-size)
-FUNCTION void calcMaturity(int debug, ostream& cout)
-    if (debug>dbgCalcProcs) cout<<"starting calcMaturity()"<<endl;
+}
 
+void model_parameters::calcMaturity(int debug, ostream& cout)
+{
+    if (debug>dbgCalcProcs) cout<<"starting calcMaturity()"<<endl;
     MaturityInfo* ptrMI = ptrMPI->ptrMat;
     
     prMat_cz.initialize();
@@ -1300,7 +1384,6 @@ FUNCTION void calcMaturity(int debug, ostream& cout)
             cout<<"pc = "<<pc<<". mn = "<<vmn<<", mx = "<<vmx<<endl;
             cout<<"lgtPrMat = "<<lgtPrMat<<endl;
         }
-
         prMat_cz(pc) = 1.0;//default is 1
         prMat_cz(pc)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrMat));
             
@@ -1316,20 +1399,10 @@ FUNCTION void calcMaturity(int debug, ostream& cout)
     }
     
     if (debug>dbgCalcProcs) cout<<"finished calcMaturity()"<<endl;
+}
 
-//******************************************************************************
-//* Function: void calcGrowth(void)
-//* 
-//* Description: Calculates growth transition matrices for all years.
-//* 
-//* Inputs:
-//*  none
-//* Returns:
-//*  void
-//* Alters:
-//*  prGr_yxmzz - year/sex/maturity state/size-specific growth transition matrices
-//******************************************************************************
-FUNCTION void calcGrowth(int debug, ostream& cout)  
+void model_parameters::calcGrowth(int debug, ostream& cout)
+{
     if(debug>dbgCalcProcs) cout<<"Starting calcGrowth()"<<endl;
     
     GrowthInfo* ptrGrI = ptrMPI->ptrGr;
@@ -1342,7 +1415,6 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
     prGr_yxmzz.initialize();
     
     dvar_matrix prGr_zz(1,nZBs,1,nZBs);
-
     int y; int x;
     for (int pc=1;pc<=ptrGrI->nPCs;pc++){
         ivector pids = ptrGrI->getPCIDs(pc);
@@ -1390,24 +1462,13 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
     }
     
     if (debug>dbgCalcProcs) cout<<"finished calcGrowth()"<<endl;
+}
 
-//******************************************************************************
-//* Function: void calcSelectivities(int debug=0, ostream& cout=std::cout)
-//* 
-//* Description: Calculates all selectivity functions.
-//* 
-//* Required inputs:
-//*  none
-//* Returns:
-//*  void
-//* Alters:
-//*  sel_iyz - selectivity array
-//******************************************************************************
-FUNCTION void calcSelectivities(int debug, ostream& cout)  
+void model_parameters::calcSelectivities(int debug, ostream& cout)
+{
     if(debug>dbgCalcProcs) cout<<"Starting calcSelectivities()"<<endl;
     
     SelectivityInfo* ptrSel = ptrMPI->ptrSel;
-
     double fsZ;             //fully selected size
     int idSel;              //selectivity function id
     int idxFSZ = ptrSel->nIVs+ptrSel->nPVs+1;//index for fsZ in pids vector below
@@ -1418,7 +1479,6 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
         
     sel_cz.initialize();//selectivities w/out deviations
     sel_iyz.initialize();//selectivity array
-
     int y;
     for (int pc=1;pc<=ptrSel->nPCs;pc++){
         params.initialize();
@@ -1496,11 +1556,9 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
                 cout<<"dvsS6      = "<<dvsS6<<endl;
             }
         }
-
         fsZ   = pids[idxFSZ];
         idSel = pids[idxFSZ+1];
         if (debug>dbgCalcProcs) cout<<tb<<"fsZ: "<<fsZ<<tb<<"idSel"<<tb<<idSel<<tb<<SelFcns::getSelFcnID(idSel)<<endl;;
-
         sel_cz(pc) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
             
         //loop over model indices as defined in the index blocks
@@ -1519,23 +1577,10 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
         }
     }
     if (debug>dbgCalcProcs) cout<<"finished calcSelectivities()"<<endl;
+}
 
-//******************************************************************************
-//* Function: void calcFisheryFs(int debug, ostream& cout)
-//* 
-//* Description: Calculates fishery F's for all years.
-//* 
-//* Inputs:
-//*  none
-//* Returns:
-//*  void
-//* Alters:
-//*  Fc_fyxms  - fully-selected fishery/year/sex/maturity state/shell condition-specific capture rate
-//*  Fc_fyxmsz - fishery/year/sex/maturity state/shell condition/size-specific capture rate
-//*  Fr_fyxmsz - fishery/year/sex/maturity state/shell condition/size-specific retained mortality rate
-//*  Fd_fyxmsz - fishery/year/sex/maturity state/shell condition/size-specific discard mortality rate
-//******************************************************************************
-FUNCTION void calcFisheryFs(int debug, ostream& cout)  
+void model_parameters::calcFisheryFs(int debug, ostream& cout)
+{
     if(debug>dbgCalcProcs) cout<<"Starting calcFisheryFs()"<<endl;
     
     FisheriesInfo* ptrFsh = ptrMPI->ptrFsh;
@@ -1561,7 +1606,6 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
      * Consequently, calculating all the above quantities  \n
      * requires 2 passes through parameter combinations.   \n
     ******************************************************/
-
     int idxER = ptrFsh->idxUseER;//index into pids below for flag to use effort ratio
     int y; int f; int x; int idSel; int idRet; int useER; int useDevs;
     //Pass 1: calculations based on parameter values
@@ -1586,7 +1630,6 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
             if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x,IMMATURE) += pLnDCM(pids[k]);} k++;
             //add in offset immature females for stanza
             if (pids[k]) {lnC(FEMALE,IMMATURE) += pLnDCXM(pids[k]);}            k++; 
-
             //extract devs vector
             useDevs = pids[k]; k++;
             dvar_vector dvsLnC;             
@@ -1620,7 +1663,6 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                     cout<<tb<<tb<<"C_xm:"<<endl<<C_xm<<endl;
                 }
             }
-
             //loop over model indices as defined in the index blocks
             imatrix idxs = ptrFsh->getModelIndices(pc);
             for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
@@ -1699,7 +1741,6 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
             idRet = pids[k++];   //retention function id
             
             if (debug>dbgCalcProcs) cout<<"pc: "<<pc<<". hm = "<<hm<<". idSel = "<<idSel<<". idRet = "<<idRet<<". Using ER"<<endl;
-
             //loop over model indices as defined in the index blocks
             imatrix idxs = ptrFsh->getModelIndices(pc);
             for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
@@ -1734,21 +1775,10 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
     }
     if (debug>dbgCalcProcs) cout<<"finished pass 2."<<endl;
     if (debug>dbgCalcProcs) cout<<"finished calcFisheryFs()"<<endl;
+}
 
-//******************************************************************************
-//* Function: void calcSurveyQs(int debug, ostream& cout)
-//* 
-//* Description: Calculates survey catchabilities for all years.
-//* 
-//* Inputs:
-//*  none
-//* Returns:
-//*  void
-//* Alters:
-//*  q_vyxms  - fully-selected survey/year/sex/maturity state/shell condition-specific catchability
-//*  q_vyxmsz - survey/year/sex/maturity state/shell condition/size-specific catchability
-//******************************************************************************
-FUNCTION void calcSurveyQs(int debug, ostream& cout)  
+void model_parameters::calcSurveyQs(int debug, ostream& cout)
+{
     if(debug>dbgCalcProcs) cout<<"Starting calcSurveyQs()"<<endl;
     
     SurveysInfo* ptrSrv = ptrMPI->ptrSrv;
@@ -1758,7 +1788,6 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
     
     q_vyxms.initialize();
     q_vyxmsz.initialize();
-
     int y; int v; int x; int idSel;
     for (int pc=1;pc<=ptrSrv->nPCs;pc++){
         lnQ.initialize();
@@ -1801,11 +1830,11 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
     }
     if (debug>dbgCalcProcs) cout<<"finished calcSurveyQs()"<<endl;
     
-//-------------------------------------------------------------------------------------
-//Calculate penalties for objective function. TODO: finish
-FUNCTION void calcPenalties(int debug, ostream& cout)
-    if (debug>=dbgObjFun) cout<<"Started calcPenalties()"<<endl;
+}
 
+void model_parameters::calcPenalties(int debug, ostream& cout)
+{
+    if (debug>=dbgObjFun) cout<<"Started calcPenalties()"<<endl;
     //penalties on maturity parameters (NOT maturity ogives)
     double penWgtLgtPrMat = 1.0;//TODO: read in value from input file
     fPenLgtPrMat.initialize();
@@ -1816,11 +1845,10 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     }
     
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate 1st differences of vector
-FUNCTION dvar_vector calc1stDiffs(const dvar_vector& d)
-//    cout<<"Starting calc1stDiffs"<<endl;
+dvar_vector model_parameters::calc1stDiffs(const dvar_vector& d)
+{
     RETURN_ARRAYS_INCREMENT();
     int mn = d.indexmin();
     int mx = d.indexmax();
@@ -1828,24 +1856,21 @@ FUNCTION dvar_vector calc1stDiffs(const dvar_vector& d)
     dvar_vector r(mn,mx-1);
     r = cp(mn+1,mx).shift(mn)-cp(mn,mx-1);
     RETURN_ARRAYS_DECREMENT();
-//    cout<<"Finished calc1stDiffs"<<endl;
     return r;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate 2nd differences of vector
-FUNCTION dvar_vector calc2ndDiffs(const dvar_vector& d)
-//    cout<<"Starting calc2ndDiffs"<<endl;
+dvar_vector model_parameters::calc2ndDiffs(const dvar_vector& d)
+{
     RETURN_ARRAYS_INCREMENT();
     int mn = d.indexmin();
     int mx = d.indexmax();
     dvar_vector r = calc1stDiffs(calc1stDiffs(d));
     RETURN_ARRAYS_DECREMENT();
-//    cout<<"Finished calc2ndDiffs"<<endl;
     return r;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate recruitment components in the likelihood.
-FUNCTION void calcNLLCompRec(int debug, ostream& cout)
+void model_parameters::calcNLLCompRec(int debug, ostream& cout)
+{
     if (debug>=dbgObjFun) cout<<"Starting calcNLLCompRec"<<endl;
     //recruitment devs
     double nllWgtRecDevs = 1.0;//TODO: read in from input file (as vector?))
@@ -1856,18 +1881,15 @@ FUNCTION void calcNLLCompRec(int debug, ostream& cout)
         cout<<"list(type='normal',nll="<<nllRecDevs<<cc; wts::writeToR(cout,value(zscrDevsLnR)); cout<<")";
     }
     if (debug>=dbgObjFun) cout<<"Finished calcNLLCompRec"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate objective function TODO: finish
-FUNCTION void calcObjFun(int debug, ostream& cout)
+void model_parameters::calcObjFun(int debug, ostream& cout)
+{
     if (debug>=dbgObjFun) cout<<"Starting calcObjFun"<<endl;
-
     //objective function penalties
     calcPenalties(debug,cout);
-
     //prior likelihoods
     calcAllPriors(debug,cout);
-
     //recruitment component
     calcNLLCompRec(debug,cout);
     
@@ -1877,9 +1899,10 @@ FUNCTION void calcObjFun(int debug, ostream& cout)
     
     if (debug>=dbgObjFun) cout<<"Finished calcObjFun"<<endl;
     
-//-------------------------------------------------------------------------------------
-//Calculate norm2 NLL contribution to objective function
-FUNCTION dvariable calcNorm2NLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+}
+
+dvariable model_parameters::calcNorm2NLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcNorm2NLL()"<<endl;
     int y;
@@ -1902,9 +1925,10 @@ FUNCTION dvariable calcNorm2NLL(dvar_vector& mod, dvector& obs, dvector& stdv, i
     RETURN_ARRAYS_DECREMENT();
     return nll;
     
-//-------------------------------------------------------------------------------------
-//Calculate normal NLL contribution to objective function
-FUNCTION dvariable calcNormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+}
+
+dvariable model_parameters::calcNormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
    if (debug>=dbgAll) cout<<"Starting calcNormalNLL()"<<endl;
     int y;
@@ -1928,9 +1952,10 @@ FUNCTION dvariable calcNormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, 
     RETURN_ARRAYS_DECREMENT();
     return nll;
     
-//-------------------------------------------------------------------------------------
-//Calculate lognormal NLL contribution to objective function
-FUNCTION dvariable calcLognormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+}
+
+dvariable model_parameters::calcLognormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcLognormalNLL()"<<endl;
     int y;
@@ -1954,9 +1979,10 @@ FUNCTION dvariable calcLognormalNLL(dvar_vector& mod, dvector& obs, dvector& std
     RETURN_ARRAYS_DECREMENT();
     return nll;
     
-//-------------------------------------------------------------------------------------
-//Calculate catch abundance components to objective function
-FUNCTION dvar_vector calcNLLs_CatchAbundance(AggregateCatchData* ptrA, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+}
+
+dvar_vector model_parameters::calcNLLs_CatchAbundance(AggregateCatchData* ptrA, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcNLLs_CatchAbundance()"<<endl;
     dvar_vector nlls;
@@ -1998,10 +2024,10 @@ FUNCTION dvar_vector calcNLLs_CatchAbundance(AggregateCatchData* ptrA, dvar5_arr
     }
     RETURN_ARRAYS_DECREMENT();
     return nlls;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate catch biomass components to objective function
-FUNCTION dvar_vector calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+dvar_vector model_parameters::calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcNLLs_CatchBiomass()"<<endl;
     dvar_vector nlls;
@@ -2050,10 +2076,10 @@ FUNCTION dvar_vector calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array
     }
     RETURN_ARRAYS_DECREMENT();
     return nlls;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate multinomial NLL contribution to objective function
-FUNCTION dvariable calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
+dvariable model_parameters::calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcMultinomialNLL()"<<endl;
     dvariable   nll  = -ss*(obs*log(mod)-obs*log(obs));//note dot-product sums
@@ -2070,9 +2096,10 @@ FUNCTION dvariable calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss
     RETURN_ARRAYS_DECREMENT();
     return nll;
     
-//-------------------------------------------------------------------------------------
-//Calculate time series contribution to objective function
-FUNCTION dvariable calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+}
+
+dvariable model_parameters::calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     dvariable nll; nll.initialize();
     switch (llType){
@@ -2095,10 +2122,10 @@ FUNCTION dvariable calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& 
     }    
     RETURN_ARRAYS_DECREMENT();
     return nll;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate size frequency contribution to objective function
-FUNCTION dvariable calcNLL(int llType, dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
+dvariable model_parameters::calcNLL(int llType, dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     dvariable nll; nll.initialize();
     switch (llType){
@@ -2116,10 +2143,10 @@ FUNCTION dvariable calcNLL(int llType, dvar_vector& mod, dvector& obs, double& s
     
     RETURN_ARRAYS_DECREMENT();
     return nll;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate catch size frequencies components to objective function
-FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+{
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcNLLs_CatchNatZ()"<<endl;
     ivector yrs = ptrZFD->yrs;
@@ -2332,10 +2359,10 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
     }
     RETURN_ARRAYS_DECREMENT();
     return nlls;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate fishery components to objective function
-FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
+void model_parameters::calcNLLs_Fisheries(int debug, ostream& cout)
+{
     if (debug>0) debug = dbgAll+10;
     if (debug>=dbgAll) cout<<"Starting calcNLLs_Fisheries()"<<endl;
     if (debug<0) cout<<"list("<<endl;
@@ -2422,10 +2449,10 @@ FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
     }//fisheries
     if (debug<0) cout<<"NULL)"<<endl;
     if (debug>=dbgAll) cout<<"Finished calcNLLs_Fisheries()"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate survey components to objective function
-FUNCTION void calcNLLs_Surveys(int debug, ostream& cout)
+void model_parameters::calcNLLs_Surveys(int debug, ostream& cout)
+{
     if (debug>0) debug = dbgAll+10;
     if (debug>=dbgAll) cout<<"Starting calcNLLs_Surveys()"<<endl;
     if (debug<0) cout<<"list("<<endl;
@@ -2458,12 +2485,11 @@ FUNCTION void calcNLLs_Surveys(int debug, ostream& cout)
     }//surveys loop
     if (debug<0) cout<<"NULL)"<<endl;
     if (debug>=dbgAll) cout<<"Finished calcNLLs_Surveys()"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Calculate contributions to objective function from all priors                                         
-FUNCTION void calcAllPriors(int debug, ostream& cout)
+void model_parameters::calcAllPriors(int debug, ostream& cout)
+{
     if (debug>=dbgPriors) cout<<"Starting calcAllPriors()"<<endl;
-
     //recruitment parameters
     tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnR,  pLnR,  debug,cout);
     tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRCV,pLnRCV,debug,cout);
@@ -2517,32 +2543,32 @@ FUNCTION void calcAllPriors(int debug, ostream& cout)
     tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQXM, pLnDQXM,debug,cout);
     
     if (debug>=dbgPriors) cout<<"Finished calcAllPriors()"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write data to file as R list
-FUNCTION void ReportToR_Data(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_Data(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_Data(...)"<<endl;
     ptrMDS->writeToR(os,"data",0);
     if (debug) cout<<"Finished ReportToR_Data(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write objective function components to file as R list
-FUNCTION void ReportToR_NLLs(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_NLLs(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_NLLs(...)"<<endl;
     os<<"ofcs=list("<<endl;
     os<<")";
     if (debug) cout<<"Finished ReportToR_NLLs(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write parameter values to file as R list
-FUNCTION void ReportToR_Params(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_Params(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_Params(...)"<<endl;
     ptrMPI->writeToR(os);
     if (debug) cout<<"Finished ReportToR_Params(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write population quantities to file as R list
-FUNCTION void ReportToR_PopQuants(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_PopQuants(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_PopQuants(...)"<<endl;
     d5_array vn_yxmsz = wts::value(n_yxmsz);
     d5_array n_xmsyz = tcsam::rearrangeYXMSZtoXMSYZ(vn_yxmsz);
@@ -2558,19 +2584,19 @@ FUNCTION void ReportToR_PopQuants(ostream& os, int debug, ostream& cout)
     os<<"n.xmsyz="; wts::writeToR(os,n_xmsyz,ptrMC->csvSXs,ptrMC->csvMSs,ptrMC->csvSCs,ptrMC->csvYrsP1,ptrMC->csvZBs); os<<endl;
     os<<")";
     if (debug) cout<<"Finished ReportToR_PopQuants(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write selectivity functions to file as R list
-FUNCTION void ReportToR_SelFuncs(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_SelFuncs(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_SelFuncs(...)"<<endl;
     os<<"sel.funcs=list("<<endl;
     os<<"sel_cz=";  wts::writeToR(os,value(sel_cz),  adstring("1:"+str(npcSel)),ptrMC->csvZBs);os<<endl;
     os<<")";
     if (debug) cout<<"Finished ReportToR_SelFuncs(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write fishery-related quantities to file as R list
-FUNCTION void ReportToR_FshQuants(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_FshQuants(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_FshQuants(...)"<<endl;
     d5_array vFc_fyxms = wts::value(Fc_fyxms);
     d5_array Fc_fxmsy = tcsam::rearrangeIYXMStoIXMSY(vFc_fyxms);
@@ -2612,10 +2638,10 @@ FUNCTION void ReportToR_FshQuants(ostream& os, int debug, ostream& cout)
     }
     os<<"NULL)";
     if (debug) cout<<"Finished ReportToR_FshQuants(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write survey-related quantities to file as R list
-FUNCTION void ReportToR_SrvQuants(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_SrvQuants(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_SrvQuants(...)"<<endl;
     d5_array vq_vyxms = wts::value(q_vyxms);
     d5_array q_vxmsy = tcsam::rearrangeIYXMStoIXMSY(vq_vyxms);
@@ -2640,25 +2666,21 @@ FUNCTION void ReportToR_SrvQuants(ostream& os, int debug, ostream& cout)
     }
     os<<"NULL)";
     if (debug) cout<<"Finished ReportToR_SrvQuants(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write quantities related to model fits to file as R list
-FUNCTION void ReportToR_ModelFits(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR_ModelFits(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR_ModelFits(...)"<<endl;
     os<<"model.fits=list("<<endl;
     os<<"fisheries="; calcNLLs_Fisheries(-1,os); os<<","<<endl; //recalc and write results to os
     os<<"surveys="; calcNLLs_Surveys(-1,os); os<<endl; //recalc and write results to os
     os<<")";
     if (debug) cout<<"Finished ReportToR_ModelFits(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Update MPI for current parameter values (mainly for export))
-FUNCTION void updateMPI(int debug, ostream& cout)
+void model_parameters::updateMPI(int debug, ostream& cout)
+{
     if (debug) cout<<"Starting updateMPI(...)"<<endl;
-//    NumberVectorInfo::debug=1;
-//    BoundedVectorInfo::debug=1;
-//    DevsVectorInfo::debug=1;
-//    DevsVectorVectorInfo::debug=1;
     //recruitment parameters
     ptrMPI->ptrRec->pLnR->setInitVals(pLnR);
     ptrMPI->ptrRec->pLnRCV->setInitVals(pLnRCV);
@@ -2722,12 +2744,11 @@ FUNCTION void updateMPI(int debug, ostream& cout)
     ptrMPI->ptrSrv->pLnDQXM->setInitVals(pLnDQXM);
     
     if (debug) cout<<"Finished updateMPI(...)"<<endl;
+}
 
-//-------------------------------------------------------------------------------------
-//Write results to file as R list
-FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
+void model_parameters::ReportToR(ostream& os, int debug, ostream& cout)
+{
     if (debug) cout<<"Starting ReportToR(...)"<<endl;
-
     updateMPI(debug,cout);
         
     os<<"res=list("<<endl;
@@ -2742,19 +2763,14 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
         
         //parameter values
         ReportToR_Params(os,debug,cout); os<<","<<endl;
-
         //selectivity functions
         ReportToR_SelFuncs(os,debug,cout); os<<","<<endl;
-
         //population quantities
         ReportToR_PopQuants(os,debug,cout); os<<","<<endl;
-
         //fishery quantities
         ReportToR_FshQuants(os,debug,cout); os<<","<<endl;
-
         //survey quantities 
         ReportToR_SrvQuants(os,debug,cout); os<<","<<endl;
-
         //model fit quantities
         ReportToR_ModelFits(os,debug,cout); os<<","<<endl;
         
@@ -2762,27 +2778,33 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
         createSimData(debug, cout);
         ptrSimMDS->writeToR(os,"sim.data",0); 
         os<<endl;
-
     os<<")"<<endl;
     if (debug) cout<<"Finished ReportToR(...)"<<endl;
+}
 
-// =============================================================================
-// =============================================================================
-REPORT_SECTION
+void model_parameters::report()
+{
+ adstring ad_tmp=initial_params::get_reportfile_name();
+  ofstream report((char*)(adprogram_name + ad_tmp));
+  if (!report)
+  {
+    cerr << "error trying to open report file"  << adprogram_name << ".rep";
+    return;
+  }
         
     //write active parameters to rpt::echo
     rpt::echo<<"Finished phase "<<current_phase()<<endl;
     
     //write report as R file
     ReportToR(report,0,rpt::echo);
+}
 
-// =============================================================================
-// =============================================================================
-BETWEEN_PHASES_SECTION
+void model_parameters::between_phases_calculations(void)
+{
+}
 
-// =============================================================================
-// =============================================================================
-FINAL_SECTION
+void model_parameters::final_calcs()
+{
     {cout<<"writing model sim data to file"<<endl;
         ofstream echo1; echo1.open("ModelSimData.dat", ios::trunc);
         writeSimData(echo1,0,cout);
@@ -2801,19 +2823,58 @@ FINAL_SECTION
     cout << "Finishing time: " << ctime(&finish);
     cout << "This run took: " << hour << " hours, " << minute << " minutes, " << second << " seconds." << endl << endl;
     
-// =============================================================================
-// =============================================================================
-RUNTIME_SECTION
-//one number for each phase, if more phases then uses the last number
-  maximum_function_evaluations 1000,5000,5000,5000,5000,5000,10000
-  convergence_criteria 1,1,.01,.001,.001,.001,1e-3,1e-3
+}
 
-// =============================================================================
-// =============================================================================
-TOP_OF_MAIN_SECTION
+void model_parameters::set_runtime(void)
+{
+  dvector temp1("{1000,5000,5000,5000,5000,5000,10000}");
+  maximum_function_evaluations.allocate(temp1.indexmin(),temp1.indexmax());
+  maximum_function_evaluations=temp1;
+  dvector temp("{1,1,.01,.001,.001,.001,1e-3,1e-3}");
+  convergence_criteria.allocate(temp.indexmin(),temp.indexmax());
+  convergence_criteria=temp;
+}
+
+model_data::~model_data()
+{}
+
+model_parameters::~model_parameters()
+{}
+
+#ifdef _BORLANDC_
+  extern unsigned _stklen=10000U;
+#endif
+
+
+#ifdef __ZTC__
+  extern unsigned int _stack=10000U;
+#endif
+
+  long int arrmblsize=0;
+
+int main(int argc,char * argv[])
+{
+    ad_set_new_handler();
+  ad_exit=&ad_boundf;
   arrmblsize = 1000000000; //must be smaller than 2,147,483,647
   gradient_structure::set_GRADSTACK_BUFFER_SIZE(40000000); // this may be incorrect in the AUTODIF manual.
   gradient_structure::set_CMPDIF_BUFFER_SIZE(1500000000);
   gradient_structure::set_NUM_DEPENDENT_VARIABLES(4000);
   time(&start);
+    gradient_structure::set_NO_DERIVATIVES();
+    gradient_structure::set_YES_SAVE_VARIABLES_VALUES();
+    if (!arrmblsize) arrmblsize=15000000;
+    model_parameters mp(arrmblsize,argc,argv);
+    mp.iprint=10;
+    mp.preliminary_calculations();
+    mp.computations(argc,argv);
+    return 0;
+}
 
+extern "C"  {
+  void ad_boundf(int i)
+  {
+    /* so we can stop here */
+    exit(i);
+  }
+}

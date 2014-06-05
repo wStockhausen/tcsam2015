@@ -54,6 +54,14 @@ MKDIR=mkdir
 CP=cp
 CCADMIN=CCadmin
 
+.PRECIOUS: %.cpp %.htp
+	
+%.cpp: %.tpl
+	"${ADMB_HOME}/bin/tpl2cpp" $*
+	
+%.htp: %.tpl
+	"${ADMB_HOME}/bin/tpl2cpp" $*
+
 # .tpl2cpp
 .tpl2cpp:
 	@echo " "
@@ -63,10 +71,10 @@ CCADMIN=CCadmin
 	@echo " PLATFORM = ${PLATFORM}"
 	@echo " ADMB_HOME = ${ADMB_HOME}"
 	"${ADMB_HOME}/bin/tpl2cpp" ${TPL}
-	${CP} ${TPL}.htp ./include/${TPL}.htp
-	${CP} ${TPL}.cpp ./src/${TPL}.cpp
-	rm -f ${TPL}.htp
-	rm -f ${TPL}.cpp
+#	${CP} ${TPL}.htp ./include/${TPL}.htp
+#	${CP} ${TPL}.cpp ./src/${TPL}.cpp
+#	rm -f ${TPL}.htp
+#	rm -f ${TPL}.cpp
 	@echo " ----------------------------------------------------------"
 	@echo " "
 
@@ -74,7 +82,7 @@ CCADMIN=CCadmin
 # build
 build: .build-post
 
-.build-pre: .tpl2cpp
+.build-pre:
 # Add your pre 'build' code here...
 
 .build-post: .build-impl

@@ -7,7 +7,7 @@
 # Macros
 TOP=`pwd`
 CND_PLATFORM=CLang-MacOSX
-CND_CONF=Release-MAC
+CND_CONF=Release-MacOSX
 CND_DISTDIR=dist
 CND_BUILDDIR=build
 CND_DLIB_EXT=dylib

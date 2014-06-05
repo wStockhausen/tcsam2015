@@ -6,22 +6,22 @@
 CND_BASEDIR=`pwd`
 CND_BUILDDIR=build
 CND_DISTDIR=dist
-# Debug-MAC configuration
-CND_PLATFORM_Debug-MAC=CLang-MacOSX
-CND_ARTIFACT_DIR_Debug-MAC=dist/Debug-MAC/CLang-MacOSX
-CND_ARTIFACT_NAME_Debug-MAC=tcsam2015
-CND_ARTIFACT_PATH_Debug-MAC=dist/Debug-MAC/CLang-MacOSX/tcsam2015
-CND_PACKAGE_DIR_Debug-MAC=dist/Debug-MAC/CLang-MacOSX/package
-CND_PACKAGE_NAME_Debug-MAC=tcsam2015.tar
-CND_PACKAGE_PATH_Debug-MAC=dist/Debug-MAC/CLang-MacOSX/package/tcsam2015.tar
-# Release-MAC configuration
-CND_PLATFORM_Release-MAC=CLang-MacOSX
-CND_ARTIFACT_DIR_Release-MAC=dist/Release-MAC/CLang-MacOSX
-CND_ARTIFACT_NAME_Release-MAC=tcsam2015
-CND_ARTIFACT_PATH_Release-MAC=dist/Release-MAC/CLang-MacOSX/tcsam2015
-CND_PACKAGE_DIR_Release-MAC=dist/Release-MAC/CLang-MacOSX/package
-CND_PACKAGE_NAME_Release-MAC=tcsam2015.tar
-CND_PACKAGE_PATH_Release-MAC=dist/Release-MAC/CLang-MacOSX/package/tcsam2015.tar
+# Debug-MacOSX configuration
+CND_PLATFORM_Debug-MacOSX=CLang-MacOSX
+CND_ARTIFACT_DIR_Debug-MacOSX=dist/Debug-MacOSX/CLang-MacOSX
+CND_ARTIFACT_NAME_Debug-MacOSX=tcsam2015
+CND_ARTIFACT_PATH_Debug-MacOSX=dist/Debug-MacOSX/CLang-MacOSX/tcsam2015
+CND_PACKAGE_DIR_Debug-MacOSX=dist/Debug-MacOSX/CLang-MacOSX/package
+CND_PACKAGE_NAME_Debug-MacOSX=tcsam2015.tar
+CND_PACKAGE_PATH_Debug-MacOSX=dist/Debug-MacOSX/CLang-MacOSX/package/tcsam2015.tar
+# Release-MacOSX configuration
+CND_PLATFORM_Release-MacOSX=CLang-MacOSX
+CND_ARTIFACT_DIR_Release-MacOSX=dist/Release-MacOSX/CLang-MacOSX
+CND_ARTIFACT_NAME_Release-MacOSX=tcsam2015
+CND_ARTIFACT_PATH_Release-MacOSX=dist/Release-MacOSX/CLang-MacOSX/tcsam2015
+CND_PACKAGE_DIR_Release-MacOSX=dist/Release-MacOSX/CLang-MacOSX/package
+CND_PACKAGE_NAME_Release-MacOSX=tcsam2015.tar
+CND_PACKAGE_PATH_Release-MacOSX=dist/Release-MacOSX/CLang-MacOSX/package/tcsam2015.tar
 # Debug-Win configuration
 CND_PLATFORM_Debug-Win=GNU-MacOSX
 CND_ARTIFACT_DIR_Debug-Win=dist/Debug-Win/GNU-MacOSX
