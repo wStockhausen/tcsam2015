@@ -42,6 +42,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/ModelFunctions.o \
 	${OBJECTDIR}/src/ModelIndexBlocks.o \
 	${OBJECTDIR}/src/ModelIndexFunctions.o \
+	${OBJECTDIR}/src/ModelParameterFunctions.o \
 	${OBJECTDIR}/src/ModelParameterInfoTypes.o \
 	${OBJECTDIR}/src/ModelParametersInfo.o \
 	${OBJECTDIR}/src/ModelSelectivities.o \
@@ -107,6 +108,11 @@ ${OBJECTDIR}/src/ModelIndexFunctions.o: src/ModelIndexFunctions.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -DUSE_LAPLACE -D__GNUDOS__ -Dlinux -I. -Iinclude -I/Users/WilliamStockhausen/Programs/admb/build/dist/include -I/Users/WilliamStockhausen/Programs/admb/build/dist/contrib/include -I/Users/WilliamStockhausen/StockAssessments-Crab/AssessmentModelDevelopment/wtsADMB/include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/ModelIndexFunctions.o src/ModelIndexFunctions.cpp
+
+${OBJECTDIR}/src/ModelParameterFunctions.o: src/ModelParameterFunctions.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -DUSE_LAPLACE -D__GNUDOS__ -Dlinux -I. -Iinclude -I/Users/WilliamStockhausen/Programs/admb/build/dist/include -I/Users/WilliamStockhausen/Programs/admb/build/dist/contrib/include -I/Users/WilliamStockhausen/StockAssessments-Crab/AssessmentModelDevelopment/wtsADMB/include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/ModelParameterFunctions.o src/ModelParameterFunctions.cpp
 
 ${OBJECTDIR}/src/ModelParameterInfoTypes.o: src/ModelParameterInfoTypes.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

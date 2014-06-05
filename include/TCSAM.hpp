@@ -15,6 +15,7 @@
     #include "ModelSelectivities.hpp"
     #include "ModelParameterInfoTypes.hpp"
     #include "ModelParametersInfo.hpp"
+    #include "ModelParameterFunctions.hpp"
     #include "ModelData.hpp"
     #include "SummaryFunctions.hpp"
 

@@ -10,6 +10,10 @@
 // History:
 //  2014-02-11: created
 //  2014-05-23: renamed TCSAM2015
+//  2014-06-05: 1. moved setInitVals(...) functions to ModelParameterFunctions.hpp/cpp
+//              2. moved setDevs() to ) to ModelParameterFunctions.hpp/cpp
+//              3. moved calcPriors(...) to ModelParameterFunctions.hpp/cpp
+//
 // =============================================================================
 // =============================================================================
 GLOBALS_SECTION
@@ -912,141 +916,6 @@ FUNCTION void writeSimData(ostream& os, int debug, ostream& cout)
     }
     if (debug) cout<<"finished writing model results as data"<<endl;
      
-//******************************************************************************
-//* Function: void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout)
-//* 
-//* Description: Sets initial values for a parameter vector.
-//*
-//* Note: this function MUST be declared/defined as a FUNCTION in the tpl code
-//*     because the parameter assignment is a private method but the model_parameters 
-//*     class has friend access.
-//* 
-//* Inputs:
-//*  pI (BoundedNumberVectorInfo*) 
-//*     pointer to BoundedNumberVectorInfo object
-//*  p (param_init_bounded_number_vector&)
-//*     parameter vector
-//* Returns:
-//*  void
-//* Alters:
-//*  p - changes initial values
-//******************************************************************************
-FUNCTION void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout)
-    if (debug>=dbgAll) cout<<"Starting setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).label()<<endl; 
-    int np = pI->getSize();
-    if (np){
-        dvector vls = pI->getInitVals();
-        for (int i=1;i<=np;i++) p(i)=vls(i);
-        rpt::echo<<"InitVals for "<<p(1).label()<<": "<<p<<endl;
-    } else {
-        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
-    }
-    
-    if (debug>=dbgAll) {
-        std::cout<<"Enter 1 to continue >>";
-        std::cin>>np;
-        if (np<0) exit(-1);
-        std::cout<<"Finished setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).label()<<endl; 
-    }
-
-//******************************************************************************
-//* Function: void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
-//* 
-//* Description: Sets initial values for a vector of parameter vectors.
-//*
-//* Note: this function MUST be declared/defined as a FUNCTION in the tpl code
-//*     because the parameter assignment is a private method but the model_parameters 
-//*     class has friend access.
-//* 
-//* Inputs:
-//*  pI (BoundedVectorVectorInfo*) 
-//*     pointer to BoundedNumberVectorInfo object
-//*  p (param_init_bounded_vector_vector&)
-//*     parameter vector
-//* Returns:
-//*  void
-//* Alters:
-//*  p - changes initial values
-//******************************************************************************
-FUNCTION void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
-    if (debug>=dbgAll) cout<<"Starting setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
-    int np = pI->getSize();
-    if (np){
-        for (int i=1;i<=np;i++) {
-            dvector vls = (*pI)[i]->getInitVals();
-            if (debug>=dbgAll) cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<endl;
-            for (int j=vls.indexmin();j<=vls.indexmax();j++) p(i,j)=vls(j);
-        }
-        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).label()<<":"<<tb<<p(i)<<endl;
-    } else {
-        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
-    }
-    
-    if (debug>=dbgAll) {
-        std::cout<<"Enter 1 to continue >>";
-        std::cin>>np;
-        if (np<0) exit(-1);
-        std::cout<<"Finished setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
-    }
-
-//******************************************************************************
-//* Function: void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
-//* 
-//* Description: Sets initial values for a vector of parameter vectors.
-//*
-//* Note: this function MUST be declared/defined as a FUNCTION in the tpl code
-//*     because the parameter assignment is a private method but the model_parameters 
-//*     class has friend access.
-//* 
-//* Inputs:
-//*  pI (DevsVectorVectorInfo*) 
-//*     pointer to DevsNumberVectorInfo object
-//*  p (param_init_bounded_vector_vector&)
-//*     parameter vector
-//* Returns:
-//*  void
-//* Alters:
-//*  p - changes initial values
-//******************************************************************************
-FUNCTION void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
-    if (debug>=dbgAll) cout<<"Starting setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
-    int np = pI->getSize();
-    if (np){
-        for (int i=1;i<=np;i++) {
-            dvector vls = (*pI)[i]->getInitVals();
-            if (debug) cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<endl;
-            for (int j=vls.indexmin();j<=(vls.indexmax()-1);j++) p(i,j)=vls(j);
-        }
-        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).label()<<":"<<tb<<p(i)<<endl;
-    } else {
-        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
-    }
-    
-    if (debug>=dbgAll) {
-        std::cout<<"Enter 1 to continue >>";
-        std::cin>>np;
-        if (np<0) exit(-1);
-        std::cout<<"Finished setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
-    }
-
-//-------------------------------------------------------------------------------------
-FUNCTION void setDevs(dvar_matrix& devs, param_init_bounded_vector_vector& pDevs, int debug, ostream& cout)
-    if (debug>=dbgAll) cout<<"starting setDevs(devs,pDevs)"<<endl;
-    int nv = pDevs.indexmax();//number of devs vectors defined
-    int mni; int mxi;
-    for (int v=1;v<=nv;v++){
-        mni = pDevs(v).indexmin();
-        mxi = pDevs(v).indexmax();
-        devs(v)(mni,mxi) = pDevs(v);
-        devs(v,mxi+1) = -sum(devs(v)(mni,mxi));
-    }
-    if (debug>=dbgAll) {
-        std::cout<<"Enter 1 to continue >>";
-        std::cin>>nv;
-        if (nv<0) exit(-1);
-        cout<<"finished setDevs(devs,pDevs)"<<endl;
-    }
-
 //-------------------------------------------------------------------------------------
 FUNCTION void setDevs(int debug, ostream& cout)
     if (debug>=dbgAll) cout<<"starting setDevs()"<<endl;
@@ -2591,113 +2460,61 @@ FUNCTION void calcNLLs_Surveys(int debug, ostream& cout)
     if (debug>=dbgAll) cout<<"Finished calcNLLs_Surveys()"<<endl;
 
 //-------------------------------------------------------------------------------------
-//Calculate priors                                      
-FUNCTION void calcPriors(NumberVectorInfo* ptrVI,param_init_number_vector& pv, int debug, ostream& cout)
-    if (ptrVI->getSize()){
-        dvar_vector tmp = pv;
-        dvar_vector pri = ptrVI->calcLogPriors(tmp);//ln-scale prior (NOT NLL!)
-        if (debug>=dbgPriors) cout<<"priors("<<ptrVI->name<<") = "<<pri<<endl;
-        objFun += -ptrVI->getPriorWgts()*pri;
-    }
-
-//-------------------------------------------------------------------------------------
-//Calculate priors                                      
-FUNCTION void calcPriors(BoundedNumberVectorInfo* ptrVI,param_init_bounded_number_vector& pv, int debug, ostream& cout)
-    if (ptrVI->getSize()){
-        dvar_vector tmp = pv;
-        dvar_vector pri = ptrVI->calcLogPriors(tmp);//ln-scale prior (NOT NLL!)
-        if (debug>=dbgPriors) cout<<"priors("<<ptrVI->name<<") = "<<pri<<endl;
-        objFun += -ptrVI->getPriorWgts()*pri;
-    }
-
-//-------------------------------------------------------------------------------------
-//Calculate contributions to objective function from priors                                      
-FUNCTION void calcPriors(BoundedVectorVectorInfo* ptrVVI, param_init_bounded_vector_vector& pm, int debug, ostream& cout)
-    if (ptrVVI->getSize()){
-        dvector wts = ptrVVI->getPriorWgts();
-        for (int i=1;i<=pm.indexmax();i++) {
-            dvar_vector tmp = 1.0*pm(i);
-            dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
-            if (debug>=dbgPriors){
-                cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<endl;
-                cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<endl;
-            }
-            objFun += -wts(i)*sum(pri);
-        }
-    }    
-
-//-------------------------------------------------------------------------------------
-//Calculate contributions to objective function from priors                                      
-FUNCTION void calcPriors(DevsVectorVectorInfo* ptrVVI, dvar_matrix& pm, int debug, ostream& cout)
-    if (ptrVVI->getSize()){
-        dvector wts = ptrVVI->getPriorWgts();
-        for (int i=1;i<=pm.indexmax();i++) {
-            dvar_vector tmp = 1.0*pm(i);
-            dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
-            if (debug>=dbgPriors){
-                cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<endl;
-                cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<endl;
-            }
-            objFun += -wts(i)*sum(pri);
-        }
-    }    
-
-//-------------------------------------------------------------------------------------
 //Calculate contributions to objective function from all priors                                         
 FUNCTION void calcAllPriors(int debug, ostream& cout)
     if (debug>=dbgPriors) cout<<"Starting calcAllPriors()"<<endl;
 
     //recruitment parameters
-    calcPriors(ptrMPI->ptrRec->pLnR,  pLnR,  debug,cout);
-    calcPriors(ptrMPI->ptrRec->pLnRCV,pLnRCV,debug,cout);
-    calcPriors(ptrMPI->ptrRec->pLgtRX,pLgtRX,debug,cout);
-    calcPriors(ptrMPI->ptrRec->pLnRa, pLnRa, debug,cout);
-    calcPriors(ptrMPI->ptrRec->pLnRb, pLnRb, debug,cout);
-    calcPriors(ptrMPI->ptrRec->pDevsLnR,devsLnR,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrRec->pLnR,  pLnR,  debug,cout);
+    calcPriors(objFun,ptrMPI->ptrRec->pLnRCV,pLnRCV,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrRec->pLgtRX,pLgtRX,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrRec->pLnRa, pLnRa, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrRec->pLnRb, pLnRb, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrRec->pDevsLnR,devsLnR,debug,cout);
    
     //natural mortality parameters
-    calcPriors(ptrMPI->ptrNM->pLnM,   pLnM,   debug,cout);
-    calcPriors(ptrMPI->ptrNM->pLnDMT, pLnDMT, debug,cout);
-    calcPriors(ptrMPI->ptrNM->pLnDMX, pLnDMX, debug,cout);
-    calcPriors(ptrMPI->ptrNM->pLnDMM, pLnDMM, debug,cout);
-    calcPriors(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrNM->pLnM,   pLnM,   debug,cout);
+    calcPriors(objFun,ptrMPI->ptrNM->pLnDMT, pLnDMT, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrNM->pLnDMX, pLnDMX, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrNM->pLnDMM, pLnDMM, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrNM->pLnDMXM,pLnDMXM,debug,cout);
     
     //growth parameters
-    calcPriors(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   debug,cout);
-    calcPriors(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   debug,cout);
-    calcPriors(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrGr->pLnGrA,   pLnGrA,   debug,cout);
+    calcPriors(objFun,ptrMPI->ptrGr->pLnGrB,   pLnGrB,   debug,cout);
+    calcPriors(objFun,ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,debug,cout);
     
     //maturity parameters
-    calcPriors(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,debug,cout);
     
     //selectivity parameters
-    calcPriors(ptrMPI->ptrSel->pS1,pS1,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pS2,pS2,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pS3,pS3,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pS4,pS4,debug,cout);     
-    calcPriors(ptrMPI->ptrSel->pS5,pS5,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pS6,pS6,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pDevsS1,devsS1,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pDevsS2,devsS2,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pDevsS3,devsS3,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pDevsS4,devsS4,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pDevsS5,devsS5,debug,cout);
-    calcPriors(ptrMPI->ptrSel->pDevsS6,devsS6,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pS1,pS1,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pS2,pS2,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pS3,pS3,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pS4,pS4,debug,cout);     
+    calcPriors(objFun,ptrMPI->ptrSel->pS5,pS5,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pS6,pS6,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pDevsS1,devsS1,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pDevsS2,devsS2,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pDevsS3,devsS3,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pDevsS4,devsS4,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pDevsS5,devsS5,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSel->pDevsS6,devsS6,debug,cout);
     
     //fishing mortality parameters
-    calcPriors(ptrMPI->ptrFsh->pLnC,    pLnC,   debug,cout);
-    calcPriors(ptrMPI->ptrFsh->pLnDCT,  pLnDCT, debug,cout);
-    calcPriors(ptrMPI->ptrFsh->pLnDCX,  pLnDCX, debug,cout);
-    calcPriors(ptrMPI->ptrFsh->pLnDCM,  pLnDCM, debug,cout);
-    calcPriors(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM,debug,cout);
-    calcPriors(ptrMPI->ptrFsh->pDevsLnC,devsLnC,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrFsh->pLnC,    pLnC,   debug,cout);
+    calcPriors(objFun,ptrMPI->ptrFsh->pLnDCT,  pLnDCT, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrFsh->pLnDCX,  pLnDCX, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrFsh->pLnDCM,  pLnDCM, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrFsh->pLnDCXM, pLnDCXM,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrFsh->pDevsLnC,devsLnC,debug,cout);
    
     //survey catchability parameters
-    calcPriors(ptrMPI->ptrSrv->pLnQ,    pLnQ,   debug,cout);
-    calcPriors(ptrMPI->ptrSrv->pLnDQT,  pLnDQT, debug,cout);
-    calcPriors(ptrMPI->ptrSrv->pLnDQX,  pLnDQX, debug,cout);
-    calcPriors(ptrMPI->ptrSrv->pLnDQM,  pLnDQM, debug,cout);
-    calcPriors(ptrMPI->ptrSrv->pLnDQXM, pLnDQXM,debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSrv->pLnQ,    pLnQ,   debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSrv->pLnDQT,  pLnDQT, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSrv->pLnDQX,  pLnDQX, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSrv->pLnDQM,  pLnDQM, debug,cout);
+    calcPriors(objFun,ptrMPI->ptrSrv->pLnDQXM, pLnDQXM,debug,cout);
     
     if (debug>=dbgPriors) cout<<"Finished calcAllPriors()"<<endl;
 
