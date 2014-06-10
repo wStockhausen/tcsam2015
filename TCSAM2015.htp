@@ -349,6 +349,9 @@ public:
   virtual void initializationfunction(void);
  void createSimData(int debug, ostream& cout);
  void writeSimData(ostream& os, int debug, ostream& cout);
+ void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout);
+ void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
+ void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
  void setAllDevs(int debug, ostream& cout);
  void runPopDyMod(int debug, ostream& cout);
  void initPopDyMod(int debug, ostream& cout);

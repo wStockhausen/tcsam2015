@@ -238,13 +238,30 @@
              *           element.
              */
             ivector getRevIndices(){return ptrIB->getRevIndexVector();}
-            dvar_vector calcLogPrior(dvar_vector& x);
-            
+            /**
+             * Calculates the (ln-scale) prior probabilities (not NLLS!)vcorresponding to 
+             * the values of the input vector.
+             * 
+             * @param x - dvar_vector to calculate ln-scale priors for
+             * @return - dvar_vector of ln-scale priors (not NLLs)
+             */
+            dvar_vector calcLogPrior(dvar_vector& x);            
+            /**
+             * Gets a copy of the vector of initial values.
+             * 
+             * @return - the initial values.
+             */
             virtual dvector getInitVals(){return initVals;}           
+            /**
+             * Sets initial values to input value.
+             * 
+             * @param x - value to set as initial values
+             */
             virtual void    setInitVal(double x){initVals = x;}            
             /**
-             * Sets initial values to input vector element-by-element..
-             * @param x
+             * Sets initial values to input vector element-by-element.
+             * 
+             * @param x - vector to set as initial values
              */
             virtual void setInitVals(dvector& x);
             /**

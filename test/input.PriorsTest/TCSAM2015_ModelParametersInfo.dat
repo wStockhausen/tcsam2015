@@ -15,8 +15,8 @@ PARAMETERS
 pLnR #ln-scale mean recruitment parameter (2013 ok)
 2  #number of parameters
 #id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
-1      0      10     OFF      4.31        1       OFF           1        normal      6 3   #spin-up period  (0608)
-2      0      10     OFF      4.31        1       OFF           1        normal      6 3   #model period    (0608)
+1      0      20     OFF       8         1       OFF           1        normal      10 3   #spin-up period  (ok 2013)
+2      0      20     OFF      11.4       1       OFF           1        normal      10 3   #model period    (ok 2013)
 pLnRCV #ln-scale parameter for cv of recruitment
 1  #number of parameters
 #id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts

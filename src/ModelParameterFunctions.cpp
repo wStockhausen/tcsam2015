@@ -25,12 +25,20 @@ namespace tcsam{
  * 
 ******************************************************************************/
 void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, std::ostream& cout){
-    if (debug>=tcsam::dbgAll) cout<<"Starting setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).get_name()<<std::endl; 
+    debug=tcsam::dbgAll;
+    if (debug>=tcsam::dbgAll) std::cout<<"Starting setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).get_name()<<std::endl; 
     int np = pI->getSize();
     if (np){
         dvector vls = pI->getInitVals();
-        for (int i=1;i<=np;i++) p(i).set_initial_value(vls(i));
+        p.set_initial_value(vls);
         rpt::echo<<"InitVals for "<<p(1).get_name()<<": "<<p<<std::endl;
+        if (debug>=tcsam::dbgAll) {
+            std::cout<<"vls = "<<vls<<std::endl;
+            std::cout<<"p   = "<<p<<std::endl;
+            double_index_guts* ptr = new dvector_index(vls);
+            std::cout<<ptr<<tb<<ptr->indexmin()<<tb<<ptr->indexmax()<<endl;
+            for (int i=ptr->indexmin();i<=ptr->indexmax();i++) std::cout<<(*((*ptr)[i]))<<tb; std::cout<<std::endl;
+        }
     } else {
         rpt::echo<<"InitVals for "<<p(1).get_name()<<" not defined because np = "<<np<<std::endl;
     }
@@ -58,15 +66,20 @@ void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& 
  * 
 ******************************************************************************/
 void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, std::ostream& cout){
-    if (debug>=tcsam::dbgAll) cout<<"Starting setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).get_name()<<std::endl; 
+    debug=tcsam::dbgAll;
+    if (debug>=tcsam::dbgAll) std::cout<<"Starting setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).get_name()<<std::endl; 
     int np = pI->getSize();
     if (np){
         for (int i=1;i<=np;i++) {
             dvector vls = (*pI)[i]->getInitVals();
             if (debug>=tcsam::dbgAll) cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<std::endl;
-            for (int j=vls.indexmin();j<=vls.indexmax();j++) p(i,j)=vls(j);
+            for (int j=vls.indexmin();j<=vls.indexmax();j++) p(i,j) = vls(j);
+            if (debug>=tcsam::dbgAll) {
+                std::cout<<"vls  = "<<vls<<std::endl;
+                std::cout<<"p(i) = "<<p(i)<<std::endl;
+            }
         }
-        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).get_name()<<":"<<tb<<p(i)<<std::endl;
+        for (int i=1;i<=np;i++) rpt::echo<<"InitVals for "<<p(i).get_name()<<":"<<tb<<p(i)<<std::endl;
     } else {
         rpt::echo<<"InitVals for "<<p(1).get_name()<<" not defined because np = "<<np<<std::endl;
     }
@@ -93,15 +106,20 @@ void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& 
 * @alters - changes initial values of p
 ******************************************************************************/
 void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, std::ostream& cout){
-    if (debug>=tcsam::dbgAll) cout<<"Starting setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).get_name()<<std::endl; 
+    debug=tcsam::dbgAll;
+    if (debug>=tcsam::dbgAll) std::cout<<"Starting setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).get_name()<<std::endl; 
     int np = pI->getSize();
     if (np){
         for (int i=1;i<=np;i++) {
             dvector vls = (*pI)[i]->getInitVals();
-            if (debug) cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<std::endl;
+            if (debug>=tcsam::dbgAll) cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<std::endl;
             for (int j=vls.indexmin();j<=(vls.indexmax()-1);j++) p(i,j)=vls(j);
+            if (debug>=tcsam::dbgAll) {
+                std::cout<<"vls  = "<<vls<<std::endl;
+                std::cout<<"p(i) = "<<p(i)<<std::endl;
+            }
         }
-        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).get_name()<<":"<<tb<<p(i)<<std::endl;
+        for (int i=1;i<=np;i++) rpt::echo<<"InitVals for "<<p(i).get_name()<<":"<<tb<<p(i)<<std::endl;
     } else {
         rpt::echo<<"InitVals for "<<p(1).get_name()<<" not defined because np = "<<np<<std::endl;
     }

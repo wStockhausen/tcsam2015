@@ -10,7 +10,7 @@
 // History:
 //  2014-02-11: created
 //  2014-05-23: renamed TCSAM2015
-//  2014-06-05: 1. moved setInitVals(...) functions to tcsam::setInitVals(...) in ModelParameterFunctions.hpp/cpp
+//  2014-06-05: 1. moved setInitVals(...) functions to setInitVals(...) in ModelParameterFunctions.hpp/cpp
 //              2. moved setDevs() to ) to tcsam::setDevs() in ModelParameterFunctions.hpp/cpp
 //              3. moved calcPriors(...) to tcsam::calcPriors(...) in ModelParameterFunctions.hpp/cpp
 //
@@ -754,57 +754,57 @@ PRELIMINARY_CALCS_SECTION
     
     //set initial values for all parameters
     //recruitment parameters
-    tcsam::setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
      
     //natural mortality parameters
-    tcsam::setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
     
     //growth parameters
-    tcsam::setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
     
     //maturity parameters
-    tcsam::setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
+    setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
     
     //selectivity parameters
-    tcsam::setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
      
     //fully-selected fishing capture rate parameters
-    tcsam::setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
     
     //survey catchability parameters
-    tcsam::setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
-    tcsam::setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
     
     cout<<"testing setAllDevs()"<<endl;
     setAllDevs(0,rpt::echo);
@@ -859,13 +859,13 @@ PRELIMINARY_CALCS_SECTION
     calcObjFun(1,rpt::echo);
     
     {cout<<"writing model results to R"<<endl;
-     ofstream echo1; echo1.open("ModelRes.R", ios::trunc);
+     ofstream echo1; echo1.open("ModelRes0.R", ios::trunc);
      ReportToR(echo1,1,cout);
     }
     
     {cout<<"writing model sim data to file"<<endl;
         createSimData(0,cout);
-        ofstream echo1; echo1.open("ModelSimData.dat", ios::trunc);
+        ofstream echo1; echo1.open("ModelSimData0.dat", ios::trunc);
         writeSimData(echo1,0,cout);
     }
     
@@ -916,6 +916,139 @@ FUNCTION void writeSimData(ostream& os, int debug, ostream& cout)
     }
     if (debug) cout<<"finished writing model results as data"<<endl;
      
+//******************************************************************************
+//* Function: void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout)
+//* 
+//* Description: Sets initial values for a parameter vector.
+//*
+//* Note: this function MUST be declared/defined as a FUNCTION in the tpl code
+//*     because the parameter assignment is a private method but the model_parameters 
+//*     class has friend access.
+//* 
+//* Inputs:
+//*  pI (BoundedNumberVectorInfo*) 
+//*     pointer to BoundedNumberVectorInfo object
+//*  p (param_init_bounded_number_vector&)
+//*     parameter vector
+//* Returns:
+//*  void
+//* Alters:
+//*  p - changes initial values
+//******************************************************************************
+FUNCTION void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout)
+//    debug=dbgAll;
+    if (debug>=dbgAll) std::cout<<"Starting setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).label()<<endl; 
+    int np = pI->getSize();
+    if (np){
+        dvector vls = pI->getInitVals();
+        for (int i=1;i<=np;i++) p(i)=vls(i);
+        //p.set_initial_value(vls);
+        rpt::echo<<"InitVals for "<<p(1).label()<<": "<<p<<endl;
+        if (debug>=dbgAll) {
+            std::cout<<"p   = "<<p<<std::endl;
+            std::cout<<"vls = "<<vls<<std::endl;
+        }
+    } else {
+        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
+    }
+    
+    if (debug>=dbgAll) {
+        std::cout<<"Enter 1 to continue >>";
+        std::cin>>np;
+        if (np<0) exit(-1);
+        std::cout<<"Finished setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).label()<<endl; 
+    }
+
+//******************************************************************************
+//* Function: void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
+//* 
+//* Description: Sets initial values for a vector of parameter vectors.
+//*
+//* Note: this function MUST be declared/defined as a FUNCTION in the tpl code
+//*     because the parameter assignment is a private method but the model_parameters 
+//*     class has friend access.
+//* 
+//* Inputs:
+//*  pI (BoundedVectorVectorInfo*) 
+//*     pointer to BoundedNumberVectorInfo object
+//*  p (param_init_bounded_vector_vector&)
+//*     parameter vector
+//* Returns:
+//*  void
+//* Alters:
+//*  p - changes initial values
+//******************************************************************************
+FUNCTION void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
+//    debug=dbgAll;
+    if (debug>=dbgAll) std::cout<<"Starting setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
+    int np = pI->getSize();
+    if (np){
+        for (int i=1;i<=np;i++) {
+            dvector vls = (*pI)[i]->getInitVals();
+            if (debug>=dbgAll) std::cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<endl;
+            for (int j=vls.indexmin();j<=vls.indexmax();j++) p(i,j)=vls(j);
+            if (debug>=dbgAll){
+                std::cout<<"p(i)   = "<<p(i)<<endl;
+                std::cout<<"vls(i) = "<<vls<<endl;
+            }
+        }
+        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).label()<<":"<<tb<<p(i)<<endl;
+    } else {
+        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
+    }
+    
+    if (debug>=dbgAll) {
+        std::cout<<"Enter 1 to continue >>";
+        std::cin>>np;
+        if (np<0) exit(-1);
+        std::cout<<"Finished setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
+    }
+
+//******************************************************************************
+//* Function: void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
+//* 
+//* Description: Sets initial values for a vector of parameter vectors.
+//*
+//* Note: this function MUST be declared/defined as a FUNCTION in the tpl code
+//*     because the parameter assignment is a private method but the model_parameters 
+//*     class has friend access.
+//* 
+//* Inputs:
+//*  pI (DevsVectorVectorInfo*) 
+//*     pointer to DevsNumberVectorInfo object
+//*  p (param_init_bounded_vector_vector&)
+//*     parameter vector
+//* Returns:
+//*  void
+//* Alters:
+//*  p - changes initial values
+//******************************************************************************
+FUNCTION void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout)
+//    debug = dbgAll;
+    if (debug>=dbgAll) std::cout<<"Starting setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
+    int np = pI->getSize();
+    if (np){
+        for (int i=1;i<=np;i++) {
+            dvector vls = (*pI)[i]->getInitVals();
+            if (debug>=dbgAll) std::cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<endl;
+            for (int j=vls.indexmin();j<=(vls.indexmax()-1);j++) p(i,j)=vls(j);
+            if (debug>=dbgAll){
+                std::cout<<"p(i)   = "<<p(i)<<endl;
+                std::cout<<"vls(i) = "<<vls<<endl;
+            }
+        }
+        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).label()<<":"<<tb<<p(i)<<endl;
+    } else {
+        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
+    }
+    
+    if (debug>=dbgAll) {
+        std::cout<<"Enter 1 to continue >>";
+        std::cin>>np;
+        if (np<0) exit(-1);
+        std::cout<<"Finished setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p) for "<<p(1).label()<<endl; 
+    }
+
 //-------------------------------------------------------------------------------------
 FUNCTION void setAllDevs(int debug, ostream& cout)
     if (debug>=dbgAll) cout<<"starting setAllDevs()"<<endl;
@@ -1310,8 +1443,9 @@ FUNCTION void calcMaturity(int debug, ostream& cout)
             y = idxs(idx,1);
             x = idxs(idx,2);
             if (debug) cout<<"y = "<<y<<tb<<"sex = "<<tcsam::getSexType(x)<<endl;
-            prMat_yxz(y,x) = 1.0;//default is 1
-            prMat_yxz(y,x)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrMat));
+//            prMat_yxz(y,x) = 1.0;//default is 1
+//            prMat_yxz(y,x)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrMat));
+            prMat_yxz(y,x) = prMat_cz(pc);//note: this change made a difference, but not sure why!
         }
     }
     
@@ -1810,7 +1944,7 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     double penWgtLgtPrMat = 1.0;//TODO: read in value from input file
     fPenLgtPrMat.initialize();
     for (int i=1;i<=npLgtPrMat;i++){
-        dvar_vector v = pLgtPrMat(i);
+        dvar_vector v; v = pLgtPrMat(i);
         fPenLgtPrMat(i) = norm2(calc2ndDiffs(v));
         objFun += penWgtLgtPrMat*fPenLgtPrMat(i);
     }
@@ -1824,7 +1958,7 @@ FUNCTION dvar_vector calc1stDiffs(const dvar_vector& d)
     RETURN_ARRAYS_INCREMENT();
     int mn = d.indexmin();
     int mx = d.indexmax();
-    dvar_vector cp = d;
+    dvar_vector cp; cp = d;
     dvar_vector r(mn,mx-1);
     r = cp(mn+1,mx).shift(mn)-cp(mn,mx-1);
     RETURN_ARRAYS_DECREMENT();
@@ -2013,10 +2147,13 @@ FUNCTION dvar_vector calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array
         nlls.allocate(1,nSXs); nlls.initialize();
         tB_xy.allocate(1,nSXs,mny,mxy); tB_xy.initialize();
         ivector yrs = ptrB->yrs;
+        //calc catch biomass by sex
         for (int x=1;x<=nSXs;x++){
-            //calc catch biomass by sex
             for (int y=mny;y<=mxy;y++) {
-                for (int m=1;m<=nMSs;m++) tB_xy(x,y) += sum(mA_yxmsz(y,x,m)*ptrMDS->ptrBio->wAtZ_xmz(x,m));//sum by sex over maturity states
+                for (int m=1;m<=nMSs;m++) {
+                    //sum by sex over maturity states, shell conditions, sizes
+                    for (int s=1;s<=nSCs;s++) tB_xy(x,y) += mA_yxmsz(y,x,m,s)*ptrMDS->ptrBio->wAtZ_xmz(x,m);
+                }
             }
             if (debug<0) cout<<tcsam::getSexType(x)<<"=";
             nlls(x) = calcNLL(ptrB->llType, tB_xy(x), ptrB->C_xy(x), ptrB->stdv_xy(x), ptrB->yrs, debug, cout); 
@@ -2028,9 +2165,12 @@ FUNCTION dvar_vector calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array
         nlls.allocate(ANY_SX,ANY_SX); nlls.initialize();
         tB_xy.allocate(ANY_SX,ANY_SX,mny,mxy);
         tB_xy.initialize();
-        for (int y=mny;y<=mxy;y++) {
-            for (int x=1;x<=nSXs;x++){
-                for (int m=1;m<=nMSs;m++) tB_xy(ANY_SX,y) += sum(mA_yxmsz(y,x,m)*ptrMDS->ptrBio->wAtZ_xmz(x,m));
+        //calc catch biomass over sexes
+        for (int x=1;x<=nSXs;x++){
+            for (int y=mny;y<=mxy;y++) {
+                for (int m=1;m<=nMSs;m++) {
+                    for (int s=1;s<=nSCs;s++) tB_xy(ANY_SX,y) += mA_yxmsz(y,x,m,s)*ptrMDS->ptrBio->wAtZ_xmz(x,m);
+                }
             }
         }
         if (debug<0) cout<<tcsam::getSexType(ANY_SX)<<"=";
@@ -2056,14 +2196,15 @@ FUNCTION dvar_vector calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array
 FUNCTION dvariable calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcMultinomialNLL()"<<endl;
-    dvariable   nll  = -ss*(obs*log(mod)-obs*log(obs));//note dot-product sums
+    dvariable nll = -ss*(obs*(log(mod+smlVal)-log(obs+smlVal)));//note dot-product sums
     if (debug<0){
         dvector vmod = value(mod);
-        dvector nlls = -ss*(elem_prod(obs,log(vmod))-elem_prod(obs,log(obs)));
-        dvector zscrs = elem_div(obs-vmod,sqrt(elem_prod(vmod,1.0-vmod)/ss));//pearson residuals
-        cout<<"list(type='multinomial',nll="<<nll<<cc<<"ss="<<ss<<cc; 
-        cout<<"nlls=";  wts::writeToR(cout,nlls, ptrMC->csvZBs); cout<<cc;
-        cout<<"zscrs="; wts::writeToR(cout,zscrs,ptrMC->csvZBs); 
+        dvector nlls = -ss*(elem_prod(obs,log(vmod+smlVal)-log(obs+smlVal)));
+        dvector zscrs = elem_div(obs-vmod,sqrt(elem_prod((vmod+smlVal),1.0-(vmod+smlVal))/ss));//pearson residuals
+        double effN = (vmod*(1.0-vmod))/norm2(obs-vmod);
+        cout<<"list(type='multinomial',nll="<<nll<<cc<<"ss="<<ss<<cc<<"effN="<<effN<<cc<<endl; 
+        cout<<"nlls=";  wts::writeToR(cout,nlls, ptrMC->csvZBs); cout<<cc<<endl;
+        cout<<"zscrs="; wts::writeToR(cout,zscrs,ptrMC->csvZBs); cout<<endl;
         cout<<")";
     }
     if (debug>=dbgAll) cout<<"Finished calcMultinomialNLL()"<<endl;
@@ -2166,7 +2307,7 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                             }
                         }
                     }
-                    oP_z = (oP_z+smlVal)/sum(oP_z+smlVal);
+                    oP_z /= sum(oP_z);
                     if (debug>0){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
@@ -2177,7 +2318,6 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                         }
                     }
                     mP_z /= nT;//normalize model size comp
-                    mP_z = (mP_z+smlVal)/sum(mP_z+smlVal);//
                     if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
                     if (debug<0) {
                         cout<<"'"<<y<<"'=list(";
@@ -2204,7 +2344,7 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
                         }
-                        oP_z = (oP_z+smlVal)/sum(oP_z+smlVal);
+                        oP_z /= sum(oP_z);
                         if (debug>0){
                             cout<<"ss = "<<ss<<endl;
                             cout<<"oP_Z = "<<oP_z<<endl;
@@ -2213,7 +2353,6 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                             for (int s=1;s<=nSCs;s++) mP_z += mA_yxmsz(y,x,m,s);
                         }
                         mP_z /= nT;//normalize model size comp
-                        mP_z = (mP_z+smlVal)/sum(mP_z+smlVal);//
                         if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
                         if (debug<0) {
                             cout<<"'"<<y<<"'=list(";
@@ -2247,13 +2386,12 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                             for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
                         }
                     }//x
-                    oP_z = (oP_z+smlVal)/sum(oP_z+smlVal);
+                    oP_z /= sum(oP_z);
                     if (debug>0){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
                     }
                     mP_z /= nT;//normalize model size comp
-                    mP_z = (mP_z+smlVal)/sum(mP_z+smlVal);//
                     if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
                     for (int x=1;x<=nSXs;x++) {
                         int mnz = 1+(x-1)*nZBs;
@@ -2294,13 +2432,12 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                             if (m<=nMSs) {for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);}
                         }//m
                     }//x
-                    oP_z = (oP_z+smlVal)/sum(oP_z+smlVal);
+                    oP_z /= sum(oP_z);
                     if (debug>0){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
                     }
                     mP_z /= nT;//normalize model size comp
-                    mP_z = (mP_z+smlVal)/sum(mP_z+smlVal);//
                     if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
                     for (int x=1;x<=nSXs;x++) {
                         for (int m=1;m<=nMSs;m++) {
@@ -2548,8 +2685,9 @@ FUNCTION void ReportToR_PopQuants(ostream& os, int debug, ostream& cout)
     d5_array n_xmsyz = tcsam::rearrangeYXMSZtoXMSYZ(vn_yxmsz);
     
     os<<"pop.quants=list("<<endl;
-    os<<"R.y=";  wts::writeToR(os,value(R_y), ptrMC->csvYrs);             os<<cc<<endl;
-    os<<"Rx.c="; wts::writeToR(os,value(Rx_c),adstring("1:"+str(npcRec))); os<<cc<<endl;
+    os<<"R.y=";  wts::writeToR(os,value(R_y), ptrMC->csvYrs);               os<<cc<<endl;
+    os<<"Rx.y=";  wts::writeToR(os,trans(value(R_yx))(MALE), ptrMC->csvYrs);os<<cc<<endl;
+    os<<"Rx.c="; wts::writeToR(os,value(Rx_c),adstring("1:"+str(npcRec)));  os<<cc<<endl;
     os<<"R.cz="; wts::writeToR(os,value(R_cz),adstring("1:"+str(npcRec)),ptrMC->csvZBs); os<<cc<<endl;
     os<<"M.cxm=";   wts::writeToR(os,value(M_cxm),   adstring("1:"+str(npcNM)),ptrMC->csvSXs,ptrMC->csvMSs); os<<cc<<endl;
     os<<"prMat.cz=";wts::writeToR(os,value(prMat_cz),adstring("1:"+str(npcMat)),ptrMC->csvZBs); os<<cc<<endl;
