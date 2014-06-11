@@ -151,7 +151,13 @@ namespace tcsam{
             ModelPDFInfo(){pPDF=0;pSmplr=0;vpPDF=0;vpSmplr=0;}
         public:
             ~ModelPDFInfo(){pPDF=0;pSmplr=0;vpPDF=0;vpSmplr=0;}
+            int canCalcLogPDF(prevariable& val){if (pPDF)  return 1; else return 0;}
+            int canCalcLogPDF(dvar_vector& val){if (vpPDF) return 1; else return 0;}
+            dvariable calcLogPDF(prevariable& val,dvar_vector params,dvector& consts);
+            dvar_vector calcLogPDF(dvar_vector& val,dvar_vector params,dvector& consts);
             int canSample(void){if ((pSmplr)||(vpSmplr)) return 1; else return 0;}
+            double drawSample(random_number_generator& rng,dvector& params, dvector& consts);
+            dvector drawSample(int n,random_number_generator& rng,dvector& params, dvector& consts);
             adstring getPDFType(void){return pdfType;}
             int getNumConsts(void){return nFxd;}
             int getNumParams(void){return nVar;}
@@ -159,10 +165,6 @@ namespace tcsam{
             adstring_array getNamesForParams(){return nmsVar;}
             adstring getStringForConstsNames();
             adstring getStringForParamsNames();
-            dvariable calcLogPDF(prevariable& val,dvar_vector params,dvector& consts);
-            dvar_vector calcLogPDF(dvar_vector& val,dvar_vector params,dvector& consts);
-            double drawSample(random_number_generator& rng,dvector& params, dvector& consts);
-            dvector drawSample(int n,random_number_generator& rng,dvector& params, dvector& consts);
     };
 
 //----------------------------------------------------------------------

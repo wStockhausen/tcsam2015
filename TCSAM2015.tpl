@@ -13,7 +13,10 @@
 //  2014-06-05: 1. moved setInitVals(...) functions to setInitVals(...) in ModelParameterFunctions.hpp/cpp
 //              2. moved setDevs() to ) to tcsam::setDevs() in ModelParameterFunctions.hpp/cpp
 //              3. moved calcPriors(...) to tcsam::calcPriors(...) in ModelParameterFunctions.hpp/cpp
-//
+//  2014-06-09: started review to make sure deep copies are implemented for objects that 
+//              should not be modified within a computational unit.
+//  2014-06-11: 1. created setFinalVal(...), setFinalVals(...) functionality for ModelParameterInfoTypes
+//                 and revised writeToR(...) for parameters to output both initial and final values.
 // =============================================================================
 // =============================================================================
 GLOBALS_SECTION
@@ -2798,66 +2801,66 @@ FUNCTION void updateMPI(int debug, ostream& cout)
 //    DevsVectorInfo::debug=1;
 //    DevsVectorVectorInfo::debug=1;
     //recruitment parameters
-    ptrMPI->ptrRec->pLnR->setInitVals(pLnR);
-    ptrMPI->ptrRec->pLnRCV->setInitVals(pLnRCV);
-    ptrMPI->ptrRec->pLgtRX->setInitVals(pLgtRX);
-    ptrMPI->ptrRec->pLnRa->setInitVals(pLnRa);
-    ptrMPI->ptrRec->pLnRb->setInitVals(pLnRb);
-    cout<<"setting intVals for pDevsLnR"<<endl;
-    for (int p=1;p<=ptrMPI->ptrRec->pDevsLnR->getSize();p++) (*ptrMPI->ptrRec->pDevsLnR)[p]->setInitVals(pDevsLnR(p));
+    ptrMPI->ptrRec->pLnR->setFinalVals(pLnR);
+    ptrMPI->ptrRec->pLnRCV->setFinalVals(pLnRCV);
+    ptrMPI->ptrRec->pLgtRX->setFinalVals(pLgtRX);
+    ptrMPI->ptrRec->pLnRa->setFinalVals(pLnRa);
+    ptrMPI->ptrRec->pLnRb->setFinalVals(pLnRb);
+    cout<<"setting final vals for pDevsLnR"<<endl;
+    for (int p=1;p<=ptrMPI->ptrRec->pDevsLnR->getSize();p++) (*ptrMPI->ptrRec->pDevsLnR)[p]->setFinalVals(pDevsLnR(p));
      
     //natural mortality parameters
-    ptrMPI->ptrNM->pLnM->setInitVals(pLnM);
-    ptrMPI->ptrNM->pLnDMT->setInitVals(pLnDMT);
-    ptrMPI->ptrNM->pLnDMX->setInitVals(pLnDMX);
-    ptrMPI->ptrNM->pLnDMM->setInitVals(pLnDMM);
-    ptrMPI->ptrNM->pLnDMXM->setInitVals(pLnDMXM);
+    ptrMPI->ptrNM->pLnM->setFinalVals(pLnM);
+    ptrMPI->ptrNM->pLnDMT->setFinalVals(pLnDMT);
+    ptrMPI->ptrNM->pLnDMX->setFinalVals(pLnDMX);
+    ptrMPI->ptrNM->pLnDMM->setFinalVals(pLnDMM);
+    ptrMPI->ptrNM->pLnDMXM->setFinalVals(pLnDMXM);
     
     //growth parameters
-    ptrMPI->ptrGr->pLnGrA->setInitVals(pLnGrA);
-    ptrMPI->ptrGr->pLnGrB->setInitVals(pLnGrB);
-    ptrMPI->ptrGr->pLnGrBeta->setInitVals(pLnGrBeta);
+    ptrMPI->ptrGr->pLnGrA->setFinalVals(pLnGrA);
+    ptrMPI->ptrGr->pLnGrB->setFinalVals(pLnGrB);
+    ptrMPI->ptrGr->pLnGrBeta->setFinalVals(pLnGrBeta);
     
     //maturity parameters
-    cout<<"setting intVals for pLgtPrMat"<<endl;
-    for (int p=1;p<=npLgtPrMat;p++) (*ptrMPI->ptrMat->pLgtPrMat)[p]->setInitVals(pLgtPrMat(p));
+    cout<<"setting final vals for pLgtPrMat"<<endl;
+    for (int p=1;p<=npLgtPrMat;p++) (*ptrMPI->ptrMat->pLgtPrMat)[p]->setFinalVals(pLgtPrMat(p));
     
     //selectivity parameters
-    ptrMPI->ptrSel->pS1->setInitVals(pS1);
-    ptrMPI->ptrSel->pS2->setInitVals(pS2);
-    ptrMPI->ptrSel->pS3->setInitVals(pS3);
-    ptrMPI->ptrSel->pS4->setInitVals(pS4);
-    ptrMPI->ptrSel->pS5->setInitVals(pS5);
-    ptrMPI->ptrSel->pS6->setInitVals(pS6);
-    cout<<"setting intVals for pDevsS1"<<endl;
-    for (int p=1;p<=ptrMPI->ptrSel->pDevsS1->getSize();p++) (*ptrMPI->ptrSel->pDevsS1)[p]->setInitVals(pDevsS1(p));
-    cout<<"setting intVals for pDevsS2"<<endl;
-    for (int p=1;p<=ptrMPI->ptrSel->pDevsS2->getSize();p++) (*ptrMPI->ptrSel->pDevsS2)[p]->setInitVals(pDevsS2(p));
-    cout<<"setting intVals for pDevsS3"<<endl;
-    for (int p=1;p<=ptrMPI->ptrSel->pDevsS3->getSize();p++) (*ptrMPI->ptrSel->pDevsS3)[p]->setInitVals(pDevsS3(p));
-    cout<<"setting intVals for pDevsS4"<<endl;
-    for (int p=1;p<=ptrMPI->ptrSel->pDevsS4->getSize();p++) (*ptrMPI->ptrSel->pDevsS4)[p]->setInitVals(pDevsS4(p));
-    cout<<"setting intVals for pDevsS5"<<endl;
-    for (int p=1;p<=ptrMPI->ptrSel->pDevsS5->getSize();p++) (*ptrMPI->ptrSel->pDevsS5)[p]->setInitVals(pDevsS5(p));
-    cout<<"setting intVals for pDevsS6"<<endl;
-    for (int p=1;p<=ptrMPI->ptrSel->pDevsS6->getSize();p++) (*ptrMPI->ptrSel->pDevsS6)[p]->setInitVals(pDevsS6(p));
+    ptrMPI->ptrSel->pS1->setFinalVals(pS1);
+    ptrMPI->ptrSel->pS2->setFinalVals(pS2);
+    ptrMPI->ptrSel->pS3->setFinalVals(pS3);
+    ptrMPI->ptrSel->pS4->setFinalVals(pS4);
+    ptrMPI->ptrSel->pS5->setFinalVals(pS5);
+    ptrMPI->ptrSel->pS6->setFinalVals(pS6);
+    cout<<"setting final vals for pDevsS1"<<endl;
+    for (int p=1;p<=ptrMPI->ptrSel->pDevsS1->getSize();p++) (*ptrMPI->ptrSel->pDevsS1)[p]->setFinalVals(pDevsS1(p));
+    cout<<"setting final vals for pDevsS2"<<endl;
+    for (int p=1;p<=ptrMPI->ptrSel->pDevsS2->getSize();p++) (*ptrMPI->ptrSel->pDevsS2)[p]->setFinalVals(pDevsS2(p));
+    cout<<"setting final vals for pDevsS3"<<endl;
+    for (int p=1;p<=ptrMPI->ptrSel->pDevsS3->getSize();p++) (*ptrMPI->ptrSel->pDevsS3)[p]->setFinalVals(pDevsS3(p));
+    cout<<"setting final vals for pDevsS4"<<endl;
+    for (int p=1;p<=ptrMPI->ptrSel->pDevsS4->getSize();p++) (*ptrMPI->ptrSel->pDevsS4)[p]->setFinalVals(pDevsS4(p));
+    cout<<"setting final vals for pDevsS5"<<endl;
+    for (int p=1;p<=ptrMPI->ptrSel->pDevsS5->getSize();p++) (*ptrMPI->ptrSel->pDevsS5)[p]->setFinalVals(pDevsS5(p));
+    cout<<"setting final vals for pDevsS6"<<endl;
+    for (int p=1;p<=ptrMPI->ptrSel->pDevsS6->getSize();p++) (*ptrMPI->ptrSel->pDevsS6)[p]->setFinalVals(pDevsS6(p));
      
     //fully-selected fishing capture rate parameters
-    ptrMPI->ptrFsh->pHM->setInitVals(pHM);
-    ptrMPI->ptrFsh->pLnC->setInitVals(pLnC);
-    ptrMPI->ptrFsh->pLnDCT->setInitVals(pLnDCT);
-    ptrMPI->ptrFsh->pLnDCX->setInitVals(pLnDCX);
-    ptrMPI->ptrFsh->pLnDCM->setInitVals(pLnDCM);
-    ptrMPI->ptrFsh->pLnDCXM->setInitVals(pLnDCXM);
-    cout<<"setting intVals for pDevsLnC"<<endl;
-    for (int p=1;p<=ptrMPI->ptrFsh->pDevsLnC->getSize();p++) (*ptrMPI->ptrFsh->pDevsLnC)[p]->setInitVals(pDevsLnC(p));
+    ptrMPI->ptrFsh->pHM->setFinalVals(pHM);
+    ptrMPI->ptrFsh->pLnC->setFinalVals(pLnC);
+    ptrMPI->ptrFsh->pLnDCT->setFinalVals(pLnDCT);
+    ptrMPI->ptrFsh->pLnDCX->setFinalVals(pLnDCX);
+    ptrMPI->ptrFsh->pLnDCM->setFinalVals(pLnDCM);
+    ptrMPI->ptrFsh->pLnDCXM->setFinalVals(pLnDCXM);
+    cout<<"setting final vals for pDevsLnC"<<endl;
+    for (int p=1;p<=ptrMPI->ptrFsh->pDevsLnC->getSize();p++) (*ptrMPI->ptrFsh->pDevsLnC)[p]->setFinalVals(pDevsLnC(p));
     
     //survey catchability parameters
-    ptrMPI->ptrSrv->pLnQ->setInitVals(pLnQ);
-    ptrMPI->ptrSrv->pLnDQT->setInitVals(pLnDQT);
-    ptrMPI->ptrSrv->pLnDQX->setInitVals(pLnDQX);
-    ptrMPI->ptrSrv->pLnDQM->setInitVals(pLnDQM);
-    ptrMPI->ptrSrv->pLnDQXM->setInitVals(pLnDQXM);
+    ptrMPI->ptrSrv->pLnQ->setFinalVals(pLnQ);
+    ptrMPI->ptrSrv->pLnDQT->setFinalVals(pLnDQT);
+    ptrMPI->ptrSrv->pLnDQX->setFinalVals(pLnDQX);
+    ptrMPI->ptrSrv->pLnDQM->setFinalVals(pLnDQM);
+    ptrMPI->ptrSrv->pLnDQXM->setFinalVals(pLnDQXM);
     
     if (debug) cout<<"Finished updateMPI(...)"<<endl;
 

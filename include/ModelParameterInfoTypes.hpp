@@ -36,6 +36,7 @@
             static int debug;
         protected:
             double initVal;     //initial value on "natural" scale
+            double finlVal;     //final value (for output to R)
             int phase;          //phase in which to turn on parameter
             bool resample;      //flag to do resampling of initial values
             double priorWgt;    //weight to assign to prior probability
@@ -60,6 +61,7 @@
             virtual double drawInitVal(random_number_generator& rng, double vif);//draw initial value by resampling prior
             virtual void   setInitVal(double x){initVal=x;}          
             virtual void   setInitVal(param_init_number& x){initVal=value(x);}
+            virtual void   setFinalVal(param_init_number& x){finlVal=value(x);}
             virtual void   read(cifstream & is);
             virtual void   write(std::ostream & os);
             virtual void   writeToR(std::ostream & os);
@@ -97,6 +99,7 @@
             double drawInitVal(random_number_generator& rng,double vif);//draw initial value based on jitter or resampling prior
             void   setInitVal(double x);           
             void   setInitVal(param_init_bounded_number& x){initVal=value(x);}
+            void   setFinalVal(param_init_bounded_number& x){finlVal=value(x);}
             void   read(cifstream & is);
             void   write(std::ostream & os);
             void   writeToR(std::ostream& os);
@@ -121,6 +124,7 @@
             IndexBlock* ptrIB;//pointer to index block
             int readVals;    //flag to read initial values
             dvector initVals;//initial values
+            dvector finlVals;//final values (for output to R)
         public:
             adstring      name;
             ModelPDFInfo* pMPI;
@@ -163,7 +167,7 @@
             dvector getInitVals(){return initVals;}
             /**
              * Sets initial values to input dvector element-by-element..
-             * @param x
+             * @param x - vector of initial values
              */
             virtual void setInitVals(dvector& x){initVals=x;}     
             /**
@@ -172,11 +176,22 @@
              */
             virtual void setInitVals(param_init_vector & x){initVals=value(x);}     
             /**
+             * Sets final values for output to R.
+             * @param x - vector of final values
+             */
+            virtual void setFinalVals(param_init_vector & x){finlVals.allocate(x.indexmin(),x.indexmax()); finlVals=value(x);}     
+            /**
              * Calculates vector of log prior values based on input vector.
              * @return 
              */
             dvar_vector calcLogPrior(dvar_vector& x);
-            
+            /**
+             * Draw inital values based on jittering or resampling the prior.
+             * 
+             * @param rng - random number generator object
+             * @param vif - variance inflation factor
+             * @return 
+             */
             virtual dvector drawInitVals(random_number_generator& rng, double vif);//draw initial values by resampling prior
             /**
              * Reads initial values from filestream.
@@ -211,6 +226,7 @@
             IndexBlock* ptrIB;//pointer to index block
             int readVals;     //flag to read initial values
             dvector initVals; //initial values
+            dvector finlVals; //final values (for output to R)
         public:
             BoundedVectorInfo():BoundedNumberInfo(){}
             BoundedVectorInfo(adstring& name):BoundedNumberInfo(name){}
@@ -269,6 +285,11 @@
              * @param x
              */
             virtual void setInitVals(param_init_bounded_vector & x){initVals=value(x);} 
+            /**
+             * Sets final values for output to R.
+             * @param x
+             */
+            virtual void setFinalVals(param_init_bounded_vector & x){finlVals.allocate(x.indexmin(),x.indexmax()); finlVals=value(x);} 
             /**
              * Reads initial values from an input stream.
              * @param is
@@ -330,6 +351,14 @@
              */
             virtual void setInitVals(param_init_bounded_vector & x);     
             /**
+             * Sets final values 1:(N-1) to those of the vector x, but
+             * sets the value for element N to -sum(initVals(1,N-1)) so
+             * the sum over all elements is 0. x may have size N-1.
+             * 
+             * @param x - param_init_bounded_vector of final values
+             */
+            virtual void setFinalVals(param_init_bounded_vector & x);     
+            /**
              * Reads initial values 1:N from a file stream and sets the 
              * values for 1:(N-1) to those of the read-in vector x, but sets
              * the value for element N to -sum(initVals(1,N-1)) so the
@@ -341,6 +370,7 @@
             
             virtual dvector drawInitVals(random_number_generator& rng, double vif);//draw initial values by resampling prior
             virtual void    read(cifstream & is);
+            virtual void    writeToR(std::ostream & os);
         protected:
             void calcDevs(void);
     };
@@ -373,10 +403,10 @@
             
             virtual dvector drawInitVals(random_number_generator& rng, double vif);
             virtual void setInitVals(param_init_number_vector& x);
+            virtual void setFinalVals(param_init_number_vector& x);
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
-//            virtual void writeToR(std::ostream& os, dvar_vector& pv, int indent=0);
             friend cifstream& operator >>(cifstream & is, NumberVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, NumberVectorInfo & obj){obj.write(os);return os;}
     };
@@ -400,6 +430,7 @@
             
             virtual dvector drawInitVals(random_number_generator& rng, double vif);
             virtual void setInitVals(param_init_bounded_number_vector& x);
+            virtual void setFinalVals(param_init_bounded_number_vector& x);
             void read(cifstream & is);
             void write(std::ostream & os);
             void writeToR(std::ostream& os, adstring nm, int indent=0);
@@ -430,37 +461,9 @@
             ivector getMaxIndices(void);
             ivector getPhases(void);
             dvector getPriorWgts(void);
-//            /**
-//             * Return ivector of model indices corresponding to integer indices 1:N.
-//             * 
-//             * @return - ivector iv(1:N) such that iv(i) is the model index value 
-//             *           corresponding to the ith element.
-//             */
-//            ivector getFwdIndices(int i){return ppVIs[i-1]->getFwdIndices();}
-//            /**
-//             * Return ivector of integer indices 1:N corresponding to model indices.
-//             * 
-//             * @return - ivector iv(modMin:modMax) such that iv(i) is the index into
-//             *           the block corresponding to model index value i. iv(i) is 0
-//             *           for model index values i that do not correspond to a block
-//             *           element.
-//             */
-//            ivector getRevIndices(int i){return ppVIs[i-1]->getRevIndices();}
-//            dvector getInitVals(int i);//return initial vals for ith vector
-//            /**
-//             * Calculates (-ln-scale) priors for each element of the input vector
-//             * based on the prior characteristics for the ith BoundedVector.
-//             * @param i
-//             * @param pv
-//             * @return 
-//             */
-//            dvar_vector calcLogPriors(int i, dvar_vector & pv);       
-//            
-//            virtual dvector drawInitVals(int i, random_number_generator& rng, double vif);
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
-//            virtual void writeToR(std::ostream& os, dvar_vector& pv, int indent=0);
             friend cifstream& operator >>(cifstream & is, VectorVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, VectorVectorInfo & obj){obj.write(os);return os;}
     };
@@ -490,41 +493,11 @@
             ivector getMaxIndices(void);
             ivector getPhases(void);
             dvector getPriorWgts(void);
-//            /**
-//             * Calculates (-ln-scale) priors for each element of the input vector
-//             * based on the prior characteristics for the ith BoundedVector.
-//             * @param i
-//             * @param pv
-//             * @return 
-//             */
-//            dvar_vector calcLogPriors(int i, dvar_vector & pv);       
-            
             dvector getLowerBounds(void);
             dvector getUpperBounds(void);
-            
-//            /**
-//             * Return ivector of model indices corresponding to integer indices 1:N.
-//             * 
-//             * @return - ivector iv(1:N) such that iv(i) is the model index value 
-//             *           corresponding to the ith element.
-//             */
-//            ivector getFwdIndices(int i){return ppVIs[i-1]->getFwdIndices();}
-//            /**
-//             * Return ivector of integer indices 1:N corresponding to model indices.
-//             * 
-//             * @return - ivector iv(modMin:modMax) such that iv(i) is the index into
-//             *           the block corresponding to model index value i. iv(i) is 0
-//             *           for model index values i that do not correspond to a block
-//             *           element.
-//             */
-//            ivector getRevIndices(int i){return ppVIs[i-1]->getRevIndices();}
-//            dvector getInitVals(int i);//get initial values from ith vector
-//            virtual dvector drawInitVals(int i, random_number_generator& rng, double vif);
-            
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
-//            virtual void writeToR(std::ostream& os, dvar_vector& pv, int indent=0);
             friend cifstream& operator >>(cifstream & is, BoundedVectorVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, BoundedVectorVectorInfo & obj){obj.write(os);return os;}
     };
@@ -554,41 +527,11 @@
             ivector getMaxIndices(void);
             ivector getPhases(void);
             dvector getPriorWgts(void);
-//            /**
-//             * Calculates (-ln-scale) priors for each element of the input vector
-//             * based on the prior characteristics for the ith DevsVector.
-//             * @param i
-//             * @param pv
-//             * @return 
-//             */
-//            dvar_vector calcLogPriors(int i, dvar_vector & pv);       
-            
             dvector getLowerBounds(void);
             dvector getUpperBounds(void);
-            
-//            /**
-//             * Return ivector of model indices corresponding to integer indices 1:N.
-//             * 
-//             * @return - ivector iv(1:N) such that iv(i) is the model index value 
-//             *           corresponding to the ith element.
-//             */
-//            ivector getFwdIndices(int i){return ppVIs[i-1]->getFwdIndices();}
-//            /**
-//             * Return ivector of integer indices 1:N corresponding to model indices.
-//             * 
-//             * @return - ivector iv(modMin:modMax) such that iv(i) is the index into
-//             *           the block corresponding to model index value i. iv(i) is 0
-//             *           for model index values i that do not correspond to a block
-//             *           element.
-//             */
-//            ivector getRevIndices(int i){return ppVIs[i-1]->getRevIndices();}
-//            dvector getInitVals(int i);//get initial values from ith vector
-//            virtual dvector drawInitVals(int i, random_number_generator& rng, double vif);
-            
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
-//            virtual void writeToR(std::ostream& os, dvar_vector& pv, int indent=0);
             friend cifstream& operator >>(cifstream & is, DevsVectorVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, DevsVectorVectorInfo & obj){obj.write(os);return os;}
     };

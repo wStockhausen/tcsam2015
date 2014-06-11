@@ -151,6 +151,7 @@ void NumberInfo::writeToR(ostream& os){
 ***************************************************************/
 void NumberInfo::writeToR1(ostream& os){
     os<<"initVal="<<initVal<<cc;
+    os<<"finalVal="<<finlVal<<cc;
     os<<"phase="<<phase<<cc;
     os<<"resample="<<qt<<wts::getOnOffType(resample)<<qt<<cc;
     os<<"priorWgt="<<priorWgt<<cc;
@@ -280,12 +281,17 @@ dvector VectorInfo::drawInitVals(random_number_generator& rng, double vif){
 dvar_vector VectorInfo::calcLogPrior(dvar_vector & pv){
     RETURN_ARRAYS_INCREMENT();
     if (debug) cout<<"starting VectorInfo::calcLogPrior(pv) for "<<name<<endl;
-    dvar_vector lps(pv.indexmin(),pv.indexmax());
-    lps.initialize();
-    dvariable x;
-    for (int i=pv.indexmin();i<=pv.indexmax();i++) {
-        x = pv(i);//have to copy pv(i) )
-        lps(i) = NumberInfo::calcLogPrior(x);
+    dvar_vector lps;
+    if (pMPI->canCalcLogPDF(pv)) {
+        lps = pMPI->calcLogPDF(pv,priorParams,priorConsts);
+    } else {
+        lps.allocate(pv.indexmin(),pv.indexmax());
+        lps.initialize();
+        dvariable x;
+        for (int i=pv.indexmin();i<=pv.indexmax();i++) {
+            x = pv(i);//have to copy pv(i) )
+            lps(i) = NumberInfo::calcLogPrior(x);
+        }
     }
     if (debug) {
         cout<<"logPrior: "<<lps<<endl;
@@ -342,9 +348,15 @@ void VectorInfo::write(ostream & os){
 *   writeToR                                                    *
 ***************************************************************/
 void VectorInfo::writeToR(ostream& os){
+    if (debug) cout<<"VectorInfo::writeToR for "<<this->name<<endl;
+    if (!finlVals.allocated()) {
+        finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
+        finlVals = initVals;
+    }
     os<<"list(";
-    NumberInfo::writeToR1(os); os<<cc;
-    wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
+    NumberInfo::writeToR1(os); os<<cc<<endl;
+    os<<"initVals=";  wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector())); os<<cc<<endl;
+    os<<"finalVals="; wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
     os<<")";
 }
 ////////////////////////////VectorInfo/////////////////////////////////
@@ -408,12 +420,17 @@ dvector BoundedVectorInfo::drawInitVals(random_number_generator& rng, double vif
 dvar_vector BoundedVectorInfo::calcLogPrior(dvar_vector & pv){
     RETURN_ARRAYS_INCREMENT();
     if (debug) cout<<"starting BoundedVectorInfo::calcLogPrior(pv) for "<<name<<endl;
-    dvar_vector lps(pv.indexmin(),pv.indexmax());
-    lps.initialize();
-    dvariable x;
-    for (int i=pv.indexmin();i<=pv.indexmax();i++) {
-        x = pv(i);//have to copy pv(i) )
-        lps(i) = BoundedNumberInfo::calcLogPrior(x);
+    dvar_vector lps;
+    if (pMPI->canCalcLogPDF(pv)) {
+        lps = pMPI->calcLogPDF(pv,priorParams,priorConsts);
+    } else {
+        lps.allocate(pv.indexmin(),pv.indexmax());
+        lps.initialize();
+        dvariable x;
+        for (int i=pv.indexmin();i<=pv.indexmax();i++) {
+            x = pv(i);//have to copy pv(i) )
+            lps(i) = BoundedNumberInfo::calcLogPrior(x);
+        }
     }
     if (debug) {
         cout<<"logPrior: "<<lps<<endl;
@@ -470,9 +487,15 @@ void BoundedVectorInfo::write(ostream & os){
 *   writeToR                                                    *
 ***************************************************************/
 void BoundedVectorInfo::writeToR(ostream& os){
+    if (debug) cout<<"BoundedVectorInfo::writeToR for "<<this->name<<endl;
+    if (!finlVals.allocated()) {
+        finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
+        finlVals = initVals;
+    }
     os<<"list(";
-    BoundedNumberInfo::writeToR1(os); os<<cc;
-    wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
+    BoundedNumberInfo::writeToR1(os); os<<cc<<endl;
+    os<<"initVals=";  wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector())); os<<cc<<endl;
+    os<<"finalVals="; wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
     os<<")";
 }
 
@@ -517,6 +540,25 @@ void DevsVectorInfo::setInitVals(param_init_bounded_vector & x){
     if (debug) cout<<"finished DevsVectorInfo::setInitVals(param_init_bounded_vector & x) for "<<name<<endl;
 }     
 
+/**
+ * Sets final values 1:(N-1) to those of the vector x, but
+ * sets the value for element N to -sum(initVals(1,N-1)) so
+ * the sum over all elements is 0. x may have size N-1.
+ * 
+ * @param x - param_init_bounded_vector of final values
+ */
+void DevsVectorInfo::setFinalVals(param_init_bounded_vector & x){
+    if (debug) {
+        cout<<"starting DevsVectorInfo::setFinalVals(param_init_bounded_vector & x) for "<<name<<endl;
+        cout<<"input x  index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
+        cout<<"initVals index limits: "<<1<<cc<<N<<endl;
+    }
+    if (!finlVals.allocated()) finlVals.allocate(initVals.indexmin(),initVals.indexmax());
+    finlVals(1,N-1) = value(x);
+    finlVals(N) = -sum(finlVals(1,N-1));
+    if (debug) cout<<"finished DevsVectorInfo::setFinalVals(param_init_bounded_vector & x) for "<<name<<endl;
+}     
+
 /***************************************************************
 *   read initial values. \n
 ***************************************************************/
@@ -559,6 +601,22 @@ void DevsVectorInfo::read(cifstream & is){
         cin>>debug;
         if (debug<0) exit(-1);
     }
+}
+
+/***************************************************************
+*   writeToR                                                    *
+***************************************************************/
+void DevsVectorInfo::writeToR(ostream& os){
+    if (debug) cout<<"DevsVectorInfo::writeToR for "<<this->name<<endl;
+    if (!finlVals.allocated()) {
+        finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
+        finlVals = initVals;
+    }
+    os<<"list(";
+    NumberInfo::writeToR1(os); os<<cc<<endl;
+    os<<"initVals=";  wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector())); os<<cc<<endl;
+    os<<"finalVals="; wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
+    os<<")";
 }
 
 /*------------------------------------------------------------------------------
@@ -618,6 +676,15 @@ void NumberVectorInfo::setInitVals(param_init_number_vector& x){
     if (debug) cout<<"starting NumberVectorInfo::setInitVals(x)"<<this<<endl;
     for (int i=1;i<=nNIs;i++) ppNIs[i-1]->setInitVal(x(i));
     if (debug) cout<<"finished NumberVectorInfo::setInitVals(x)"<<this<<endl;
+}
+
+/***************************************************************
+*   Set final parameter values.                              *
+***************************************************************/
+void NumberVectorInfo::setFinalVals(param_init_number_vector& x){
+    if (debug) cout<<"starting NumberVectorInfo::setFinalVals(x)"<<this<<endl;
+    for (int i=1;i<=nNIs;i++) ppNIs[i-1]->setFinalVal(x(i));
+    if (debug) cout<<"finished NumberVectorInfo::setFinalVals(x)"<<this<<endl;
 }
 
 /***************************************************************
@@ -740,6 +807,15 @@ void BoundedNumberVectorInfo::setInitVals(param_init_bounded_number_vector& x){
     if (debug) cout<<"starting BoundedNumberVectorInfo::setInitVals(x)"<<this<<endl;
     for (int i=1;i<=nNIs;i++) (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->setInitVal(x(i));
     if (debug) cout<<"finished BoundedNumberVectorInfo::setInitVals(x)"<<this<<endl;
+}
+
+/***************************************************************
+*   Set final parameter values.                              *
+***************************************************************/
+void BoundedNumberVectorInfo::setFinalVals(param_init_bounded_number_vector& x){
+    if (debug) cout<<"starting BoundedNumberVectorInfo::setFinalVals(x)"<<this<<endl;
+    for (int i=1;i<=nNIs;i++) (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->setFinalVal(x(i));
+    if (debug) cout<<"finished BoundedNumberVectorInfo::setFinalVals(x)"<<this<<endl;
 }
 
 /***************************************************************
@@ -873,70 +949,6 @@ dvector VectorVectorInfo::getPriorWgts(){
     if (debug) cout<<"finished VectorVectorInfo::getPriorWgts() for "<<name<<endl;
     return wts;
 }
-
-///***************************************************************
-//*   Get initial parameter values.                              *
-//***************************************************************/
-//dvector VectorVectorInfo::getInitVals(int i){
-//    if (debug) cout<<"starting VectorVectorInfo::getInitVals(int i) for "<<name<<endl;
-//    dvector initVals;
-//    if ((i>0)&&(i<=nVIs)) {initVals = ppVIs[i-1]->getInitVals();} else 
-//    {
-//        cout<<"Error using BoundedVectorVectorInfo::getInitVals(int i) for "<<name<<endl;
-//        cout<<"Max valid index = "<<nVIs<<" but requested index "<<i<<endl;
-//        cout<<"Aborting..."<<endl;
-//        exit(-1);
-//    }
-//    if (debug) {
-//        cout<<"i = "<<i<<cc<<" nVIs = "<<nVIs<<endl;
-//        cout<<"idxs = "<<initVals.indexmin()<<":"<<initVals.indexmax()<<endl;
-//        cout<<"initVals = "<<initVals<<endl;
-//        cout<<"finished VectorVectorInfo::getInitVals() for "<<name<<endl;
-//        cout<<"Enter 1 to continue >>";
-//        cin>>debug;
-//        if (debug<0) exit(-1);
-//    }
-//    return initVals;
-//}
-//
-///***************************************************************
-//*   Draw initial parameter values.                             *
-//***************************************************************/
-//dvector VectorVectorInfo::drawInitVals(int i, random_number_generator& rng, double vif){
-//    if (debug) cout<<"starting VectorVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
-//    dvector initVals;
-//    if ((i>0)&&(i<=nVIs)) {initVals = ppVIs[i-1]->drawInitVals(rng,vif);} else
-//    {
-//        cout<<"Error using VectorVectorInfo::drawInitVals(int i,...) for "<<name<<endl;
-//        cout<<"Max valid index = "<<nVIs<<" but requested index "<<i<<endl;
-//        cout<<"Aborting..."<<endl;
-//        exit(-1);
-//    }
-//        
-//    if (debug) cout<<"finished VectorVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
-//    return initVals;
-//}
-//
-///***************************************************************
-//*   Calculate log prior probability for all parameters.        *
-//***************************************************************/
-//dvar_vector VectorVectorInfo::calcLogPriors(int i,dvar_vector & pv){
-//    RETURN_ARRAYS_INCREMENT();
-//    if (debug) cout<<"starting VectorVectorInfo::calcLogPriors(i,pv) for "<<name<<endl;
-//    dvar_vector lps(pv.indexmin(),pv.indexmax());
-//    lps.initialize();
-//    if (ppVIs) lps = ppVIs[i-1]->calcLogPrior(pv);
-//    if (debug) {
-//        cout<<"i: "<<i<<tb<<"pv:  "<<pv<<endl;
-//        cout<<"logPriors: "<<lps<<endl;
-//        cout<<"finished VectorVectorInfo::calcLogPriors(i,pv) for "<<name<<endl;
-//        cout<<"Enter 1 to continue: ";
-//        cin>>debug;
-//        if (debug<0) exit(-1);
-//    }
-//    RETURN_ARRAYS_DECREMENT();
-//    return lps;
-//}
 
 /***************************************************************
 *   Read from stream.                                          *
@@ -1137,69 +1149,6 @@ dvector BoundedVectorVectorInfo::getPriorWgts(){
     if (debug) cout<<"finished BoundedVectorVectorInfo::getPriorWgts()"<<this<<endl;
     return wts;
 }
-
-///***************************************************************
-//*   Get initial parameter values.                              *
-//***************************************************************/
-//dvector BoundedVectorVectorInfo::getInitVals(int i){
-//    if (debug) cout<<"starting BoundedVectorVectorInfo::getInitVals() for "<<name<<endl;
-//    dvector initVals;
-//    if ((i>0)&&(i<=nVIs)) {initVals = ppVIs[i-1]->getInitVals();} else {
-//        cout<<"Error using BoundedVectorVectorInfo::getInitVals(int i) for "<<name<<endl;
-//        cout<<"Max valid index = "<<nVIs<<" but requested index "<<i<<endl;
-//        cout<<"Aborting..."<<endl;
-//        exit(-1);
-//    }
-//    if (debug) {
-//        cout<<"i = "<<i<<cc<<" nVIs = "<<nVIs<<endl;
-//        cout<<"idxs = "<<initVals.indexmin()<<":"<<initVals.indexmax()<<endl;
-//        cout<<"initVals = "<<initVals<<endl;
-//        cout<<"finished BoundedVectorVectorInfo::getInitVals() for "<<name<<endl;
-//        cout<<"Enter 1 to continue >>";
-//        cin>>debug;
-//        if (debug<0) exit(-1);
-//    }
-//    return initVals;
-//}
-//
-///***************************************************************
-//*   Draw initial parameter values.                             *
-//***************************************************************/
-////TODO: correct this (and VectorVectorInfo version)!
-//dvector BoundedVectorVectorInfo::drawInitVals(int i,random_number_generator& rng, double vif){
-//    if (debug) cout<<"starting BoundedVectorVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
-//    dvector initVals;
-//    if ((i>0)&&(i<=nVIs)) {initVals = ppVIs[i-1]->drawInitVals(rng,vif);} else
-//    {
-//        cout<<"Error using BoundedVectorVectorInfo::drawInitVals(int i,...) for "<<name<<endl;
-//        cout<<"Max valid index = "<<nVIs<<" but requested index "<<i<<endl;
-//        cout<<"Aborting..."<<endl;
-//        exit(-1);
-//    }
-//    if (debug) cout<<"finished BoundedVectorVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
-//    return initVals;
-//}
-//
-///***************************************************************
-//*   Calculate log prior probability for ith BoundedVector.        *
-//***************************************************************/
-//dvar_vector BoundedVectorVectorInfo::calcLogPriors(int i, dvar_vector & pv){
-//    RETURN_ARRAYS_INCREMENT();
-//    if (debug) cout<<"starting BoundedVectorVectorInfo::calcLogPriors(i,pv) for "<<name<<endl;
-//    dvar_vector lps(pv.indexmin(),pv.indexmax());
-//    lps.initialize();
-//    if (ppVIs) lps = ppVIs[i-1]->calcLogPrior(pv);
-//    if (debug) {
-//        cout<<"i: "<<i<<tb<<"pv:  "<<pv<<endl;
-//        cout<<"logPriors: "<<lps<<endl;
-//        cout<<"finished BoundedVectorVectorInfo::calcLogPriors(i,pv) for "<<name<<endl;
-//        cout<<"Enter 1 to continue: ";
-//        cin>>debug;
-//        if (debug<0) exit(-1);
-//    }
-//    RETURN_ARRAYS_DECREMENT();
-//    return lps;
-//}
 ////////////////////////////BoundedVectorVectorInfo/////////////////////////////////
 
 /*------------------------------------------------------------------------------
@@ -1344,67 +1293,4 @@ dvector DevsVectorVectorInfo::getPriorWgts(){
     if (debug) cout<<"finished DevsVectorVectorInfo::getPriorWgts()"<<this<<endl;
     return wts;
 }
-
-///***************************************************************
-//*   Get initial parameter values.                              *
-//***************************************************************/
-//dvector DevsVectorVectorInfo::getInitVals(int i){
-//    if (debug) cout<<"starting DevsVectorVectorInfo::getInitVals() for "<<name<<endl;
-//    dvector initVals;
-//    if ((i>0)&&(i<=nVIs)) {initVals = ppVIs[i-1]->getInitVals();} else {
-//        cout<<"Error using DevsVectorVectorInfo::getInitVals(int i) for "<<name<<endl;
-//        cout<<"Max valid index = "<<nVIs<<" but requested index "<<i<<endl;
-//        cout<<"Aborting..."<<endl;
-//        exit(-1);
-//    }
-//    if (debug) {
-//        cout<<"i = "<<i<<cc<<" nVIs = "<<nVIs<<endl;
-//        cout<<"idxs = "<<initVals.indexmin()<<":"<<initVals.indexmax()<<endl;
-//        cout<<"initVals = "<<initVals<<endl;
-//        cout<<"finished DevsVectorVectorInfo::getInitVals() for "<<name<<endl;
-//        cout<<"Enter 1 to continue >>";
-//        cin>>debug;
-//        if (debug<0) exit(-1);
-//    }
-//    return initVals;
-//}
-//
-///***************************************************************
-//*   Draw initial parameter values.                             *
-//***************************************************************/
-////TODO: correct this (and VectorVectorInfo version)!
-//dvector DevsVectorVectorInfo::drawInitVals(int i,random_number_generator& rng, double vif){
-//    if (debug) cout<<"starting DevsVectorVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
-//    dvector initVals;
-//    if ((i>0)&&(i<=nVIs)) {initVals = ppVIs[i-1]->drawInitVals(rng,vif);} else
-//    {
-//        cout<<"Error using DevsVectorVectorInfo::drawInitVals(int i,...) for "<<name<<endl;
-//        cout<<"Max valid index = "<<nVIs<<" but requested index "<<i<<endl;
-//        cout<<"Aborting..."<<endl;
-//        exit(-1);
-//    }
-//    if (debug) cout<<"finished DevsVectorVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
-//    return initVals;
-//}
-//
-///***************************************************************
-//*   Calculate log prior probability for all parameters.        *
-//***************************************************************/
-//dvar_vector DevsVectorVectorInfo::calcLogPriors(int i, dvar_vector & pv){
-//    RETURN_ARRAYS_INCREMENT();
-//    if (debug) cout<<"starting DevsVectorVectorInfo::calcLogPriors(i,pv) for "<<name<<endl;
-//    dvar_vector lps(pv.indexmin(),pv.indexmax());
-//    lps.initialize();
-//    if (ppVIs) lps = ppVIs[i-1]->calcLogPrior(pv);
-//    if (debug) {
-//        cout<<"i: "<<i<<tb<<"pv:  "<<pv<<endl;
-//        cout<<"logPriors: "<<lps<<endl;
-//        cout<<"finished DevsVectorVectorInfo::calcLogPriors(i,pv) for "<<name<<endl;
-//        cout<<"Enter 1 to continue: ";
-//        cin>>debug;
-//        if (debug<0) exit(-1);
-//    }
-//    RETURN_ARRAYS_DECREMENT();
-//    return lps;
-//}
 ////////////////////////////DevsVectorVectorInfo/////////////////////////////////

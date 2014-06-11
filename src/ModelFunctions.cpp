@@ -579,6 +579,13 @@ dvariable ModelPDFInfo::calcLogPDF(prevariable& val,dvar_vector params,dvector& 
     return res;
 }
 
+dvar_vector ModelPDFInfo::calcLogPDF(dvar_vector& vals,dvar_vector params,dvector& consts){
+    RETURN_ARRAYS_INCREMENT();
+    dvar_vector res = (*vpPDF)(vals,params,consts);
+    RETURN_ARRAYS_DECREMENT();
+    return res;
+}
+
 /***************************************************************
 *   get a sample from the pdf(x)                               *
 ***************************************************************/

@@ -18,9 +18,10 @@ pLnR #ln-scale mean recruitment parameter (2013 ok)
 1      0      10     OFF      4.31        1       OFF           1        normal      6 3   #spin-up period  (0608)
 2      0      10     OFF      4.31        1       OFF           1        normal      6 3   #model period    (0608)
 pLnRCV #ln-scale parameter for cv of recruitment
-1  #number of parameters
+2  #number of parameters
 #id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
-1     -2.0   2.0    OFF   -0.43275213    -1       OFF           1      none                      #full model period (ok 2013; init val equiv. to var=0.5)
+1     -2.0   2.0    OFF   -0.43275213    -1       OFF           1      none                      #data-informed model period (init val equiv. to var=0.5)
+2     -2.0   5.0    OFF    2.0           -1       OFF           1      none                      #model spin-up period
 pLgtRX #logit-scale parameter for male sex ratio
 1  #number of parameters
 #id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
@@ -36,7 +37,7 @@ pLnRb #ln-scale gamma distribution scale paramter for pr(size-at-recruitment)
 pDevsLnR #annual ln-scale recruitment deviations
 2    #number of parameter vectors
 #id  idx.type  block      read?   lower   upper  jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
-1     YEAR   [-1:1974]    FALSE   -10      10     OFF      0         2         OFF           1        none   #spin-up period (ok 2013)
+1     YEAR   [-1:1974]    FALSE   -10      10     OFF      0         2         OFF           1        1stdiff_normal 0 1   #spin-up period (ok 2013)
 2     YEAR   [1975:-1]    FALSE   -10      10     OFF      0         2         OFF           1        none   #model period   (ok 2013)
 #initial values vectors go here
 #-------------------------------
