@@ -238,8 +238,7 @@ void BoundedNumberInfo::write(ostream & os){
 ***************************************************************/
 void BoundedNumberInfo::writeToR(ostream& os){
     os<<"list(";
-    writeToR1(os); os<<cc;
-    NumberInfo::writeToR1(os);
+    writeToR1(os);
     os<<")";
 }
 
@@ -249,7 +248,8 @@ void BoundedNumberInfo::writeToR(ostream& os){
 void BoundedNumberInfo::writeToR1(ostream& os){
     os<<"lower="<<lower<<cc;
     os<<"upper="<<upper<<cc;
-    os<<"jitter="<<qt<<wts::getOnOffType(jitter)<<qt;
+    os<<"jitter="<<qt<<wts::getOnOffType(jitter)<<qt<<cc;
+    NumberInfo::writeToR1(os);
 }
 ////////////////////////////BoundedNumberInfo/////////////////////////////////
 
@@ -613,7 +613,7 @@ void DevsVectorInfo::writeToR(ostream& os){
         finlVals = initVals;
     }
     os<<"list(";
-    NumberInfo::writeToR1(os); os<<cc<<endl;
+    BoundedNumberInfo::writeToR1(os); os<<cc<<endl;
     os<<"initVals=";  wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector())); os<<cc<<endl;
     os<<"finalVals="; wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
     os<<")";
