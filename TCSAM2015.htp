@@ -341,12 +341,20 @@ private:
   param_vector fPenDevsS6;
   param_vector fPenDevsLnC;
   param_number nllRecDevs;
+  param_stddev_vector sdrLnR_y;
+  param_stddev_matrix sdrSpB_yx;
 public:
   virtual void userfunction(void);
   virtual void report(void);
   virtual void final_calcs(void);
   model_parameters(int sz,int argc, char * argv[]);
   virtual void initializationfunction(void);
+  void writeMCMCHeader(void);
+ void writeMCMCtoR(ostream& mcmc,NumberVectorInfo* ptr);
+ void writeMCMCtoR(ostream& mcmc,BoundedNumberVectorInfo* ptr);
+ void writeMCMCtoR(ostream& mcmc,BoundedVectorVectorInfo* ptr);
+ void writeMCMCtoR(ostream& mcmc,DevsVectorVectorInfo* ptr);
+ void writeMCMCtoR(ofstream& mcmc);
  void createSimData(int debug, ostream& cout);
  void writeSimData(ostream& os, int debug, ostream& cout);
  void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout);

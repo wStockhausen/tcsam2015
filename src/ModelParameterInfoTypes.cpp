@@ -359,6 +359,19 @@ void VectorInfo::writeToR(ostream& os){
     os<<"finalVals="; wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
     os<<")";
 }
+
+/**
+ * Writes final values to an output stream as an R vector
+ * @param os - the output stream.
+ */
+void VectorInfo::writeFinalValsToR(ostream& os){
+    if (debug) cout<<"VectorInfo::writeFinalValsToR for "<<this->name<<endl;
+    if (!finlVals.allocated()) {
+        finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
+        finlVals = initVals;
+    }
+    wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
+}
 ////////////////////////////VectorInfo/////////////////////////////////
 
 /*------------------------------------------------------------------------------
@@ -499,6 +512,19 @@ void BoundedVectorInfo::writeToR(ostream& os){
     os<<")";
 }
 
+/**
+ * Writes final values to an output stream as an R vector.
+ * @param os - the output stream.
+ */
+void BoundedVectorInfo::writeFinalValsToR(ostream& os){
+    if (debug) cout<<"BoundedVectorInfo::writeFinalValsToR for "<<this->name<<endl;
+    if (!finlVals.allocated()) {
+        finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
+        finlVals = initVals;
+    }
+    wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
+}
+
 ////////////////////////////BoundedVectorInfo/////////////////////////////////
 
 /*------------------------------------------------------------------------------
@@ -617,6 +643,19 @@ void DevsVectorInfo::writeToR(ostream& os){
     os<<"initVals=";  wts::writeToR(os,initVals,wts::to_qcsv(ptrIB->getFwdIndexVector())); os<<cc<<endl;
     os<<"finalVals="; wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
     os<<")";
+}
+
+/**
+ * Writes final values to an output stream as an R vector.
+ * @param os - the output stream.
+ */
+void DevsVectorInfo::writeFinalValsToR(ostream& os){
+    if (debug) cout<<"DevsVectorInfo::writeFinalValsToR for "<<this->name<<endl;
+    if (!finlVals.allocated()) {
+        finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
+        finlVals = initVals;
+    }
+    wts::writeToR(os,finlVals,wts::to_qcsv(ptrIB->getFwdIndexVector()));
 }
 
 /*------------------------------------------------------------------------------
@@ -769,6 +808,19 @@ void NumberVectorInfo::writeToR(ostream& os, adstring nm, int indent){
         int p=nNIs;               os<<tb<<"'"<<p<<"'="; ppNIs[p-1]->writeToR(os); os<<")"<<endl;
     } else {
         os<<nm<<"=NULL";
+    }
+}
+
+/***************************************************************
+*   Write only final values to stream as an R vector.          *
+***************************************************************/
+void NumberVectorInfo::writeFinalValsToR(ostream& os){
+    if (nNIs){
+        dvector vals(1,nNIs);
+        for (int p=1;p<nNIs;p++) vals(p) = ppNIs[p-1]->getFinalVal();
+        wts::writeToR(os,vals);
+    } else {
+        os<<"NULL";
     }
 }
 ////////////////////////////NumberVectorInfo/////////////////////////////////
@@ -1005,6 +1057,21 @@ void VectorVectorInfo::writeToR(ostream& os, adstring nm, int indent){
         os<<nm<<"=NULL";
     }
 }
+
+/**
+ * Writes final values to an output stream as an R list of vector.
+ * 
+ * @param os - the output stream
+ */
+void VectorVectorInfo::writeFinalValsToR(ostream& os){
+    if (nVIs){
+        os<<"list("<<endl;
+        for (int p=1;p<nVIs;p++) {os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeFinalValsToR(os); os<<","<<endl;}
+        int p=nVIs;               os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeFinalValsToR(os); os<<")";
+    } else {
+        os<<"NULL";
+    }
+}
 ////////////////////////////VectorVectorInfo/////////////////////////////////
 
 /*------------------------------------------------------------------------------
@@ -1088,6 +1155,21 @@ void BoundedVectorVectorInfo::writeToR(ostream& os, adstring nm, int indent){
         int p=nVIs;               os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeToR(os); os<<")"<<endl;
     } else {
         os<<nm<<"=NULL";
+    }
+}
+
+/**
+ * Writes final values to an output stream as an R list of vectors.
+ * 
+ * @param os - the output stream
+ */
+void BoundedVectorVectorInfo::writeFinalValsToR(ostream& os){
+    if (nVIs){
+        os<<"list("<<endl;
+        for (int p=1;p<nVIs;p++) {os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeFinalValsToR(os); os<<","<<endl;}
+        int p=nVIs;               os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeFinalValsToR(os); os<<")";
+    } else {
+        os<<"NULL";
     }
 }
 /***************************************************************
@@ -1232,6 +1314,21 @@ void DevsVectorVectorInfo::writeToR(ostream& os, adstring nm, int indent){
         int p=nVIs;               os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeToR(os); os<<")"<<endl;
     } else {
         os<<nm<<"=NULL";
+    }
+}
+
+/**
+ * Writes final values to an output stream as an R list of vectors.
+ * 
+ * @param os - the output stream
+ */
+void DevsVectorVectorInfo::writeFinalValsToR(ostream& os){
+    if (nVIs){
+        os<<"list("<<endl;
+        for (int p=1;p<nVIs;p++) {os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeFinalValsToR(os); os<<","<<endl;}
+        int p=nVIs;               os<<tb<<"'"<<p<<"'="; ppVIs[p-1]->writeFinalValsToR(os); os<<")";
+    } else {
+        os<<"NULL";
     }
 }
 /***************************************************************

@@ -61,10 +61,12 @@
             virtual double drawInitVal(random_number_generator& rng, double vif);//draw initial value by resampling prior
             virtual void   setInitVal(double x){initVal=x;}          
             virtual void   setInitVal(param_init_number& x){initVal=value(x);}
+            virtual double getFinalVal(){return finlVal;}
             virtual void   setFinalVal(param_init_number& x){finlVal=value(x);}
-            virtual void   read(cifstream & is);
-            virtual void   write(std::ostream & os);
-            virtual void   writeToR(std::ostream & os);
+            
+            virtual void read(cifstream & is);
+            virtual void write(std::ostream & os);
+            virtual void writeToR(std::ostream & os);
             
             friend cifstream& operator >>(cifstream & is, NumberInfo & obj){obj.read(is); return is;}
             friend std::ostream& operator <<(std::ostream & os, NumberInfo & obj){obj.write(os); return os;}
@@ -96,15 +98,17 @@
             double getLowerBound(){return lower;}
             double getUpperBound(){return upper;}
            
-            double drawInitVal(random_number_generator& rng,double vif);//draw initial value based on jitter or resampling prior
-            void   setInitVal(double x);           
-            void   setInitVal(param_init_bounded_number& x){initVal=value(x);}
-            void   setFinalVal(param_init_bounded_number& x){finlVal=value(x);}
-            void   read(cifstream & is);
-            void   write(std::ostream & os);
-            void   writeToR(std::ostream& os);
+            virtual double drawInitVal(random_number_generator& rng,double vif);//draw initial value based on jitter or resampling prior
+            virtual void setInitVal(double x);           
+            virtual void setInitVal(param_init_number& x) {std::cout<<"cannot use setInitVal(param_init_number) for BoundedNumberInfo. Aborting..."<<endl; exit(-1);}
+            virtual void setFinalVal(param_init_number& x){std::cout<<"cannot use setFinalVal(param_init_number) for BoundedNumberInfo. Aborting..."<<endl; exit(-1);}
+            virtual void setInitVal(param_init_bounded_number& x){initVal=value(x);}
+            virtual void setFinalVal(param_init_bounded_number& x){finlVal=value(x);}
+            virtual void read(cifstream & is);
+            virtual void write(std::ostream & os);
+            virtual void writeToR(std::ostream& os);
         protected:
-            void writeToR1(std::ostream & os);
+            virtual void writeToR1(std::ostream & os);
     };
 
 /*------------------------------------------------------------------------------
@@ -176,6 +180,11 @@
              */
             virtual void setInitVals(param_init_vector & x){initVals=value(x);}     
             /**
+             * Returns a copy of the vector of final values.
+             * @return dvector of final values
+             */
+            virtual dvector getFinalVals(){return finlVals;}
+            /**
              * Sets final values for output to R.
              * @param x - vector of final values
              */
@@ -197,14 +206,15 @@
              * Reads initial values from filestream.
              * @param is
              */
-            virtual void    readInitVals(cifstream& is){is>>initVals;}
+            virtual void readInitVals(cifstream& is){is>>initVals;}
             /**
              * Reads vector info from input filestream.
              * @param is
              */
-            virtual void    read(cifstream & is);
-            virtual void    write(std::ostream & os);
-            virtual void    writeToR(std::ostream & os);
+            virtual void read(cifstream & is);
+            virtual void write(std::ostream & os);
+            virtual void writeToR(std::ostream & os);
+            virtual void writeFinalValsToR(std::ostream & os);
     };
 
 /*----------------------------------------------------------------------------\n
@@ -286,6 +296,11 @@
              */
             virtual void setInitVals(param_init_bounded_vector & x){initVals=value(x);} 
             /**
+             * Returns a copy of the vector of final values.
+             * @return dvector of final values
+             */
+            virtual dvector getFinalVals(){return finlVals;}
+            /**
              * Sets final values for output to R.
              * @param x
              */
@@ -302,9 +317,10 @@
              * @return 
              */
             virtual dvector drawInitVals(random_number_generator& rng, double vif);//draw initial values by resampling prior
-            virtual void    read(cifstream & is);
-            virtual void    write(std::ostream & os);
-            virtual void    writeToR(std::ostream & os);
+            virtual void read(cifstream & is);
+            virtual void write(std::ostream & os);
+            virtual void writeToR(std::ostream & os);
+            virtual void writeFinalValsToR(std::ostream & os);
     };
 
 /*----------------------------------------------------------------------------\n
@@ -369,8 +385,9 @@
             void    readInitVals(cifstream & is);
             
             virtual dvector drawInitVals(random_number_generator& rng, double vif);//draw initial values by resampling prior
-            virtual void    read(cifstream & is);
-            virtual void    writeToR(std::ostream & os);
+            virtual void read(cifstream & is);
+            virtual void writeToR(std::ostream & os);
+            virtual void writeFinalValsToR(std::ostream & os);
         protected:
             void calcDevs(void);
     };
@@ -407,6 +424,7 @@
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
+            virtual void writeFinalValsToR(std::ostream& os);
             friend cifstream& operator >>(cifstream & is, NumberVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, NumberVectorInfo & obj){obj.write(os);return os;}
     };
@@ -464,6 +482,7 @@
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
+            virtual void writeFinalValsToR(std::ostream& os);
             friend cifstream& operator >>(cifstream & is, VectorVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, VectorVectorInfo & obj){obj.write(os);return os;}
     };
@@ -498,6 +517,7 @@
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
+            virtual void writeFinalValsToR(std::ostream& os);
             friend cifstream& operator >>(cifstream & is, BoundedVectorVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, BoundedVectorVectorInfo & obj){obj.write(os);return os;}
     };
@@ -532,6 +552,7 @@
             virtual void read(cifstream & is);
             virtual void write(std::ostream & os);
             virtual void writeToR(std::ostream& os, adstring nm, int indent=0);
+            virtual void writeFinalValsToR(std::ostream& os);
             friend cifstream& operator >>(cifstream & is, DevsVectorVectorInfo & obj){obj.read(is);return is;}
             friend std::ostream& operator <<(std::ostream & os, DevsVectorVectorInfo & obj){obj.write(os);return os;}
     };

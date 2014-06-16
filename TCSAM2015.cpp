@@ -16,7 +16,10 @@
     ModelDatasets*       ptrSimMDS;//ptr to simulated model datasets object
     
     //file streams and filenames
-    ofstream mcmc;        //stream for mcmc output
+    std::ofstream mcmc;        //stream for mcmc output
+    
+    //filenames
+    adstring fnMCMC = "TCSAM2015.MCMC.R";
     adstring fnConfigFile;//configuration file
     adstring fnResultFile;//results file name 
     adstring fnPin;       //pin file
@@ -804,6 +807,8 @@ cout<<"#Starting PARAMETER_SECTION"<<endl;
   #ifndef NO_AD_INITIALIZE
   nllRecDevs.initialize();
   #endif
+  sdrLnR_y.allocate(mnYr,mxYr,"sdrLnR_y");
+  sdrSpB_yx.allocate(mnYr+5,mxYr,1,nSXs,"sdrSpB_yx");
 cout<<"#finished PARAMETER_SECTION"<<endl;
 rpt::echo<<"#finished PARAMETER_SECTION"<<endl;
 }
@@ -839,128 +844,119 @@ void model_parameters::preliminary_calculations(void)
     }
     if (debug) rpt::echo<<"avgEff = "<<avgEff<<endl;
     
-    //set initial values for all parameters
-    //recruitment parameters
-    setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
-     
-    //natural mortality parameters
-    setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
-    
-    //growth parameters
-    setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
-    
-    //maturity parameters
-    setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
-    
-    //selectivity parameters
-    setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
-     
-    //fully-selected fishing capture rate parameters
-    setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
-    
-    //survey catchability parameters
-    setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
-    
-    cout<<"testing setAllDevs()"<<endl;
-    setAllDevs(0,rpt::echo);
-    
-    cout<<"testing calcRecruitment():"<<endl;
-    calcRecruitment(0,rpt::echo);
-    cout<<"testing calcNatMort():"<<endl;
-    calcNatMort(0,rpt::echo);
-    cout<<"testing calcGrowth():"<<endl;
-    calcGrowth(0,rpt::echo);
-    cout<<"testing calcMaturity():"<<endl;
-    calcMaturity(0,rpt::echo);
-    cout<<"testing calcSelectivities():"<<endl;
-    calcSelectivities(dbgCalcProcs,rpt::echo);
-    
-    cout<<"testing calcFisheryFs():"<<endl;
-    calcFisheryFs(dbgCalcProcs,rpt::echo);
-    
-    cout<<"testing calcSurveyQs():"<<endl;
-    calcSurveyQs(dbgCalcProcs,cout);
-    
-    cout<<"testing runPopDyMod():"<<endl;
-    runPopDyMod(0,cout);
-    rpt::echo<<"n_yxm:"<<endl;
-    for (int y=mnYr;y<=(mxYr+1);y++){
-        for (int x=1;x<=nSXs;x++){
-            for (int m=1;m<=nMSs;m++){
-               rpt::echo<<y<<cc;
-               rpt::echo<<tcsam::getSexType(x)<<cc;
-               rpt::echo<<tcsam::getMaturityType(m)<<cc;
-               rpt::echo<<sum(n_yxmsz(y,x,m))<<endl;
-            }
-        }
-    }
-    rpt::echo<<"n_yxmsz:"<<endl;
-    for (int y=mnYr;y<=(mxYr+1);y++){
-        for (int x=1;x<=nSXs;x++){
-            for (int m=1;m<=nMSs;m++){
-                for (int s=1;s<=nSCs;s++){
+    if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")<0) {
+        //set initial values for all parameters
+        //recruitment parameters
+        setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
+        setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
+        setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
+        setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
+        setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
+        setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
+        //natural mortality parameters
+        setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
+        setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
+        //growth parameters
+        setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
+        setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
+        setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
+        //maturity parameters
+        setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
+        //selectivity parameters
+        setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
+        setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
+        //fully-selected fishing capture rate parameters
+        setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
+        setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
+        setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
+        setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
+        setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
+        setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
+        //survey catchability parameters
+        setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
+        setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
+        setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
+        cout<<"testing setAllDevs()"<<endl;
+        setAllDevs(0,rpt::echo);
+        cout<<"testing calcRecruitment():"<<endl;
+        calcRecruitment(0,rpt::echo);
+        cout<<"testing calcNatMort():"<<endl;
+        calcNatMort(0,rpt::echo);
+        cout<<"testing calcGrowth():"<<endl;
+        calcGrowth(0,rpt::echo);
+        cout<<"testing calcMaturity():"<<endl;
+        calcMaturity(0,rpt::echo);
+        cout<<"testing calcSelectivities():"<<endl;
+        calcSelectivities(dbgCalcProcs,rpt::echo);
+        cout<<"testing calcFisheryFs():"<<endl;
+        calcFisheryFs(dbgCalcProcs,rpt::echo);
+        cout<<"testing calcSurveyQs():"<<endl;
+        calcSurveyQs(dbgCalcProcs,cout);
+        cout<<"testing runPopDyMod():"<<endl;
+        runPopDyMod(0,cout);
+        rpt::echo<<"n_yxm:"<<endl;
+        for (int y=mnYr;y<=(mxYr+1);y++){
+            for (int x=1;x<=nSXs;x++){
+                for (int m=1;m<=nMSs;m++){
                    rpt::echo<<y<<cc;
                    rpt::echo<<tcsam::getSexType(x)<<cc;
                    rpt::echo<<tcsam::getMaturityType(m)<<cc;
-                   rpt::echo<<tcsam::getShellType(s)<<cc;
-                   rpt::echo<<n_yxmsz(y,x,m,s)<<endl;
+                   rpt::echo<<sum(n_yxmsz(y,x,m))<<endl;
                 }
             }
         }
+        rpt::echo<<"n_yxmsz:"<<endl;
+        for (int y=mnYr;y<=(mxYr+1);y++){
+            for (int x=1;x<=nSXs;x++){
+                for (int m=1;m<=nMSs;m++){
+                    for (int s=1;s<=nSCs;s++){
+                       rpt::echo<<y<<cc;
+                       rpt::echo<<tcsam::getSexType(x)<<cc;
+                       rpt::echo<<tcsam::getMaturityType(m)<<cc;
+                       rpt::echo<<tcsam::getShellType(s)<<cc;
+                       rpt::echo<<n_yxmsz(y,x,m,s)<<endl;
+                    }
+                }
+            }
+        }
+        cout<<"Testing calcObjFun()"<<endl;
+        calcObjFun(1,rpt::echo);
+        {cout<<"writing model results to R"<<endl;
+            ofstream echo1; echo1.open("ModelRes0.R", ios::trunc);
+            ReportToR(echo1,1,cout);
+        }
+        {cout<<"writing model sim data to file"<<endl;
+            createSimData(0,cout);
+            ofstream echo1; echo1.open("ModelSimData0.dat", ios::trunc);
+            writeSimData(echo1,0,cout);
+        }
+        cout<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
+        rpt::echo<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
+        int tmp = 1;
+        cout<<"Enter 1 to continue > ";
+        cin>>tmp;
+        if (tmp<0) exit(-1);
+    } else {
+        writeMCMCHeader();
+        cout<<"MCEVAL is on"<<endl;
     }
     
-    cout<<"Testing calcObjFun()"<<endl;
-    calcObjFun(1,rpt::echo);
-    
-    {cout<<"writing model results to R"<<endl;
-     ofstream echo1; echo1.open("ModelRes0.R", ios::trunc);
-     ReportToR(echo1,1,cout);
-    }
-    
-    {cout<<"writing model sim data to file"<<endl;
-        createSimData(0,cout);
-        ofstream echo1; echo1.open("ModelSimData0.dat", ios::trunc);
-        writeSimData(echo1,0,cout);
-    }
-    
-    cout<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
-    rpt::echo<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
-    int tmp = 1;
-    cout<<"Enter 1 to continue > ";
-    cin>>tmp;
-    if (tmp<0) exit(-1);
     
 }
 
@@ -970,6 +966,108 @@ void model_parameters::userfunction(void)
     objFun.initialize();
     runPopDyMod(0,rpt::echo);
     calcObjFun(0,rpt::echo);
+    
+    if (sd_phase()||mc_phase()){
+        sdrLnR_y = log(R_y);
+        for (int y=mnYr+5; y<=mxYr; y++){
+            sdrSpB_yx(y) = spb_yx(y);
+        }
+    }
+    
+    if (mceval_phase()){
+        writeMCMCtoR(mcmc);
+    }
+}
+
+void model_parameters::writeMCMCHeader(void)
+{
+    mcmc.open((char*)(fnMCMC),ofstream::out|ofstream::trunc);
+    mcmc<<"mcmc=list("<<endl;
+    mcmc.close();
+    
+}
+
+void model_parameters::writeMCMCtoR(ostream& mcmc,NumberVectorInfo* ptr)
+{
+    mcmc<<ptr->name<<"="; ptr->writeFinalValsToR(mcmc);
+    
+}
+
+void model_parameters::writeMCMCtoR(ostream& mcmc,BoundedNumberVectorInfo* ptr)
+{
+    mcmc<<ptr->name<<"="; ptr->writeFinalValsToR(mcmc);
+    
+}
+
+void model_parameters::writeMCMCtoR(ostream& mcmc,BoundedVectorVectorInfo* ptr)
+{
+    mcmc<<ptr->name<<"="; ptr->writeFinalValsToR(mcmc);
+    
+}
+
+void model_parameters::writeMCMCtoR(ostream& mcmc,DevsVectorVectorInfo* ptr)
+{
+    mcmc<<ptr->name<<"="; ptr->writeFinalValsToR(mcmc);
+    
+}
+
+void model_parameters::writeMCMCtoR(ofstream& mcmc)
+{
+    mcmc.open((char *) fnMCMC, ofstream::out|ofstream::app);
+    mcmc<<"list("<<endl;
+    //write parameter values
+        //recruitment values
+        writeMCMCtoR(mcmc,ptrMPI->ptrRec->pLnR);   mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrRec->pLnRCV); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrRec->pLgtRX); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrRec->pLnRa);  mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrRec->pLnRb);  mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrRec->pDevsLnR);  mcmc<<cc<<endl;
+        //natural mortality parameters
+        writeMCMCtoR(mcmc,ptrMPI->ptrNM->pLnM); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrNM->pLnDMT); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrNM->pLnDMX); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrNM->pLnDMM); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrNM->pLnDMXM); mcmc<<cc<<endl;
+        //growth parameters
+        writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrA); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrB); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrBeta); mcmc<<cc<<endl;
+        //maturity parameters
+        writeMCMCtoR(mcmc,ptrMPI->ptrMat->pLgtPrMat); mcmc<<cc<<endl;
+        //selectivity parameters
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS1); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS2); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS3); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS4); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS5); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS6); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pDevsS1); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pDevsS2); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pDevsS3); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pDevsS4); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pDevsS5); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSel->pDevsS6); mcmc<<cc<<endl;
+        //fully-selected fishing capture rate parameters
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pHM); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pLnC); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pLnDCT); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pLnDCX); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pLnDCM); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pLnDCXM); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrFsh->pDevsLnC); mcmc<<cc<<endl;
+        //survey catchability parameters
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnQ);    mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQT);  mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQX);  mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQM);  mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQXM); mcmc<<cc<<endl;
+    
+    //write sdr variables
+        
+    mcmc<<")"<<cc<<endl;
+    mcmc.close();
+    
 }
 
 void model_parameters::createSimData(int debug, ostream& cout)
@@ -2769,7 +2867,7 @@ void model_parameters::updateMPI(int debug, ostream& cout)
     ptrMPI->ptrRec->pLgtRX->setFinalVals(pLgtRX);
     ptrMPI->ptrRec->pLnRa->setFinalVals(pLnRa);
     ptrMPI->ptrRec->pLnRb->setFinalVals(pLnRb);
-    cout<<"setting final vals for pDevsLnR"<<endl;
+    //cout<<"setting final vals for pDevsLnR"<<endl;
     for (int p=1;p<=ptrMPI->ptrRec->pDevsLnR->getSize();p++) (*ptrMPI->ptrRec->pDevsLnR)[p]->setFinalVals(pDevsLnR(p));
      
     //natural mortality parameters
@@ -2785,7 +2883,7 @@ void model_parameters::updateMPI(int debug, ostream& cout)
     ptrMPI->ptrGr->pLnGrBeta->setFinalVals(pLnGrBeta);
     
     //maturity parameters
-    cout<<"setting final vals for pLgtPrMat"<<endl;
+    //cout<<"setting final vals for pLgtPrMat"<<endl;
     for (int p=1;p<=npLgtPrMat;p++) (*ptrMPI->ptrMat->pLgtPrMat)[p]->setFinalVals(pLgtPrMat(p));
     
     //selectivity parameters
@@ -2795,17 +2893,17 @@ void model_parameters::updateMPI(int debug, ostream& cout)
     ptrMPI->ptrSel->pS4->setFinalVals(pS4);
     ptrMPI->ptrSel->pS5->setFinalVals(pS5);
     ptrMPI->ptrSel->pS6->setFinalVals(pS6);
-    cout<<"setting final vals for pDevsS1"<<endl;
+    //cout<<"setting final vals for pDevsS1"<<endl;
     for (int p=1;p<=ptrMPI->ptrSel->pDevsS1->getSize();p++) (*ptrMPI->ptrSel->pDevsS1)[p]->setFinalVals(pDevsS1(p));
-    cout<<"setting final vals for pDevsS2"<<endl;
+    //cout<<"setting final vals for pDevsS2"<<endl;
     for (int p=1;p<=ptrMPI->ptrSel->pDevsS2->getSize();p++) (*ptrMPI->ptrSel->pDevsS2)[p]->setFinalVals(pDevsS2(p));
-    cout<<"setting final vals for pDevsS3"<<endl;
+    //cout<<"setting final vals for pDevsS3"<<endl;
     for (int p=1;p<=ptrMPI->ptrSel->pDevsS3->getSize();p++) (*ptrMPI->ptrSel->pDevsS3)[p]->setFinalVals(pDevsS3(p));
-    cout<<"setting final vals for pDevsS4"<<endl;
+    //cout<<"setting final vals for pDevsS4"<<endl;
     for (int p=1;p<=ptrMPI->ptrSel->pDevsS4->getSize();p++) (*ptrMPI->ptrSel->pDevsS4)[p]->setFinalVals(pDevsS4(p));
-    cout<<"setting final vals for pDevsS5"<<endl;
+    //cout<<"setting final vals for pDevsS5"<<endl;
     for (int p=1;p<=ptrMPI->ptrSel->pDevsS5->getSize();p++) (*ptrMPI->ptrSel->pDevsS5)[p]->setFinalVals(pDevsS5(p));
-    cout<<"setting final vals for pDevsS6"<<endl;
+    //cout<<"setting final vals for pDevsS6"<<endl;
     for (int p=1;p<=ptrMPI->ptrSel->pDevsS6->getSize();p++) (*ptrMPI->ptrSel->pDevsS6)[p]->setFinalVals(pDevsS6(p));
      
     //fully-selected fishing capture rate parameters
@@ -2815,7 +2913,7 @@ void model_parameters::updateMPI(int debug, ostream& cout)
     ptrMPI->ptrFsh->pLnDCX->setFinalVals(pLnDCX);
     ptrMPI->ptrFsh->pLnDCM->setFinalVals(pLnDCM);
     ptrMPI->ptrFsh->pLnDCXM->setFinalVals(pLnDCXM);
-    cout<<"setting final vals for pDevsLnC"<<endl;
+    //cout<<"setting final vals for pDevsLnC"<<endl;
     for (int p=1;p<=ptrMPI->ptrFsh->pDevsLnC->getSize();p++) (*ptrMPI->ptrFsh->pDevsLnC)[p]->setFinalVals(pDevsLnC(p));
     
     //survey catchability parameters
@@ -2890,6 +2988,11 @@ void model_parameters::final_calcs()
     {cout<<"writing model sim data to file"<<endl;
         ofstream echo1; echo1.open("ModelSimData.dat", ios::trunc);
         writeSimData(echo1,0,cout);
+    }
+    if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")>-1) {
+        mcmc.open((char*)(fnMCMC),ofstream::out|ofstream::app);
+        mcmc<<"NULL)"<<endl;
+        mcmc.close();
     }
     
     long hour,minute,second;
