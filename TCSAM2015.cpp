@@ -975,7 +975,6 @@ void model_parameters::userfunction(void)
     }
     
     if (mceval_phase()){
-        cout<<"pLnR = "<<pLnR<<endl;
         updateMPI(0, cout);
         writeMCMCtoR(mcmc);
     }
@@ -1063,9 +1062,11 @@ void model_parameters::writeMCMCtoR(ofstream& mcmc)
         writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQT);  mcmc<<cc<<endl;
         writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQX);  mcmc<<cc<<endl;
         writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQM);  mcmc<<cc<<endl;
-        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQXM); //mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQXM); mcmc<<cc<<endl;
     
-    //write other quantities
+        //write other quantities
+        mcmc<<"R_y="; wts::writeToR(mcmc,value(R_y)); mcmc<<cc<<endl;
+        mcmc<<"spb_yx="; wts::writeToR(mcmc,value(spb_yx),ptrMC->csvYrs,ptrMC->csvSXs); //mcmc<<cc<<endl;
         
     mcmc<<")"<<cc<<endl;
     mcmc.close();
@@ -1608,21 +1609,18 @@ void model_parameters::calcGrowth(int debug, ostream& cout)
         prGr_zz.initialize();
         dvar_vector mnZ = mfexp(grA)*pow(zBs,grB);//mean size after growth from zBs
         dvar_vector alZ = (mnZ-zBs)/grBeta;//scaled mean growth increment from zBs
-        for (int z=1;z<=nZBs;z++){//pre-molt growth bin
+        for (int z=1;z<nZBs;z++){//pre-molt growth bin
             dvar_vector dZs =  zBs(z,nZBs) - zBs(z);//realized growth increments (note non-neg. growth only)
             if (debug) cout<<"dZs: "<<dZs.indexmin()<<":"<<dZs.indexmax()<<endl;
             dvar_vector prs = elem_prod(pow(dZs,alZ(z)-1.0),mfexp(-dZs/grBeta)); //pr(dZ|z)
             if (debug) cout<<"prs: "<<prs.indexmin()<<":"<<prs.indexmax()<<endl;
             if (prs.size()>10) prs(z+10,nZBs) = 0.0;//limit growth range TODO: this assumes bin size is 5 mm
             if (debug) cout<<prs<<endl;
-            if (z<nZBs) {
-                prs = prs/sum(prs);//normalize to sum to 1
-            } else if (dZs(nZBs)==0){
-                prs = 1.0;//no growth from largest size bin
-            }
+            prs = prs/sum(prs);//normalize to sum to 1
             if (debug) cout<<prs<<endl;
             prGr_zz(z)(z,nZBs) = prs;
         }
+        prGr_zz(nZBs,nZBs) = 1.0; //no growth from max size
         prGr_czz(pc) = trans(prGr_zz);//transpose so rows are post-molt (i.e., "to") z's so n+ = prGr_zz*n
         
         //loop over model indices as defined in the index blocks
