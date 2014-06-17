@@ -817,7 +817,7 @@ void NumberVectorInfo::writeToR(ostream& os, adstring nm, int indent){
 void NumberVectorInfo::writeFinalValsToR(ostream& os){
     if (nNIs){
         dvector vals(1,nNIs);
-        for (int p=1;p<nNIs;p++) vals(p) = ppNIs[p-1]->getFinalVal();
+        for (int p=1;p<=nNIs;p++) vals(p) = ppNIs[p-1]->getFinalVal();
         wts::writeToR(os,vals);
     } else {
         os<<"NULL";

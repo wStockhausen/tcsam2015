@@ -764,64 +764,64 @@ PRELIMINARY_CALCS_SECTION
     }
     if (debug) rpt::echo<<"avgEff = "<<avgEff<<endl;
     
+    //set initial values for all parameters
+    //recruitment parameters
+    setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
+
+    //natural mortality parameters
+    setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
+
+    //growth parameters
+    setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
+
+    //maturity parameters
+    setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
+
+    //selectivity parameters
+    setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
+
+    //fully-selected fishing capture rate parameters
+    setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
+
+    //survey catchability parameters
+    setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
+
+    cout<<"testing setAllDevs()"<<endl;
+    setAllDevs(0,rpt::echo);
+
     if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")<0) {
-        //set initial values for all parameters
-        //recruitment parameters
-        setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
-        setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
-        setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
-        setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
-        setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
-        setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
-
-        //natural mortality parameters
-        setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
-        setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
-
-        //growth parameters
-        setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
-        setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
-        setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
-
-        //maturity parameters
-        setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
-
-        //selectivity parameters
-        setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
-        setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
-
-        //fully-selected fishing capture rate parameters
-        setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
-        setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
-        setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
-        setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
-        setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
-        setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
-
-        //survey catchability parameters
-        setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
-        setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
-        setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
-
-        cout<<"testing setAllDevs()"<<endl;
-        setAllDevs(0,rpt::echo);
-
         cout<<"testing calcRecruitment():"<<endl;
         calcRecruitment(0,rpt::echo);
         cout<<"testing calcNatMort():"<<endl;
@@ -911,6 +911,8 @@ PROCEDURE_SECTION
     }
     
     if (mceval_phase()){
+        cout<<"pLnR = "<<pLnR<<endl;
+        updateMPI(0, cout);
         writeMCMCtoR(mcmc);
     }
 
@@ -941,7 +943,7 @@ FUNCTION void writeMCMCtoR(ostream& mcmc,DevsVectorVectorInfo* ptr)
 //******************************************************************************
 FUNCTION void writeMCMCtoR(ofstream& mcmc)
     mcmc.open((char *) fnMCMC, ofstream::out|ofstream::app);
-    mcmc<<"list("<<endl;
+    mcmc<<"list(objFun="<<objFun<<cc<<endl;
     //write parameter values
         //recruitment values
         writeMCMCtoR(mcmc,ptrMPI->ptrRec->pLnR);   mcmc<<cc<<endl;
@@ -994,9 +996,9 @@ FUNCTION void writeMCMCtoR(ofstream& mcmc)
         writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQT);  mcmc<<cc<<endl;
         writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQX);  mcmc<<cc<<endl;
         writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQM);  mcmc<<cc<<endl;
-        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQXM); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrSrv->pLnDQXM); //mcmc<<cc<<endl;
     
-    //write sdr variables
+    //write other quantities
         
     mcmc<<")"<<cc<<endl;
     mcmc.close();
