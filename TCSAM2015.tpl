@@ -728,7 +728,7 @@ PARAMETER_SECTION
     
     //sdreport variables
     sdreport_vector sdrLnR_y(mnYr,mxYr);
-    sdreport_matrix sdrSpB_yx(mnYr+5,mxYr,1,nSXs);
+    sdreport_matrix sdrSpB_xy(1,nSXs,mnYr+5,mxYr);
 
     
     !!cout<<"#finished PARAMETER_SECTION"<<endl;
@@ -903,10 +903,12 @@ PROCEDURE_SECTION
 
     calcObjFun(0,rpt::echo);
     
-    if (sd_phase()||mc_phase()){
+    if (sd_phase()){
         sdrLnR_y = log(R_y);
-        for (int y=mnYr+5; y<=mxYr; y++){
-            sdrSpB_yx(y) = spb_yx(y);
+        for (int x=1;x<=nSXs;x++){
+            for (int y=mnYr+5; y<=mxYr; y++){
+                sdrSpB_xy(x,y) = spb_yx(y,x);
+            }
         }
     }
     
