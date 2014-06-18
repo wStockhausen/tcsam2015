@@ -811,14 +811,15 @@ void NumberVectorInfo::writeToR(ostream& os, adstring nm, int indent){
     }
 }
 
-/***************************************************************
-*   Write only final values to stream as an R vector.          *
-***************************************************************/
+/**
+ * Writes final values to stream as an R list.
+ * @param os - the stream to write to
+ */
 void NumberVectorInfo::writeFinalValsToR(ostream& os){
     if (nNIs){
-        dvector vals(1,nNIs);
-        for (int p=1;p<=nNIs;p++) vals(p) = ppNIs[p-1]->getFinalVal();
-        wts::writeToR(os,vals);
+        os<<"list("<<endl;
+        for (int p=1;p<nNIs;p++) {os<<tb<<"'"<<p<<"'="<<ppNIs[p-1]->getFinalVal()<<","<<endl;}
+        int p=nNIs;               os<<tb<<"'"<<p<<"'="<<ppNIs[p-1]->getFinalVal()<<")";
     } else {
         os<<"NULL";
     }
