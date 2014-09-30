@@ -6,6 +6,8 @@
  * 
  * History:
  * 20140605: added tcsam::dgbAll, dbgPriors
+ * 20140918: renamed string constants of form "name_STR" to follow format "STR_name"
+ * 20140930: switched MALE, FEMALE so MALE=1, FEMALE=2
  */
 
 #pragma once
@@ -15,7 +17,7 @@
 class rpt{
     public:
         /* Global output filestream */
-        static ofstream echo;
+        static std::ofstream echo;
 };
     
 namespace tcsam{    
@@ -40,6 +42,15 @@ namespace tcsam{
     /* Model flag name for selectivity functions */
     const adstring STR_SELFCN = "selFcn";
     
+    //sexes
+    const int nSXs      = 2;//number of model sexes
+    const int MALE      = 1;//integer indicating sex=male
+    const int FEMALE    = 2;//integer indicating sex=female
+    const int ANY_SEX   = nSXs+1;//integer indicating combined sexes
+    const adstring STR_MALE    = "MALE";
+    const adstring STR_FEMALE  = "FEMALE";
+    const adstring STR_ANY_SEX = "ANY_SEX";
+    
     //maturity states
     const int nMSs     = 2; //number of model maturity states
     const int IMMATURE = 1;
@@ -48,15 +59,6 @@ namespace tcsam{
     const adstring STR_IMMATURE     = "IMMATURE";
     const adstring STR_MATURE       = "MATURE";
     const adstring STR_ANY_MATURITY = "ANY_MATURITY";
-    
-    //sexes
-    const int nSXs      = 2;//number of model sexes
-    const int FEMALE    = 1;//integer indicating sex=female
-    const int MALE      = 2;//integer indicating sex=male
-    const int ANY_SEX = nSXs+1;//integer indicating combined sexes
-    const adstring STR_FEMALE  = "FEMALE";
-    const adstring STR_MALE    = "MALE";
-    const adstring STR_ANY_SEX = "ANY_SEX";
         
     //shell conditions
     const int nSCs = 2;     //number of model shell conditions
@@ -68,11 +70,11 @@ namespace tcsam{
     const adstring STR_ANY_SHELL = "ANY_SHELL";
     
     //objective function fitting option types
-    const adstring FIT_NONE_STR            = "NONE";
-    const adstring FIT_BY_TOTAL_STR        = "BY_TOTAL";
-    const adstring FIT_BY_SEX_STR          = "BY_SEX";
-    const adstring FIT_BY_SEX_EXTENDED_STR = "BY_SEX_EXTENDED";
-    const adstring FIT_BY_SEX_MAT_EXTENDED_STR = "BY_SEX_MATURITY_EXTENDED";
+    const adstring STR_FIT_NONE            = "NONE";
+    const adstring STR_FIT_BY_TOTAL        = "BY_TOTAL";
+    const adstring STR_FIT_BY_SEX          = "BY_SEX";
+    const adstring STR_FIT_BY_SEX_EXTENDED = "BY_SEX_EXTENDED";
+    const adstring STR_FIT_BY_SEX_MAT_EXTENDED = "BY_SEX_MATURITY_EXTENDED";
     const int FIT_NONE            = 0;
     const int FIT_BY_TOTAL        = 1;
     const int FIT_BY_SEX          = 2;
@@ -80,11 +82,11 @@ namespace tcsam{
     const int FIT_BY_SEX_MAT_EXTENDED = 4;
     
     //likelihood types
-    const adstring LL_NONE_STR        = "NONE";
-    const adstring LL_NORM2_STR       = "NORM2";
-    const adstring LL_NORMAL_STR      = "NORMAL";
-    const adstring LL_LOGNORMAL_STR   = "LOGNORMAL";
-    const adstring LL_MULTINOMIAL_STR = "MULTINOMIAL";
+    const adstring STR_LL_NONE        = "NONE";
+    const adstring STR_LL_NORM2       = "NORM2";
+    const adstring STR_LL_NORMAL      = "NORMAL";
+    const adstring STR_LL_LOGNORMAL   = "LOGNORMAL";
+    const adstring STR_LL_MULTINOMIAL = "MULTINOMIAL";
     const int LL_NONE        = 0;
     const int LL_NORM2       = 1;
     const int LL_NORMAL      = 2;

@@ -323,7 +323,7 @@ pLnC #base (ln-scale) capture rate (mature males)
 #id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
 #TCF
 1     -5      2     OFF     -3.0        -1        OFF        1         none                #base capture rate (c=0.05), TCF historical period (pre-1965)
-2     -5      5     OFF     -0.7        1        OFF        1         none                #base capture rate, TCF data period (1965+)
+2     -5      5     OFF     -0.7         1        OFF        1         none                #base capture rate, TCF data period (1965+)
 #SCF
 3     -5      2     OFF     -4.605      -1        OFF        1         none                #base capture rate (c=0.01), SCF historical period (pre-1978)
 4     -5      5     OFF     -3.0        -4        OFF        1         none                #base capture rate, SCF data period (1992+)
@@ -332,7 +332,7 @@ pLnC #base (ln-scale) capture rate (mature males)
 6    -10     10     OFF     -5.25       -4        OFF        1         none                #base capture rate, RKF data period (1992+)
 #GTF
 7     -5      2     OFF     -3.912      -1        OFF        1         none                #base capture rate (c=0.02), GTF historical period (pre-1973)
-8     -5      5     OFF     -4.0        2        OFF        1         none                #base capture rate, GTF data period (1973+)
+8     -5      5     OFF     -4.0         2        OFF        1         none                #base capture rate, GTF data period (1973+)
 pLnDCT #main temporal ln-scale capture rate offset
 0  #number of parameters
 #id  lower   upper jitter?   init_val       phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
@@ -349,8 +349,8 @@ pDevsLnC #annual ln-scale capture rate deviations
 4    #number of parameter vectors
  #id  idx.type            idx.block              read?   lower   upper jitter? init_val  phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
  1     YEAR   [1965:1984;1987:1996;2005:2009]    FALSE     -15    15     OFF      0        2       OFF           1        normal      0 4   #TCF
- 2     YEAR   [1992:-1]                          FALSE     -15    15     OFF      0        -4       OFF           1        normal      0 4   #SCF
- 3     YEAR   [1992:1993;1996:-1]                FALSE     -15    15     OFF      0        -5       OFF           1        normal      0 4   #RKF
+ 2     YEAR   [1992:-1]                          FALSE     -15    15     OFF      0       -4       OFF           1        normal      0 4   #SCF
+ 3     YEAR   [1992:1993;1996:-1]                FALSE     -15    15     OFF      0       -5       OFF           1        normal      0 4   #RKF
  4     YEAR   [1973:-1]                          FALSE     -15    15     OFF      0        3       OFF           1        normal      0 4   #GTF
 #initial values vectors go here
 #-------------------------------

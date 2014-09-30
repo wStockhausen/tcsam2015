@@ -332,7 +332,8 @@ private:
   param_6array q_vyxmsz;
   param_6array n_vyxmsz;
   param_vector fPenRecDevs;
-  param_vector fPenLgtPrMat;
+  param_vector fPenSmoothLgtPrMat;
+  param_vector fPenNonDecLgtPrMat;
   param_vector fPenDevsS1;
   param_vector fPenDevsS2;
   param_vector fPenDevsS3;
@@ -342,7 +343,7 @@ private:
   param_vector fPenDevsLnC;
   param_number nllRecDevs;
   param_stddev_vector sdrLnR_y;
-  param_stddev_matrix sdrSpB_yx;
+  param_stddev_matrix sdrSpB_xy;
 public:
   virtual void userfunction(void);
   virtual void report(void);

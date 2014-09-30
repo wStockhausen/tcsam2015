@@ -18,6 +18,7 @@
 //  2014-06-11: 1. created setFinalVal(...), setFinalVals(...) functionality for ModelParameterInfoTypes
 //                 and revised writeToR(...) for parameters to output both initial and final values.
 //  2014-06-16: 1. Added sdrLnR_y, sdrSpB_xy, sdrFinlPop_xmsz and MCMC calc.s
+//  2014-09-30: 1. Changed to MALE=1, FEMALE=2 ordering of sexes
 //
 // =============================================================================
 // =============================================================================
@@ -712,7 +713,8 @@ PARAMETER_SECTION
     //objective function penalties
     vector fPenRecDevs(1,npDevsLnR);
     
-    vector fPenLgtPrMat(1,npLgtPrMat);
+    vector fPenSmoothLgtPrMat(1,npLgtPrMat);//smoothness penalty
+    vector fPenNonDecLgtPrMat(1,npLgtPrMat);//non-decreasing penalty
     
     vector fPenDevsS1(1,npDevsS1);
     vector fPenDevsS2(1,npDevsS2);
@@ -906,7 +908,7 @@ PROCEDURE_SECTION
     if (sd_phase()){
         sdrLnR_y = log(R_y);
         for (int x=1;x<=nSXs;x++){
-            for (int y=mnYr+5; y<=mxYr; y++){
+            for (int y=mnYr+recLag; y<=mxYr; y++){
                 sdrSpB_xy(x,y) = spb_yx(y,x);
             }
         }
@@ -2057,14 +2059,31 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
 FUNCTION void calcPenalties(int debug, ostream& cout)
     if (debug>=dbgObjFun) cout<<"Started calcPenalties()"<<endl;
 
-    //penalties on maturity parameters (NOT maturity ogives)
+    //smoothness penalties on maturity parameters (NOT maturity ogives)
     double penWgtLgtPrMat = 1.0;//TODO: read in value from input file
-    fPenLgtPrMat.initialize();
+    fPenSmoothLgtPrMat.initialize();
+    cout<<"fPenSmooth = ";
     for (int i=1;i<=npLgtPrMat;i++){
-        dvar_vector v; v = pLgtPrMat(i);
-        fPenLgtPrMat(i) = norm2(calc2ndDiffs(v));
-        objFun += penWgtLgtPrMat*fPenLgtPrMat(i);
+        dvar_vector v; v = 1.0*pLgtPrMat(i);
+        fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
+        cout<<fPenSmoothLgtPrMat(i)<<tb;
+        objFun += penWgtLgtPrMat*fPenSmoothLgtPrMat(i);
     }
+    cout<<endl;
+
+    //non-decreasing penalties on maturity parameters (NOT maturity ogives)
+    double penWgtNonDecLgtPrMat = 1.0;//TODO: read in value from input file
+    fPenNonDecLgtPrMat.initialize();
+    cout<<"fPenNonDec = ";
+    for (int i=1;i<=npLgtPrMat;i++){
+        dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
+        for (int iv=v.indexmin();iv<=v.indexmax();iv++){
+            posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+        }
+        cout<<fPenNonDecLgtPrMat(i)<<tb;
+        objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
+    }
+    cout<<endl;
     
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 

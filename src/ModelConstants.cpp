@@ -105,11 +105,11 @@ adstring tcsam::getScaleType(int i){
 }
 
 int tcsam::getFitType(adstring s){
-    if (s==FIT_NONE_STR)     return FIT_NONE;
-    if (s==FIT_BY_TOTAL_STR) return FIT_BY_TOTAL;
-    if (s==FIT_BY_SEX_STR)   return FIT_BY_SEX;
-    if (s==FIT_BY_SEX_EXTENDED_STR)   return FIT_BY_SEX_EXTENDED;
-    if (s==FIT_BY_SEX_MAT_EXTENDED_STR) return FIT_BY_SEX_MAT_EXTENDED;
+    if (s==STR_FIT_NONE)     return FIT_NONE;
+    if (s==STR_FIT_BY_TOTAL) return FIT_BY_TOTAL;
+    if (s==STR_FIT_BY_SEX)   return FIT_BY_SEX;
+    if (s==STR_FIT_BY_SEX_EXTENDED)   return FIT_BY_SEX_EXTENDED;
+    if (s==STR_FIT_BY_SEX_MAT_EXTENDED) return FIT_BY_SEX_MAT_EXTENDED;
     std::cout<<"Unrecognized fit type '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -117,11 +117,11 @@ int tcsam::getFitType(adstring s){
 }
 
 adstring tcsam::getFitType(int i){
-    if (i==FIT_NONE)     return FIT_NONE_STR;
-    if (i==FIT_BY_TOTAL) return FIT_BY_TOTAL_STR;
-    if (i==FIT_BY_SEX)   return FIT_BY_SEX_STR;
-    if (i==FIT_BY_SEX_EXTENDED)   return FIT_BY_SEX_EXTENDED_STR;
-    if (i==FIT_BY_SEX_MAT_EXTENDED) return FIT_BY_SEX_MAT_EXTENDED_STR;
+    if (i==FIT_NONE)     return STR_FIT_NONE;
+    if (i==FIT_BY_TOTAL) return STR_FIT_BY_TOTAL;
+    if (i==FIT_BY_SEX)   return STR_FIT_BY_SEX;
+    if (i==FIT_BY_SEX_EXTENDED)   return STR_FIT_BY_SEX_EXTENDED;
+    if (i==FIT_BY_SEX_MAT_EXTENDED) return STR_FIT_BY_SEX_MAT_EXTENDED;
     std::cout<<"Unrecognized fit type '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -241,11 +241,11 @@ double tcsam::getConversionMultiplier(adstring from,adstring to){
 
 int tcsam::getLikelihoodType(adstring llType){
     int type = 0;
-    if (llType==LL_LOGNORMAL_STR)   return LL_LOGNORMAL;
-    if (llType==LL_MULTINOMIAL_STR) return LL_MULTINOMIAL;
-    if (llType==LL_NONE_STR)        return LL_NONE;
-    if (llType==LL_NORM2_STR)       return LL_NORM2;
-    if (llType==LL_NORMAL_STR)      return LL_NORMAL;
+    if (llType==STR_LL_LOGNORMAL)   return LL_LOGNORMAL;
+    if (llType==STR_LL_MULTINOMIAL) return LL_MULTINOMIAL;
+    if (llType==STR_LL_NONE)        return LL_NONE;
+    if (llType==STR_LL_NORM2)       return LL_NORM2;
+    if (llType==STR_LL_NORMAL)      return LL_NORMAL;
     std::cout<<"Likelihood type keyword '"<<llType<<"' not recognized."<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -253,12 +253,12 @@ int tcsam::getLikelihoodType(adstring llType){
 }
 
 adstring tcsam::getLikelihoodType(int llType){
-    adstring type = LL_NONE_STR;
-    if (llType==LL_LOGNORMAL)   return LL_LOGNORMAL_STR;
-    if (llType==LL_MULTINOMIAL) return LL_MULTINOMIAL_STR;
-    if (llType==LL_NONE)        return LL_NONE_STR;
-    if (llType==LL_NORM2)       return LL_NORM2_STR;
-    if (llType==LL_NORMAL)      return LL_NORMAL_STR;
+    adstring type = STR_LL_NONE;
+    if (llType==LL_LOGNORMAL)   return STR_LL_LOGNORMAL;
+    if (llType==LL_MULTINOMIAL) return STR_LL_MULTINOMIAL;
+    if (llType==LL_NONE)        return STR_LL_NONE;
+    if (llType==LL_NORM2)       return STR_LL_NORM2;
+    if (llType==LL_NORMAL)      return STR_LL_NORMAL;
     std::cout<<"Likelihood type integer '"<<llType<<"' not recognized."<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);

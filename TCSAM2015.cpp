@@ -771,9 +771,13 @@ cout<<"#Starting PARAMETER_SECTION"<<endl;
   #ifndef NO_AD_INITIALIZE
     fPenRecDevs.initialize();
   #endif
-  fPenLgtPrMat.allocate(1,npLgtPrMat,"fPenLgtPrMat");
+  fPenSmoothLgtPrMat.allocate(1,npLgtPrMat,"fPenSmoothLgtPrMat");
   #ifndef NO_AD_INITIALIZE
-    fPenLgtPrMat.initialize();
+    fPenSmoothLgtPrMat.initialize();
+  #endif
+  fPenNonDecLgtPrMat.allocate(1,npLgtPrMat,"fPenNonDecLgtPrMat");
+  #ifndef NO_AD_INITIALIZE
+    fPenNonDecLgtPrMat.initialize();
   #endif
   fPenDevsS1.allocate(1,npDevsS1,"fPenDevsS1");
   #ifndef NO_AD_INITIALIZE
@@ -808,7 +812,7 @@ cout<<"#Starting PARAMETER_SECTION"<<endl;
   nllRecDevs.initialize();
   #endif
   sdrLnR_y.allocate(mnYr,mxYr,"sdrLnR_y");
-  sdrSpB_yx.allocate(mnYr+5,mxYr,1,nSXs,"sdrSpB_yx");
+  sdrSpB_xy.allocate(1,nSXs,mnYr+5,mxYr,"sdrSpB_xy");
 cout<<"#finished PARAMETER_SECTION"<<endl;
 rpt::echo<<"#finished PARAMETER_SECTION"<<endl;
 }
@@ -948,10 +952,6 @@ void model_parameters::preliminary_calculations(void)
         }
         cout<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
         rpt::echo<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
-        int tmp = 1;
-        cout<<"Enter 1 to continue > ";
-        cin>>tmp;
-        if (tmp<0) exit(-1);
     } else {
         writeMCMCHeader();
         cout<<"MCEVAL is on"<<endl;
@@ -967,10 +967,12 @@ void model_parameters::userfunction(void)
     runPopDyMod(0,rpt::echo);
     calcObjFun(0,rpt::echo);
     
-    if (sd_phase()||mc_phase()){
+    if (sd_phase()){
         sdrLnR_y = log(R_y);
-        for (int y=mnYr+5; y<=mxYr; y++){
-            sdrSpB_yx(y) = spb_yx(y);
+        for (int x=1;x<=nSXs;x++){
+            for (int y=mnYr+5; y<=mxYr; y++){
+                sdrSpB_xy(x,y) = spb_yx(y,x);
+            }
         }
     }
     
@@ -2011,14 +2013,30 @@ void model_parameters::calcSurveyQs(int debug, ostream& cout)
 void model_parameters::calcPenalties(int debug, ostream& cout)
 {
     if (debug>=dbgObjFun) cout<<"Started calcPenalties()"<<endl;
-    //penalties on maturity parameters (NOT maturity ogives)
+    //smoothness penalties on maturity parameters (NOT maturity ogives)
     double penWgtLgtPrMat = 1.0;//TODO: read in value from input file
-    fPenLgtPrMat.initialize();
+    fPenSmoothLgtPrMat.initialize();
+    cout<<"fPenSmooth = ";
     for (int i=1;i<=npLgtPrMat;i++){
-        dvar_vector v; v = pLgtPrMat(i);
-        fPenLgtPrMat(i) = norm2(calc2ndDiffs(v));
-        objFun += penWgtLgtPrMat*fPenLgtPrMat(i);
+        dvar_vector v; v = 1.0*pLgtPrMat(i);
+        fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
+        cout<<fPenSmoothLgtPrMat(i)<<tb;
+        objFun += penWgtLgtPrMat*fPenSmoothLgtPrMat(i);
     }
+    cout<<endl;
+    //non-decreasing penalties on maturity parameters (NOT maturity ogives)
+    double penWgtNonDecLgtPrMat = 1.0;//TODO: read in value from input file
+    fPenNonDecLgtPrMat.initialize();
+    cout<<"fPenNonDec = ";
+    for (int i=1;i<=npLgtPrMat;i++){
+        dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
+        for (int iv=v.indexmin();iv<=v.indexmax();iv++){
+            posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+        }
+        cout<<fPenNonDecLgtPrMat(i)<<tb;
+        objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
+    }
+    cout<<endl;
     
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 }
