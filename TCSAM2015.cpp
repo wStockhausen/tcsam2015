@@ -970,7 +970,7 @@ void model_parameters::userfunction(void)
     if (sd_phase()){
         sdrLnR_y = log(R_y);
         for (int x=1;x<=nSXs;x++){
-            for (int y=mnYr+5; y<=mxYr; y++){
+            for (int y=mnYr+ptrMDS->ptrBio->recLag; y<=mxYr; y++){
                 sdrSpB_xy(x,y) = spb_yx(y,x);
             }
         }

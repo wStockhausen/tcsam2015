@@ -3,6 +3,8 @@
  * Author: william.stockhausen
  *
  * Created on 2014-02-11.
+ * 
+ * 20140930: 1. Added recLag to BioData.
  */
 
 #ifndef MODELDATA_HPP
@@ -160,6 +162,7 @@ class IndexRange;
         d3_array frMature_xsz;//fraction mature at size by sex, shell condition
         dmatrix cvMnMxZ_xc;   //cv of min size, max size by sex
         
+        int recLag;         //recruitment lag (in years)
         int nyTiming;       //number of years for fishery season midpoints, time-at-mating
         dvector fshTiming_y;//timing of midpoint of fisheries seasons
         dvector matTiming_y;//timing of mating

@@ -19,6 +19,7 @@
 //                 and revised writeToR(...) for parameters to output both initial and final values.
 //  2014-06-16: 1. Added sdrLnR_y, sdrSpB_xy, sdrFinlPop_xmsz and MCMC calc.s
 //  2014-09-30: 1. Changed to MALE=1, FEMALE=2 ordering of sexes
+//              2. Added constant "BioData->recLag" for recruitment lag (set in BioData file)
 //
 // =============================================================================
 // =============================================================================
@@ -908,7 +909,7 @@ PROCEDURE_SECTION
     if (sd_phase()){
         sdrLnR_y = log(R_y);
         for (int x=1;x<=nSXs;x++){
-            for (int y=mnYr+recLag; y<=mxYr; y++){
+            for (int y=mnYr+ptrMDS->ptrBio->recLag; y<=mxYr; y++){
                 sdrSpB_xy(x,y) = spb_yx(y,x);
             }
         }
