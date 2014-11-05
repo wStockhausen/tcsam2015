@@ -7,6 +7,11 @@
  * Includes:
  *  class ModelConfiguration
  *  class ModelOptions
+ * 
+ * History:
+ * 2014-10-30: 1. Removed nSXs, nSCs, nMSs as static variables that were set through
+ *                the model configuration file. These should now be changed in ModelConstants.hpp
+ *                and the model recompiled for different configurations.
  */
 
 #ifndef MODELCONFIGURATION_HPP
@@ -19,9 +24,6 @@
     public:
         static int debug;  //flag to print debug info
         
-        static int nSXs;//number of sexes 
-        static int nMSs;//number of maturity states
-        static int nSCs;//number of shell conditions
         static int nZBs;//number of size bins 
         static int mnYr;//min model year
         static int mxYr;//max model year

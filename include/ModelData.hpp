@@ -103,8 +103,9 @@ class IndexRange;
         static int debug;
         const static adstring KW_SIZEFREQUENCY_DATA;//keyword indicating size frequency data
     private:
-        dmatrix inpSS_yc;       //input sample size matrix TODO: based on num tows??
-        d5_array inpNatZ_xmsyc; //input numbers-at-size data (sex,maturity state,shell condition,year,year+sample_size+nAtZ)
+        wts::adstring_matrix factors;//factor combinations for input numbers-at-size
+        dmatrix inpSS_yc;             //input sample size matrix TODO: based on num tows??
+        d5_array inpNatZ_xmsyc;       //input numbers-at-size data (sex,maturity state,shell condition,year,year+sample_size+nAtZ)
     public:
         int optFit; //objective function fitting option
         int llType; //likelihood function type

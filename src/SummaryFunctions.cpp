@@ -1,5 +1,6 @@
 #include <admodel.h>
 #include "wtsADMB.hpp"
+#include "ModelConstants.hpp"
 #include "SummaryFunctions.hpp"
 
 d3_array tcsam::calcIXYfromIYXMSZ(d6_array& n_iyxmsz){
@@ -176,4 +177,72 @@ d6_array tcsam::rearrangeIYXMSZtoIXMSYZ(d6_array& n_iyxmsz){
         }
     }
     return n_ixmsyz;
+}
+
+/**
+ * Extract (possibly summary) vector from 5d array.
+ * 
+ * @param x - sex index             (tcsam::ALL_SXs yields sum over sex)
+ * @param m - maturity index        (tcsam::ALL_MSs yields sum over maturity state)
+ * @param s - shell condition index (tcsam::ALL_SCs yields sum over shell condition)
+ * @param y - year index
+ * @param n_xmsyz - d5_array from which to extract vector at z's
+ * 
+ * @return extracted vector (indices consistent with z's)
+ */
+dvector tcsam::extractFromXMSYZ(int x, int m, int s, int y, d5_array& n_xmsyz){
+    ivector bnds = wts::getBounds(n_xmsyz);
+    dvector n_z(bnds(9,10));//dimension for z index
+    int xmn, xmx;
+    xmn = xmx = x; if (x==tcsam::ALL_SXs) {xmn = 1; xmx = tcsam::nSXs;}
+    int mmn, mmx;
+    mmn = mmx = m; if (m==tcsam::ALL_MSs) {mmn = 1; mmx = tcsam::nMSs;}
+    int smn, smx;
+    smn = smx = s; if (s==tcsam::ALL_SCs) {smn = 1; smx = tcsam::nSCs;}
+    n_z.initialize();
+    for (int xp=xmn;xp<=xmx;xp++){
+        for (int mp=mmn;mp<=mmx;mp++){
+            for (int sp=smn;sp<=smx;sp++){
+                n_z += n_xmsyz(xp,mp,sp,y);
+            }
+        }
+    }
+    return(n_z);
+}
+
+/**
+ * Extract (possibly summary) vector from 5d array w/ indices
+ * y,x,m,s,z.
+ * 
+ * @param y - year index
+ * @param x - sex index             (tcsam::ALL_SXs yields sum over sex)
+ * @param m - maturity index        (tcsam::ALL_MSs yields sum over maturity state)
+ * @param s - shell condition index (tcsam::ALL_SCs yields sum over shell condition)
+ * @param n_yxmsz - d5_array from which to extract vector at z's
+ * 
+ * @return extracted vector (indices consistent with z's)
+ */
+dvector tcsam::extractFromYXMSZ(int y, int x, int m, int s, d5_array& n_yxmsz){
+    ivector bnds = wts::getBounds(n_yxmsz);
+//    cout<<"in extractFromYXMSZ"<<endl;
+    dvector n_z(bnds(9),bnds(10));//dimension for z index
+//    cout<<n_z.indexmin()<<" "<<n_z.indexmax()<<endl;
+//    cout<<y<<" "<<x<<" "<<m<<" "<<" "<<s<<endl;
+    int xmn, xmx;
+    xmn = xmx = x; if (x==tcsam::ALL_SXs) {xmn = 1; xmx = tcsam::nSXs;}
+    int mmn, mmx;
+    mmn = mmx = m; if (m==tcsam::ALL_MSs) {mmn = 1; mmx = tcsam::nMSs;}
+    int smn, smx;
+    smn = smx = s; if (s==tcsam::ALL_SCs) {smn = 1; smx = tcsam::nSCs;}
+    n_z.initialize();
+    for (int xp=xmn;xp<=xmx;xp++){
+        for (int mp=mmn;mp<=mmx;mp++){
+            for (int sp=smn;sp<=smx;sp++){
+//                cout<<xp<<" "<<mp<<" "<<sp<<endl;
+                n_z += n_yxmsz(y,xp,mp,sp);
+            }
+        }
+    }
+//    cout<<"finished extractFromYXMSZ"<<endl;
+    return(n_z);
 }

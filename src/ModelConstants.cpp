@@ -9,7 +9,7 @@ int tcsam::getMaturityType(adstring s){
     s.to_upper();
     if (s==STR_IMMATURE)     return IMMATURE;     else
     if (s==STR_MATURE)       return MATURE;       else
-    if (s==STR_ANY_MATURITY) return ANY_MATURITY; else
+    if (s==STR_ALL_MSs) return ALL_MSs; else
     std::cout<<"Unrecognized MaturityType '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -18,7 +18,7 @@ int tcsam::getMaturityType(adstring s){
 adstring tcsam::getMaturityType(int i){
     if (i==IMMATURE)     return STR_IMMATURE;     else
     if (i==MATURE)       return STR_MATURE;       else
-    if (i==ANY_MATURITY) return STR_ANY_MATURITY; else
+    if (i==ALL_MSs) return STR_ALL_MSs; else
     std::cout<<"Unrecognized MaturityType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -29,7 +29,7 @@ int tcsam::getSexType(adstring s){
     s.to_upper();
     if (s==STR_FEMALE)  return FEMALE;  else
     if (s==STR_MALE)    return MALE;    else
-    if (s==STR_ANY_SEX) return ANY_SEX; else
+    if (s==STR_ALL_SXs) return ALL_SXs; else
     std::cout<<"Unrecognized SexType '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -38,7 +38,7 @@ int tcsam::getSexType(adstring s){
 adstring tcsam::getSexType(int i){
     if (i==FEMALE)  return STR_FEMALE;  else
     if (i==MALE)    return STR_MALE;    else
-    if (i==ANY_SEX) return STR_ANY_SEX; else
+    if (i==ALL_SXs) return STR_ALL_SXs; else
     std::cout<<"Unrecognized SexType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -49,7 +49,7 @@ int tcsam::getShellType(adstring s){
     s.to_upper();
     if (s==STR_NEW_SHELL) return NEW_SHELL; else
     if (s==STR_OLD_SHELL) return OLD_SHELL; else
-    if (s==STR_ANY_SHELL) return ANY_SHELL; else
+    if (s==STR_ALL_SCs) return ALL_SCs; else
     std::cout<<"Unrecognized ShellType '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -58,7 +58,7 @@ int tcsam::getShellType(adstring s){
 adstring tcsam::getShellType(int i){
     if (i==NEW_SHELL) return STR_NEW_SHELL; else
     if (i==OLD_SHELL) return STR_OLD_SHELL; else
-    if (i==ANY_SHELL) return STR_ANY_SHELL; else
+    if (i==ALL_SCs) return STR_ALL_SCs; else
     std::cout<<"Unrecognized ShellType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);

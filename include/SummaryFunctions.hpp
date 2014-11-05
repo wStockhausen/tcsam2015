@@ -75,6 +75,32 @@ namespace tcsam {
      * @return d6_array n_ixmsyz
      */
     d6_array rearrangeIYXMSZtoIXMSYZ(d6_array& n_iyxmsz);
+    
+    /**
+     * Extract (possibly summary) vector from 5d array w/ indices
+     * x,m,s,y,z.
+     * 
+    * @param x
+    * @param m
+    * @param s
+    * @param y
+    * @param n_xmsyz
+     * @return extracted vector (indices consistent with z)
+     */
+    dvector extractFromXMSYZ(int x, int m, int s, int y, d5_array& n_xmsyz);
+    
+    /**
+     * Extract (possibly summary) vector from 5d array w/ indices
+     * y,x,m,s,z.
+     * 
+    * @param y
+    * @param x
+    * @param m
+    * @param s
+    * @param n_yxmsz
+     * @return extracted vector (indices consistent with z)
+     */
+    dvector extractFromYXMSZ(int y, int x, int m, int s, d5_array& n_yxmsz);
 }
 #endif	/* SUMMARYFUNCTIONS_HPP */
 

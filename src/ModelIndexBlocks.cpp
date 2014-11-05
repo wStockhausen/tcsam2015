@@ -226,15 +226,15 @@ void IndexBlockSet::setType(adstring theType){
     } else
     if (type==tcsam::STR_SEX){
         modMin = 1;
-        modMax = ModelConfiguration::nSXs;
+        modMax = tcsam::nSXs;
     } else
     if (type==tcsam::STR_MATURITY_STATE){
         modMin = 1;
-        modMax = ModelConfiguration::nSXs;
+        modMax = tcsam::nSXs;
     } else
     if (type==tcsam::STR_SHELL_CONDITION){
         modMin = 1;
-        modMax = ModelConfiguration::nSXs;
+        modMax = tcsam::nSXs;
     } else 
     if (type==tcsam::STR_SIZE){
         modMin = 1;
@@ -413,15 +413,15 @@ void tcsam::getIndexLimits(adstring& idxType,int& mn,int& mx){
     } else
     if (idxType==tcsam::STR_SEX)  {
         mn = 1;
-        mx = ModelConfiguration::nSXs;
+        mx = tcsam::nSXs;
     } else
     if (idxType==tcsam::STR_MATURITY_STATE)  {
         mn = 1;
-        mx = ModelConfiguration::nMSs;
+        mx = tcsam::nMSs;
     } else
     if (idxType==tcsam::STR_SHELL_CONDITION) {
         mn = 1;
-        mx = ModelConfiguration::nSCs;
+        mx = tcsam::nSCs;
     } else
     {
         cout<<"Error in tcsam::getIndexLimits("<<idxType<<")"<<endl;

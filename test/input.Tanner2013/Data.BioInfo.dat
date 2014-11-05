@@ -11,17 +11,17 @@ BIO_DATA     #required keyword
 #WEIGHT-AT-SIZE
 KG   #units
 4    #number of factor combinations (sex x maturity state)
+#male wt(kg)@length (Rugolo 2010); new allometry fits to 2006-2009 survey collections; source=Allometry_Bairdi_Opilio_Length-Weight Models.xls; a=0.000163 b=3.136000
+MALE IMMATURE
+0.005   0.009   0.013   0.020   0.029   0.039   0.052   0.068   0.087   0.109   0.134   0.164   0.197   0.235   0.277   0.324   0.377   0.435   0.499   0.569   0.645   0.728   0.818   0.916   1.021   1.134   1.255   1.384   1.523   1.670   1.827   1.994
+MALE MATURE
+0.005   0.009   0.013   0.020   0.029   0.039   0.052   0.068   0.087   0.109   0.134   0.164   0.197   0.235   0.277   0.324   0.377   0.435   0.499   0.569   0.645   0.728   0.818   0.916   1.021   1.134   1.255   1.384   1.523   1.670   1.827   1.994
 #juvenile female wt(kg)@length (Rugolo 2010); new allometry fits to 2006-2009 survey collections; source=Allometry_Bairdi_Opilio_Length-Weight Models.xls; a=0.000637, b=2.794000
 FEMALE IMMATURE 
 0.006   0.010   0.015   0.022   0.030   0.040   0.051   0.065   0.081   0.099   0.119   0.142   0.167   0.196   0.227   0.261   0.298   0.339   0.383   0.430   0.481   0.536   0.595   0.658   0.724   0.795   0.870   0.950   1.034   1.123   1.217   1.315
 #mature female wt(kg)@length (Rugolo 2010); new allometry fits to 2006-2009 survey collections; source=Allometry_Bairdi_Opilio_Length-Weight Models.xls; a=0.000344, b=2.956000
 FEMALE MATURE
 0.006   0.010   0.015   0.022   0.030   0.041   0.053   0.068   0.086   0.106   0.130   0.156   0.186   0.220   0.257   0.298   0.343   0.393   0.447   0.506   0.570   0.639   0.713   0.792   0.878   0.969   1.066   1.170   1.280   1.396   1.520   1.650
-#male wt(kg)@length (Rugolo 2010); new allometry fits to 2006-2009 survey collections; source=Allometry_Bairdi_Opilio_Length-Weight Models.xls; a=0.000163 b=3.136000
-MALE IMMATURE
-0.005   0.009   0.013   0.020   0.029   0.039   0.052   0.068   0.087   0.109   0.134   0.164   0.197   0.235   0.277   0.324   0.377   0.435   0.499   0.569   0.645   0.728   0.818   0.916   1.021   1.134   1.255   1.384   1.523   1.670   1.827   1.994
-MALE MATURE
-0.005   0.009   0.013   0.020   0.029   0.039   0.052   0.068   0.087   0.109   0.134   0.164   0.197   0.235   0.277   0.324   0.377   0.435   0.499   0.569   0.645   0.728   0.818   0.916   1.021   1.134   1.255   1.384   1.523   1.670   1.827   1.994
 #------------------
 #PROBABILITY OF MATURING
 1    #number of factor combinations (sex)

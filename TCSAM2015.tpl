@@ -20,6 +20,11 @@
 //  2014-06-16: 1. Added sdrLnR_y, sdrSpB_xy, sdrFinlPop_xmsz and MCMC calc.s
 //  2014-09-30: 1. Changed to MALE=1, FEMALE=2 ordering of sexes
 //              2. Added constant "BioData->recLag" for recruitment lag (set in BioData file)
+//  2014-10-30: 1. Corrected sex, maturity, and shell condition dimensioning and loops 
+//                  to be independent of ordering of MALE/FEMALE, NEW/OLD_SHELL, and IMMATURE/MATURE
+//                  values.
+//              2. Added logic to avoid FEMALE-specific logic if model includes only MALEs.
+//              3. Updated to use tcsam::ALL_SXs, tcsam::ALL_S
 //
 // =============================================================================
 // =============================================================================
@@ -84,20 +89,20 @@ GLOBALS_SECTION
     int dbgDevs   = 90;
     int dbgAll    = tcsam::dbgAll;
     
-    int nSXs   = tcsam::nSXs;
-    int MALE   = tcsam::MALE;
-    int FEMALE = tcsam::FEMALE;
-    int ANY_SX = tcsam::ANY_SEX;
+    int nSXs    = tcsam::nSXs;
+    int MALE    = tcsam::MALE;
+    int FEMALE  = tcsam::FEMALE;
+    int ALL_SXs = tcsam::ALL_SXs;
     
     int nMSs     = tcsam::nMSs;
     int IMMATURE = tcsam::IMMATURE;
     int MATURE   = tcsam::MATURE;
-    int ANY_MS   = tcsam::ANY_MATURITY;
+    int ALL_MSs  = tcsam::ALL_MSs;
     
     int nSCs      = tcsam::nSCs;
     int NEW_SHELL = tcsam::NEW_SHELL;
     int OLD_SHELL = tcsam::OLD_SHELL;
-    int ANY_SC    = tcsam::ANY_SHELL;
+    int ALL_SCs   = tcsam::ALL_SCs;
     
     double smlVal = 0.00001;//small value to keep things > 0
     
@@ -366,6 +371,8 @@ DATA_SECTION
     ptrSimMDS = new ModelDatasets(ptrMC);
     ad_comm::change_datafile_name(ptrMC->fnMDS);
     ptrSimMDS->read(*(ad_comm::global_datafile));
+    rpt::echo<<"---SimMDS object after reading datasets---"<<endl;
+    rpt::echo<<(*ptrSimMDS);
     rpt::echo<<"#finished SimMDS object"<<endl;
  END_CALCS   
     
@@ -880,9 +887,9 @@ PRELIMINARY_CALCS_SECTION
         }
 
         {cout<<"writing model sim data to file"<<endl;
-            createSimData(0,cout);
+            createSimData(1,rpt::echo);
             ofstream echo1; echo1.open("ModelSimData0.dat", ios::trunc);
-            writeSimData(echo1,0,cout);
+            writeSimData(echo1,1,rpt::echo);
         }
         cout<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
         rpt::echo<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
@@ -1447,7 +1454,7 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
             if (debug>dbgCalcProcs) cout<<R_y(y)<<tb;
             R_yx(y,MALE)   = Rx_c(pc);
             if (debug>dbgCalcProcs) cout<<R_yx(y,MALE)<<endl;
-            R_yx(y,FEMALE) = 1.0-R_yx(y,MALE);
+            if (FEMALE<=nSXs) R_yx(y,FEMALE) = 1.0-R_yx(y,MALE);
             
             R_yz(y) = R_cz(pc);
             if (debug>dbgCalcProcs) cout<<R_yz(y)<<endl;
@@ -1496,12 +1503,14 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnM(pids[k]);}   k++;
         //add in main temporal offsets
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnDMT(pids[k]);} k++;
-        //add in female offset
-        if (pids[k]) {lnM(FEMALE) += pLnDMX(pids[k]);}                      k++;
-        //add in immature offsets
-        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,IMMATURE) += pLnDMM(pids[k]);} k++;
-        //add in offset immature females for stanza
-        if (pids[k]) {lnM(FEMALE,IMMATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
+        if (FEMALE<=nSXs){
+            //add in female offset
+            if (pids[k]) {lnM(FEMALE) += pLnDMX(pids[k]);}                      k++;
+            //add in immature offsets
+            if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,IMMATURE) += pLnDMM(pids[k]);} k++;
+            //add in offset immature females for stanza
+            if (pids[k]) {lnM(FEMALE,IMMATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
+        }
         
         //convert from ln-scale to arithmetic scale
         M_cxm(pc) = mfexp(lnM);
@@ -1834,12 +1843,14 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
             if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x) += pLnC(pids[k]);}   k++;
             //add in main temporal offsets
             if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x) += pLnDCT(pids[k]);} k++;
-            //add in female offset
-            if (pids[k]) {lnC(FEMALE) += pLnDCX(pids[k]);}                      k++;
-            //add in immature offsets
-            if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x,IMMATURE) += pLnDCM(pids[k]);} k++;
-            //add in offset immature females for stanza
-            if (pids[k]) {lnC(FEMALE,IMMATURE) += pLnDCXM(pids[k]);}            k++; 
+            if (FEMALE<=nSXs){
+                //add in female offset
+                if (pids[k]) {lnC(FEMALE) += pLnDCX(pids[k]);}                      k++;
+                //add in immature offsets
+                if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x,IMMATURE) += pLnDCM(pids[k]);} k++;
+                //add in offset immature females for stanza
+                if (pids[k]) {lnC(FEMALE,IMMATURE) += pLnDCXM(pids[k]);}            k++; 
+            }
 
             //extract devs vector
             useDevs = pids[k]; k++;
@@ -2023,12 +2034,14 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnQ(x) += pLnQ(pids[k]);}   k++;
         //add in main temporal offsets
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnQ(x) += pLnDQT(pids[k]);} k++;
-        //add in female offset
-        if (pids[k]) {lnQ(FEMALE) += pLnDQX(pids[k]);}                      k++;
-        //add in immature offsets
-        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnQ(x,IMMATURE) += pLnDQM(pids[k]);} k++;
-        //add in offset immature females for stanza
-        if (pids[k]) {lnQ(FEMALE,IMMATURE) += pLnDQXM(pids[k]);}            k++; 
+        if (FEMALE<=nSXs){
+            //add in female offset
+            if (pids[k]) {lnQ(FEMALE) += pLnDQX(pids[k]);}                      k++;
+            //add in immature offsets
+            if (pids[k]) {for (int x=1;x<=nSXs;x++) lnQ(x,IMMATURE) += pLnDQM(pids[k]);} k++;
+            //add in offset immature females for stanza
+            if (pids[k]) {lnQ(FEMALE,IMMATURE) += pLnDQXM(pids[k]);}            k++; 
+        }
         
         idSel = pids[k];//selectivity function id
         
@@ -2248,12 +2261,12 @@ FUNCTION dvar_vector calcNLLs_CatchAbundance(AggregateCatchData* ptrA, dvar5_arr
         if (debug<0) cout<<"NULL)";
     } else 
     if (ptrA->optFit==tcsam::FIT_BY_TOTAL){
-        nlls.allocate(ANY_SX,ANY_SX); nlls.initialize();
-        tA_xy.allocate(ANY_SX,ANY_SX,mny,mxy);
+        nlls.allocate(ALL_SXs,ALL_SXs); nlls.initialize();
+        tA_xy.allocate(ALL_SXs,ALL_SXs,mny,mxy);
         tA_xy.initialize();
-        for (int y=mny;y<=mxy;y++) tA_xy(ANY_SX,y) = sum(mA_yxmsz(y));//sum over sexes
-        if (debug<0) cout<<tcsam::getSexType(ANY_SX)<<"=";
-        nlls(ANY_SX) = calcNLL(ptrA->llType, tA_xy(ANY_SX), ptrA->C_xy(ANY_SX), ptrA->stdv_xy(ANY_SX), ptrA->yrs, debug, cout);                
+        for (int y=mny;y<=mxy;y++) tA_xy(ALL_SXs,y) = sum(mA_yxmsz(y));//sum over sexes
+        if (debug<0) cout<<tcsam::getSexType(ALL_SXs)<<"=";
+        nlls(ALL_SXs) = calcNLL(ptrA->llType, tA_xy(ALL_SXs), ptrA->C_xy(ALL_SXs), ptrA->stdv_xy(ALL_SXs), ptrA->yrs, debug, cout);                
         if (debug<0) cout<<")";
     } else {
         std::cout<<"Calling calcNLLs_CatchAbundance with invalid fit option."<<endl;
@@ -2299,19 +2312,19 @@ FUNCTION dvar_vector calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array
         if (debug<0) cout<<"NULL)";
     } else 
     if (ptrB->optFit==tcsam::FIT_BY_TOTAL){
-        nlls.allocate(ANY_SX,ANY_SX); nlls.initialize();
-        tB_xy.allocate(ANY_SX,ANY_SX,mny,mxy);
+        nlls.allocate(ALL_SXs,ALL_SXs); nlls.initialize();
+        tB_xy.allocate(ALL_SXs,ALL_SXs,mny,mxy);
         tB_xy.initialize();
         //calc catch biomass over sexes
         for (int x=1;x<=nSXs;x++){
             for (int y=mny;y<=mxy;y++) {
                 for (int m=1;m<=nMSs;m++) {
-                    for (int s=1;s<=nSCs;s++) tB_xy(ANY_SX,y) += mA_yxmsz(y,x,m,s)*ptrMDS->ptrBio->wAtZ_xmz(x,m);
+                    for (int s=1;s<=nSCs;s++) tB_xy(ALL_SXs,y) += mA_yxmsz(y,x,m,s)*ptrMDS->ptrBio->wAtZ_xmz(x,m);
                 }
             }
         }
-        if (debug<0) cout<<tcsam::getSexType(ANY_SX)<<"=";
-        nlls(ANY_SX) = calcNLL(ptrB->llType, tB_xy(ANY_SX), ptrB->C_xy(ANY_SX), ptrB->stdv_xy(ANY_SX), ptrB->yrs, debug, cout);                
+        if (debug<0) cout<<tcsam::getSexType(ALL_SXs)<<"=";
+        nlls(ALL_SXs) = calcNLL(ptrB->llType, tB_xy(ALL_SXs), ptrB->C_xy(ALL_SXs), ptrB->stdv_xy(ALL_SXs), ptrB->yrs, debug, cout);                
         if (debug<0) cout<<")";
     } else {
         std::cout<<"Calling calcNLLs_CatchBiomass with invalid fit option."<<endl;
@@ -2408,7 +2421,7 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
     int mny = mA_yxmsz.indexmin();
     int mxy = mA_yxmsz.indexmax();//may NOT be mxYr
     if (ptrZFD->optFit==tcsam::FIT_BY_TOTAL){
-        nlls.allocate(ANY_SX,ANY_SX,1,yrs.size()); nlls.initialize();
+        nlls.allocate(ALL_SXs,ALL_SXs,1,yrs.size()); nlls.initialize();
     } else
     if (ptrZFD->optFit==tcsam::FIT_BY_SEX){
         nlls.allocate(1,nSXs,1,yrs.size()); nlls.initialize();
@@ -2459,12 +2472,12 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                     if (debug<0) {
                         cout<<"'"<<y<<"'=list(";
                         cout<<"fit.type="<<ptrZFD->optFit<<cc;
-                        cout<<"sx='ANY_SEX'"<<cc;
-                        cout<<"ms='ANY_MATURITY'"<<cc;
-                        cout<<"sc='ANY_SHELL_CONDITION'"<<cc;
+                        cout<<"sx='ALL_SEX'"<<cc;
+                        cout<<"ms='ALL_MATURITY'"<<cc;
+                        cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                         cout<<"fit=";
                     }
-                    nlls(ANY_SX,iy) = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                    nlls(ALL_SXs,iy) = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
                     if (debug<0) cout<<")"<<cc<<endl;
                 }
             } else
@@ -2495,8 +2508,8 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                             cout<<"'"<<y<<"'=list(";
                             cout<<"fit.type="<<ptrZFD->optFit<<cc;
                             cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
-                            cout<<"ms='ANY_MATURITY'"<<cc;
-                            cout<<"sc='ANY_SHELL_CONDITION'"<<cc;
+                            cout<<"ms='ALL_MATURITY'"<<cc;
+                            cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                             cout<<"fit=";
                         }
                         nlls(x,iy) = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
@@ -2539,8 +2552,8 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                             cout<<"'"<<y<<"'=list(";
                             cout<<"fit.type="<<ptrZFD->optFit<<cc;
                             cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
-                            cout<<"ms='ANY_MATURITY'"<<cc;
-                            cout<<"sc='ANY_SHELL_CONDITION'"<<cc;
+                            cout<<"ms='ALL_MATURITY'"<<cc;
+                            cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                             cout<<"fit=";
                         }
                         nlls(x,iy) = calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
@@ -2587,7 +2600,7 @@ FUNCTION dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& 
                                 cout<<"fit.type="<<ptrZFD->optFit<<cc;
                                 cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
                                 cout<<"ms='"<<tcsam::getMaturityType(m)<<"'"<<cc;
-                                cout<<"sc='ANY_SHELL_CONDITION'"<<cc;
+                                cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                                 cout<<"fit=";
                             }
                             nlls(m+(x-1)*nMSs,iy) = calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);

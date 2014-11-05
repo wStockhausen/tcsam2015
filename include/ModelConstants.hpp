@@ -8,6 +8,7 @@
  * 20140605: added tcsam::dgbAll, dbgPriors
  * 20140918: renamed string constants of form "name_STR" to follow format "STR_name"
  * 20140930: switched MALE, FEMALE so MALE=1, FEMALE=2
+ * 20141030: switched ANY to ALL
  */
 
 #pragma once
@@ -46,28 +47,28 @@ namespace tcsam{
     const int nSXs      = 2;//number of model sexes
     const int MALE      = 1;//integer indicating sex=male
     const int FEMALE    = 2;//integer indicating sex=female
-    const int ANY_SEX   = nSXs+1;//integer indicating combined sexes
-    const adstring STR_MALE    = "MALE";
-    const adstring STR_FEMALE  = "FEMALE";
-    const adstring STR_ANY_SEX = "ANY_SEX";
+    const int ALL_SXs   = nSXs+1*(nSXs>1);//integer indicating all sexes combined
+    const adstring STR_MALE    = "MALE";   //string indicating male
+    const adstring STR_FEMALE  = "FEMALE"; //string indicating female
+    const adstring STR_ALL_SXs = "ALL_SEX";//string indicating all sexes combined
     
     //maturity states
     const int nMSs     = 2; //number of model maturity states
-    const int IMMATURE = 1;
-    const int MATURE   = 2;
-    const int ANY_MATURITY = nMSs+1;
-    const adstring STR_IMMATURE     = "IMMATURE";
-    const adstring STR_MATURE       = "MATURE";
-    const adstring STR_ANY_MATURITY = "ANY_MATURITY";
+    const int IMMATURE = 1; //integer indicating immature
+    const int MATURE   = 2; //integer indicating mature
+    const int ALL_MSs = nMSs+1*(nMSs>1); //integer indicating all maturity states combined
+    const adstring STR_IMMATURE = "IMMATURE";//string indicating immature
+    const adstring STR_MATURE   = "MATURE";  //string indicating mature
+    const adstring STR_ALL_MSs  = "ALL_MATURITY"; //string indicating all maturity states combined
         
     //shell conditions
     const int nSCs = 2;     //number of model shell conditions
     const int NEW_SHELL = 1;//integer indicating new shell condition
     const int OLD_SHELL = 2;//integer indicating old shell condition
-    const int ANY_SHELL = 3;//integer indicating combined shell conditions
-    const adstring STR_NEW_SHELL = "NEW_SHELL";
-    const adstring STR_OLD_SHELL = "OLD_SHELL";
-    const adstring STR_ANY_SHELL = "ANY_SHELL";
+    const int ALL_SCs = nSCs+1*(nSCs>1);//integer indicating all shell conditions combined
+    const adstring STR_NEW_SHELL = "NEW_SHELL"; //string indicating new shell condition
+    const adstring STR_OLD_SHELL = "OLD_SHELL"; //string indicating old shell condition
+    const adstring STR_ALL_SCs   = "ALL_SHELL"; //string indicating all shell conditions combined
     
     //objective function fitting option types
     const adstring STR_FIT_NONE            = "NONE";

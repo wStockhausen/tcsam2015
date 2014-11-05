@@ -15,9 +15,9 @@ AFSC.Trawl.Survey #survey names
 FALSE  #run operating model only
 FALSE  #fit to priors
 
-../input.Tanner2013/TCSAM2015_ModelParametersInfo.dat  #model parameters info file
-../input.Tanner2013/TCSAM2015_ModelDatasets.dat        #model datasets file
-../input.Tanner2013/TCSAM2015_ModelOptions.dat         #model options file
+../input.Tanner2013/Model.ParametersInfo.dat  #model parameters info file
+../input.Tanner2013/Model.Datasets.dat        #model datasets file
+../input.Tanner2013/Model.Options.dat         #model options file
 
 ON  #jitter resampling option
 0.5 #jitter range

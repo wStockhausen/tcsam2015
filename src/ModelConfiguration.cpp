@@ -19,9 +19,6 @@ int    ModelConfiguration::mnYr     = -1;//min model year
 int    ModelConfiguration::mxYr     = -1;//max model year
 int    ModelConfiguration::nSrv     = -1;//number of model surveys
 int    ModelConfiguration::nFsh     = -1;//number of model fisheries
-int    ModelConfiguration::nSXs     = -1;//number of model sex states
-int    ModelConfiguration::nMSs     = -1;//number of model maturity states
-int    ModelConfiguration::nSCs     = -1;//number of model shell condition states
 int    ModelConfiguration::nZBs     = -1;//number of model size bins
 int    ModelConfiguration::jitter   = OFF;//flag to jitter initial parameter values
 double ModelConfiguration::jitFrac  = 1.0;//fraction to jitter bounded parameter values
@@ -32,9 +29,6 @@ double ModelConfiguration::vif      = 1.0;//variance inflation factor for resamp
 ***************************************************************/
 ModelConfiguration::ModelConfiguration(){
     runOpMod=fitToPriors=INT_TRUE;//default to TRUE
-    ModelConfiguration::nSXs = tcsam::nSXs;
-    ModelConfiguration::nMSs = tcsam::nMSs;
-    ModelConfiguration::nSCs = tcsam::nSCs;
 }
 /***************************************************************
 *   destruction                                                *
@@ -129,9 +123,9 @@ void ModelConfiguration::read(cifstream & is) {
     //convert model quantities to csv strings
     csvYrs  =qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=mxYr;    y++) csvYrs  += cc+qt+str(y)+qt;
     csvYrsP1=qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=(mxYr+1);y++) csvYrsP1 += cc+qt+str(y)+qt;
-    csvSXs=qt+tcsam::getSexType(1)     +qt; for (int i=2;i<=nSXs;i++) csvSXs += cc+qt+tcsam::getSexType(i)     +qt;
-    csvMSs=qt+tcsam::getMaturityType(1)+qt; for (int i=2;i<=nMSs;i++) csvMSs += cc+qt+tcsam::getMaturityType(i)+qt;
-    csvSCs=qt+tcsam::getShellType(1)   +qt; for (int i=2;i<=nSCs;i++) csvSCs += cc+qt+tcsam::getShellType(i)   +qt;
+    csvSXs=qt+tcsam::getSexType(1)     +qt; for (int i=2;i<=tcsam::nSXs;i++) csvSXs += cc+qt+tcsam::getSexType(i)     +qt;
+    csvMSs=qt+tcsam::getMaturityType(1)+qt; for (int i=2;i<=tcsam::nMSs;i++) csvMSs += cc+qt+tcsam::getMaturityType(i)+qt;
+    csvSCs=qt+tcsam::getShellType(1)   +qt; for (int i=2;i<=tcsam::nSCs;i++) csvSCs += cc+qt+tcsam::getShellType(i)   +qt;
     csvZCs=wts::to_qcsv(zCutPts);
     csvZBs=wts::to_qcsv(zMidPts);
     csvFsh=wts::to_qcsv(lblsFsh);
@@ -273,7 +267,7 @@ void ModelOptions::read(cifstream & is) {
 void ModelOptions::write(ostream & os) {
     if (debug) cout<<"#start ModelOptions::write(ostream)"<<endl;
     os<<"#######################################"<<endl;
-    os<<"#TCSAM2014 Model Options File         #"<<endl;
+    os<<"#TCSAM2015 Model Options File         #"<<endl;
     os<<"#######################################"<<endl;
 
     //averaging options for fishery capture rates
