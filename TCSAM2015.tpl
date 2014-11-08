@@ -1770,15 +1770,19 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
         imatrix idxs = ptrSel->getModelIndices(pc);
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);//year
-            k=ptrSel->nIVs+1+6;//1st devs vector variable column
-            if (useDevsS1) {params[1] += devsS1(useDevsS1,idxDevsS1[y]);}
-            if (useDevsS2) {params[2] += devsS2(useDevsS2,idxDevsS2[y]);}
-            if (useDevsS3) {params[3] += devsS3(useDevsS3,idxDevsS3[y]);}
-            if (useDevsS4) {params[4] += devsS4(useDevsS4,idxDevsS4[y]);}
-            if (useDevsS5) {params[5] += devsS5(useDevsS5,idxDevsS5[y]);}
-            if (useDevsS6) {params[6] += devsS6(useDevsS6,idxDevsS6[y]);}
-            sel_iyz(pc,y) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
-            if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"sel: "<<sel_iyz(pc,y)<<endl;
+            if (y<=mxYr+1){
+                k=ptrSel->nIVs+1+6;//1st devs vector variable column
+                if (useDevsS1) {params[1] += devsS1(useDevsS1,idxDevsS1[y]);}
+                if (useDevsS2) {params[2] += devsS2(useDevsS2,idxDevsS2[y]);}
+                if (useDevsS3) {params[3] += devsS3(useDevsS3,idxDevsS3[y]);}
+                if (useDevsS4) {params[4] += devsS4(useDevsS4,idxDevsS4[y]);}
+                if (useDevsS5) {params[5] += devsS5(useDevsS5,idxDevsS5[y]);}
+                if (useDevsS6) {params[6] += devsS6(useDevsS6,idxDevsS6[y]);}
+                sel_iyz(pc,y) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
+                if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"sel: "<<sel_iyz(pc,y)<<endl;
+            } else {
+                if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"y < mxYr+1. Skipping year!"<<endl;
+            }
         }
     }
     if (debug>dbgCalcProcs) cout<<"finished calcSelectivities()"<<endl;
@@ -2058,10 +2062,12 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
             v = idxs(idx,1);//survey
             y = idxs(idx,2);//year
             x = idxs(idx,3);//sex
-            for (int m=1;m<=nMSs;m++){
-                for (int s=1;s<=nSCs;s++){
-                    q_vyxms(v,y,x,m,s)  = Q_xm(x,m);
-                    q_vyxmsz(v,y,x,m,s) = Q_xm(x,m)*sel_iyz(idSel,y);
+            if (y <= mxYr+1){
+                for (int m=1;m<=nMSs;m++){
+                    for (int s=1;s<=nSCs;s++){
+                        q_vyxms(v,y,x,m,s)  = Q_xm(x,m);
+                        q_vyxmsz(v,y,x,m,s) = Q_xm(x,m)*sel_iyz(idSel,y);
+                    }
                 }
             }
         }
@@ -2862,20 +2868,25 @@ FUNCTION void ReportToR_FshQuants(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Starting ReportToR_FshQuants(...)"<<endl;
     d5_array vFc_fyxms = wts::value(Fc_fyxms);
     d5_array Fc_fxmsy = tcsam::rearrangeIYXMStoIXMSY(vFc_fyxms);
+    if (debug) cout<<"finished Fc_fxmsy"<<endl;
     d6_array vFc_fyxmsz = wts::value(Fc_fyxmsz);
     d6_array Fc_fxmsyz = tcsam::rearrangeIYXMSZtoIXMSYZ(vFc_fyxmsz);
+    if (debug) cout<<"finished Fc_fxmsyz"<<endl;
     d6_array vFr_fyxmsz = wts::value(Fr_fyxmsz);
     d6_array Fr_fxmsyz = tcsam::rearrangeIYXMSZtoIXMSYZ(vFr_fyxmsz);
+    if (debug) cout<<"finished Fr_fxmsyz"<<endl;
     
     d6_array vc_fyxmsz = wts::value(c_fyxmsz);
     d3_array c_fxy = tcsam::calcIXYfromIYXMSZ(vc_fyxmsz);
     d3_array cb_fxy = tcsam::calcIXYfromIYXMSZ(vc_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
     d6_array c_fxmsyz = tcsam::rearrangeIYXMSZtoIXMSYZ(vc_fyxmsz);
+    if (debug) cout<<"finished c_fxmsyz"<<endl;
     
     d6_array vr_fyxmsz = wts::value(r_fyxmsz);
     d3_array r_fxy = tcsam::calcIXYfromIYXMSZ(vr_fyxmsz);
     d3_array rb_fxy = tcsam::calcIXYfromIYXMSZ(vr_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
     d6_array r_fxmsyz = tcsam::rearrangeIYXMSZtoIXMSYZ(vr_fyxmsz);
+    if (debug) cout<<"finished r_fxmsyz"<<endl;
    
     
     os<<"fisheries=list("<<endl;

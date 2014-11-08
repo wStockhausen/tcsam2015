@@ -3,6 +3,11 @@
 #include "ModelConstants.hpp"
 #include "SummaryFunctions.hpp"
 
+/**
+ * Calculate marginal sums over msz by ixy.
+ * @param n_iyxmsz - array to calculate sums on
+ * @return d3_array with dims ixy.
+ */
 d3_array tcsam::calcIXYfromIYXMSZ(d6_array& n_iyxmsz){
     ivector bnds = wts::getBounds(n_iyxmsz);
     int mni = bnds( 1); int mxi = bnds( 2);
@@ -23,6 +28,12 @@ d3_array tcsam::calcIXYfromIYXMSZ(d6_array& n_iyxmsz){
     return n_ixy;
 }
 
+/**
+ * Calculate marginal sums over msz by ixy, weighted by w_xmz.
+ * @param n_iyxmsz - array to calculate sums on
+ * @param w_xmz - weight-at-xmz array
+ * @return d3_array with dims ixy.
+ */
 d3_array tcsam::calcIXYfromIYXMSZ(d6_array& n_iyxmsz, d3_array w_xmz){
     ivector bnds = wts::getBounds(n_iyxmsz);
     int mni = bnds( 1); int mxi = bnds( 2);
@@ -45,6 +56,11 @@ d3_array tcsam::calcIXYfromIYXMSZ(d6_array& n_iyxmsz, d3_array w_xmz){
     return b_ixy;
 }
 
+/**
+ * Calculate marginal sums over ms by ixyz.
+ * @param n_iyxmsz - array to calculate sums on
+ * @return d4_array with dims ixyz.
+ */
 d4_array tcsam::calcIXYZfromIYXMSZ(d6_array& n_iyxmsz){
     ivector bnds = wts::getBounds(n_iyxmsz);
     int mni = bnds( 1); int mxi = bnds( 2);
@@ -69,6 +85,11 @@ d4_array tcsam::calcIXYZfromIYXMSZ(d6_array& n_iyxmsz){
     return n_ixyz;
 }
 
+/**
+ * Calculate marginal sums over s by ixmyz.
+ * @param n_iyxmsz - array to calculate sums on
+ * @return d5_array with dims ixmyz.
+ */
 d5_array tcsam::calcIXMYZfromIYXMSZ(d6_array& n_iyxmsz){
     ivector bnds = wts::getBounds(n_iyxmsz);
     int mni = bnds( 1); int mxi = bnds( 2);
@@ -93,6 +114,13 @@ d5_array tcsam::calcIXMYZfromIYXMSZ(d6_array& n_iyxmsz){
     return n_ixmyz;
 }
 
+/**
+ * Sum iyxmsz array over maturity states and rearrange indices to ixsyz.
+ * 
+ * @param n_iyxmsz - d6_array w/ indices iyxmsz to sum
+ * 
+ * @return d5_array with indices ixsyz
+ */
 d5_array tcsam::calcIXSYZfromIYXMSZ(d6_array& n_iyxmsz){
     ivector bnds = wts::getBounds(n_iyxmsz);
     int mni = bnds( 1); int mxi = bnds( 2);
@@ -118,64 +146,93 @@ d5_array tcsam::calcIXSYZfromIYXMSZ(d6_array& n_iyxmsz){
 }
 
 d5_array tcsam::rearrangeYXMSZtoXMSYZ(d5_array& n_yxmsz){
-    ivector bnds = wts::getBounds(n_yxmsz);
-    int mny = bnds( 1); int mxy = bnds( 2);
-    int mnx = bnds( 3); int mxx = bnds( 4);
-    int mnm = bnds( 5); int mxm = bnds( 6);
-    int mns = bnds( 7); int mxs = bnds( 8);
-    int mnz = bnds( 9); int mxz = bnds(10);
-    d5_array n_xmsyz(mnx,mxx,mnm,mxm,mns,mxs,mny,mxy,mnz,mxz);
-    n_xmsyz.initialize();
-    for (int x=mnx;x<=mxx;x++){
-        for (int y=mny;y<=mxy;y++){
-            for (int m=mnm;m<=mxm;m++) {
-                for (int s=mns;s<=mxs;s++) n_xmsyz(x,m,s,y) = n_yxmsz(y,x,m,s);
-            }
-        }
-    }
+    cout<<"In rearrangeYXMSZtoXMSYZ(...)"<<endl;
+    ivector perm(1,5);//{4,1,2,3,5};
+    perm[1]=4;perm[2]=1;perm[3]=2;perm[4]=3;perm[5]=5;
+    d5_array n_xmsyz = wts::permuteDims(perm,n_yxmsz);
+    cout<<"Finished rearrangeYXMSZtoXMSYZ(...)"<<endl;
+//    ivector bnds = wts::getBounds(n_yxmsz);
+//    int mny = bnds( 1); int mxy = bnds( 2);
+//    int mnx = bnds( 3); int mxx = bnds( 4);
+//    int mnm = bnds( 5); int mxm = bnds( 6);
+//    int mns = bnds( 7); int mxs = bnds( 8);
+//    int mnz = bnds( 9); int mxz = bnds(10);
+//    d5_array n_xmsyz(mnx,mxx,mnm,mxm,mns,mxs,mny,mxy,mnz,mxz);
+//    n_xmsyz.initialize();
+//    for (int x=mnx;x<=mxx;x++){
+//        for (int y=mny;y<=mxy;y++){
+//            for (int m=mnm;m<=mxm;m++) {
+//                for (int s=mns;s<=mxs;s++) n_xmsyz(x,m,s,y) = n_yxmsz(y,x,m,s);
+//            }
+//        }
+//    }
     return n_xmsyz;
 }
 
+/**
+ * Rearrange indices for a d5_array from IYXMS to IXMSY.
+ * 
+ * @param n_iyxms - d5_array with indices iyxms
+ * 
+ * @return d5_array with indices ixmsy
+ */
 d5_array tcsam::rearrangeIYXMStoIXMSY(d5_array& n_iyxms){
-    ivector bnds = wts::getBounds(n_iyxms);
-    int mni = bnds( 1); int mxi = bnds( 2);
-    int mny = bnds( 3); int mxy = bnds( 4);
-    int mnx = bnds( 5); int mxx = bnds( 6);
-    int mnm = bnds( 7); int mxm = bnds( 8);
-    int mns = bnds( 9); int mxs = bnds(10);
-    d5_array n_ixmsy(mni,mxi,mnx,mxx,mnm,mxm,mns,mxs,mny,mxy);
-    n_ixmsy.initialize();
-    for (int i=mni;i<=mxi;i++){
-        for (int x=mnx;x<=mxx;x++){
-            for (int y=mny;y<=mxy;y++){
-                for (int m=mnm;m<=mxm;m++) {
-                    for (int s=mns;s<=mxs;s++) n_ixmsy(i,x,m,s,y) = n_iyxms(i,y,x,m,s);
-                }
-            }
-        }
-    }
+    cout<<"starting rearrangeIYXMStoIXMSY(...)"<<endl;
+    ivector perm(1,5);//{1,5,2,3,4};
+    perm[1]=1;perm[2]=5;perm[3]=2;perm[4]=3;perm[5]=4;
+    d5_array n_ixmsy = wts::permuteDims(perm,n_iyxms);
+    cout<<"finished rearrangeIYXMStoIXMSY(...)"<<endl;
+//    ivector bnds = wts::getBounds(n_iyxms);
+//    int mni = bnds( 1); int mxi = bnds( 2);
+//    int mny = bnds( 3); int mxy = bnds( 4);
+//    int mnx = bnds( 5); int mxx = bnds( 6);
+//    int mnm = bnds( 7); int mxm = bnds( 8);
+//    int mns = bnds( 9); int mxs = bnds(10);
+//    d5_array n_ixmsy(mni,mxi,mnx,mxx,mnm,mxm,mns,mxs,mny,mxy);
+//    n_ixmsy.initialize();
+//    for (int i=mni;i<=mxi;i++){
+//        for (int x=mnx;x<=mxx;x++){
+//            for (int y=mny;y<=mxy;y++){
+//                for (int m=mnm;m<=mxm;m++) {
+//                    for (int s=mns;s<=mxs;s++) n_ixmsy(i,x,m,s,y) = n_iyxms(i,y,x,m,s);
+//                }
+//            }
+//        }
+//    }
     return n_ixmsy;
 }
 
+/**
+ * Rearrange indices for a d6_array from IYXMSZ to IXMSYZ.
+ * 
+ * @param n_iyxmsz - d6_array with indices iyxmsz
+ * 
+ * @return d6_array with indices ixmsyz
+ */
 d6_array tcsam::rearrangeIYXMSZtoIXMSYZ(d6_array& n_iyxmsz){
-    ivector bnds = wts::getBounds(n_iyxmsz);
-    int mni = bnds( 1); int mxi = bnds( 2);
-    int mny = bnds( 3); int mxy = bnds( 4);
-    int mnx = bnds( 5); int mxx = bnds( 6);
-    int mnm = bnds( 7); int mxm = bnds( 8);
-    int mns = bnds( 9); int mxs = bnds(10);
-    int mnz = bnds(11); int mxz = bnds(12);
-    d6_array n_ixmsyz(mni,mxi,mnx,mxx,mnm,mxm,mns,mxs,mny,mxy,mnz,mxz);
-    n_ixmsyz.initialize();
-    for (int i=mni;i<=mxi;i++){
-        for (int x=mnx;x<=mxx;x++){
-            for (int y=mny;y<=mxy;y++){
-                for (int m=mnm;m<=mxm;m++) {
-                    for (int s=mns;s<=mxs;s++) n_ixmsyz(i,x,m,s,y) = n_iyxmsz(i,y,x,m,s);
-                }
-            }
-        }
-    }
+    cout<<"starting rearrangeIYXMSZtoIXMSYZ(...)"<<endl;
+    ivector perm(1,6);//{1,5,2,3,4,6};
+    perm[1]=1;perm[2]=5;perm[3]=2;perm[4]=3;perm[5]=4;perm[6]=6;
+    d6_array n_ixmsyz = wts::permuteDims(perm,n_iyxmsz);
+    cout<<"finished rearrangeIYXMSZtoIXMSYZ(...)"<<endl;
+//    ivector bnds = wts::getBounds(n_iyxmsz);
+//    int mni = bnds( 1); int mxi = bnds( 2);
+//    int mny = bnds( 3); int mxy = bnds( 4);
+//    int mnx = bnds( 5); int mxx = bnds( 6);
+//    int mnm = bnds( 7); int mxm = bnds( 8);
+//    int mns = bnds( 9); int mxs = bnds(10);
+//    int mnz = bnds(11); int mxz = bnds(12);
+//    d6_array n_ixmsyz(mni,mxi,mnx,mxx,mnm,mxm,mns,mxs,mny,mxy,mnz,mxz);
+//    n_ixmsyz.initialize();
+//    for (int i=mni;i<=mxi;i++){
+//        for (int x=mnx;x<=mxx;x++){
+//            for (int y=mny;y<=mxy;y++){
+//                for (int m=mnm;m<=mxm;m++) {
+//                    for (int s=mns;s<=mxs;s++) n_ixmsyz(i,x,m,s,y) = n_iyxmsz(i,y,x,m,s);
+//                }
+//            }
+//        }
+//    }
     return n_ixmsyz;
 }
 
