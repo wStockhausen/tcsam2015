@@ -131,6 +131,16 @@ void ModelConfiguration::read(cifstream & is) {
     csvFsh=wts::to_qcsv(lblsFsh);
     csvSrv=wts::to_qcsv(lblsSrv);
     
+    dimYrsToR   = "year=c("+csvYrs+")";
+    dimYrsP1ToR = "year=c("+csvYrsP1+")";
+    dimSXsToR   = "sex=c("+csvSXs+")";
+    dimMSsToR   = "maturity=c("+csvMSs+")";
+    dimSCsToR   = "'shell condition'=c("+csvSCs+")";
+    dimZCsToR   = "size=c("+wts::to_qcsv(zCutPts)+")";
+    dimZBsToR   = "size=c("+wts::to_qcsv(zMidPts)+")";
+    dimFshToR   = "fishery=c("+wts::to_qcsv(lblsFsh)+")";
+    dimSrvToR   = "survey=c("+wts::to_qcsv(lblsSrv)+")";
+    
     if (debug){
         cout<<wts::getBooleanType(runOpMod)   <<"   #run operating model?"<<endl;
         cout<<wts::getBooleanType(fitToPriors)<<"   #fit to priors?"<<endl;
@@ -149,6 +159,18 @@ void ModelConfiguration::read(cifstream & is) {
     if (debug) cout<<"end ModelConfiguration::read(cifstream & is)"<<endl;
 }
 
+/**
+ * Set max model year (for retrospective model runs).
+ * 
+ * @param yr - new max model year
+ */
+void ModelConfiguration::setMaxModelYear(int yr){
+    mxYr = yr;
+    csvYrs  =qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=mxYr;    y++) csvYrs  += cc+qt+str(y)+qt;
+    csvYrsP1=qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=(mxYr+1);y++) csvYrsP1 += cc+qt+str(y)+qt;
+    dimYrsToR   = "year=c("+csvYrs+")";
+    dimYrsP1ToR = "year=c("+csvYrsP1+")";
+}
 /***************************************************************
 *   function to write to file in ADMB format                   *
 ***************************************************************/

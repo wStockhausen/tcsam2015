@@ -61,11 +61,33 @@
         adstring csvFsh;//csv string of fishery labels
         adstring csvSrv;//csv string of survey labels
 
+        adstring dimYrsToR;  //R dim string of model years (mnYr:mxYr)
+        adstring dimYrsP1ToR;//R dim string of model years+1 (mnYr:mxYr+1)
+        adstring dimSXsToR;//R dim string of sexes
+        adstring dimMSsToR;//R dim string of maturity states
+        adstring dimSCsToR;//R dim string of shell conditions
+        adstring dimZCsToR;//R dim string of size bin cutpoints
+        adstring dimZBsToR;//R dim string of size bin midpoints
+        adstring dimFshToR;//R dim string of fishery labels
+        adstring dimSrvToR;//R dim string of survey labels
+
     public:
         ModelConfiguration();
         ~ModelConfiguration();
         ModelConfiguration& operator =(const ModelConfiguration & rhs);
         
+        /**
+         * Set max model year (for retrospective model runs).
+         * 
+         * @param yr - new max model year
+         */
+        void setMaxModelYear(int yr);
+        /**
+         * Tests if mnYr <= yr <= mxYr. 
+         * 
+         * @param yr
+         * @return 1 if true, 0 if false
+         */
         int isModelYear(int yr){if ((mnYr<=yr)&&(yr<=mxYr)) return 1; return 0;}
         void read(const adstring & fn);   //read file in ADMB format
         void write(const adstring & fn);  //write object to file in ADMB format

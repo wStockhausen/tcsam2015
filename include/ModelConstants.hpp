@@ -20,7 +20,14 @@ class rpt{
         /* Global output filestream */
         static std::ofstream echo;
 };
-    
+
+class tcsamDims{
+    public:
+        static adstring getSXsForR(int mn,int mx);
+        static adstring getMSsForR(int mn,int mx);
+        static adstring getSCsForR(int mn,int mx);
+};
+
 namespace tcsam{    
     /* minimum debugging level that will print ALL debug info */
     const int dbgAll = 100;
@@ -51,6 +58,7 @@ namespace tcsam{
     const adstring STR_MALE    = "MALE";   //string indicating male
     const adstring STR_FEMALE  = "FEMALE"; //string indicating female
     const adstring STR_ALL_SXs = "ALL_SEX";//string indicating all sexes combined
+//    extern adstring_array STR_SXs(1,nSXs);  //string array
     
     //maturity states
     const int nMSs     = 2; //number of model maturity states
@@ -60,6 +68,7 @@ namespace tcsam{
     const adstring STR_IMMATURE = "IMMATURE";//string indicating immature
     const adstring STR_MATURE   = "MATURE";  //string indicating mature
     const adstring STR_ALL_MSs  = "ALL_MATURITY"; //string indicating all maturity states combined
+//    const adstring_array STR_MSs(1,nMSs);  //string array
         
     //shell conditions
     const int nSCs = 2;     //number of model shell conditions
@@ -69,6 +78,7 @@ namespace tcsam{
     const adstring STR_NEW_SHELL = "NEW_SHELL"; //string indicating new shell condition
     const adstring STR_OLD_SHELL = "OLD_SHELL"; //string indicating old shell condition
     const adstring STR_ALL_SCs   = "ALL_SHELL"; //string indicating all shell conditions combined
+//    const adstring_array STR_SCs(1,nSCs);  //string array
     
     //objective function fitting option types
     const adstring STR_FIT_NONE            = "NONE";

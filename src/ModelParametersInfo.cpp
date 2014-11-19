@@ -212,7 +212,7 @@ void ParameterGroupInfo::createIndices(void){
  * @param pBNVI
  * @return 
  */
-BoundedNumberVectorInfo* ParameterGroupInfo::read(cifstream& is,adstring& lbl, BoundedNumberVectorInfo* pBNVI){
+BoundedNumberVectorInfo* ParameterGroupInfo::read(cifstream& is, adstring& lbl, BoundedNumberVectorInfo* pBNVI){
     adstring param;
     is>>param;
     if (param==lbl){
@@ -234,7 +234,7 @@ BoundedNumberVectorInfo* ParameterGroupInfo::read(cifstream& is,adstring& lbl, B
  * @param pBVVI
  * @return 
  */
-BoundedVectorVectorInfo* ParameterGroupInfo::read(cifstream& is,adstring& lbl, BoundedVectorVectorInfo* pBVVI){
+BoundedVectorVectorInfo* ParameterGroupInfo::read(cifstream& is, adstring& lbl, BoundedVectorVectorInfo* pBVVI){
     adstring param;
     is>>param;
     if (param==lbl){
@@ -256,7 +256,7 @@ BoundedVectorVectorInfo* ParameterGroupInfo::read(cifstream& is,adstring& lbl, B
  * @param pDVVI
  * @return 
  */
-DevsVectorVectorInfo* ParameterGroupInfo::read(cifstream& is,adstring& lbl, DevsVectorVectorInfo* pDVVI){
+DevsVectorVectorInfo* ParameterGroupInfo::read(cifstream& is, adstring& lbl, DevsVectorVectorInfo* pDVVI){
     adstring param;
     is>>param;
     if (param==lbl){
@@ -387,9 +387,11 @@ void ParameterGroupInfo::writeToR(std::ostream& os){
             for (int p=1;p<=nPCs;p++){
                 ivector iv = getPCIDs(p);
                 imatrix im = getModelIndices(p);
+                adstring ids = "index=c(1:"+str(im.indexmax())+")";
+                adstring tps = "type=c("+wts::to_qcsv(lblIVs)+")";
                 os<<qt<<p<<qt<<"=list(";
                 os<<"ids.PC="; wts::writeToR(os,iv,lbls); os<<cc<<endl;
-                os<<"ids.Mod="; wts::writeToR(os,im,"1:"+str(im.indexmax()),wts::to_qcsv(lblIVs)); os<<"),"<<endl;
+                os<<"ids.Mod="; wts::writeToR(os,im,ids,tps); os<<"),"<<endl;
             }
         os<<"NULL)"<<endl;
     os<<")";
@@ -506,7 +508,6 @@ void RecruitmentInfo::write(std::ostream & os){
     os<<(*pDevsLnR)<<endl;
 }
 
-//TODO: implement!
 void RecruitmentInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"rec=list("<<endl;
@@ -630,7 +631,6 @@ void NaturalMortalityInfo::write(std::ostream & os){
     os<<(*pLnDMXM)<<endl;
  }
 
-//TODO: implement this!
 void NaturalMortalityInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"nm=list("<<endl;
@@ -736,7 +736,6 @@ void GrowthInfo::write(std::ostream & os){
     os<<(*pLnGrBeta)<<endl;
  }
 
-//TODO: implement this!
 void GrowthInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"grw=list("<<endl;
@@ -983,7 +982,6 @@ void SelectivityInfo::write(std::ostream & os){
     os<<(*pDevsS6)<<endl;
  }
 
-//TODO: implement this!
 void SelectivityInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"sel=list("<<endl;
@@ -1145,7 +1143,6 @@ void FisheriesInfo::write(std::ostream & os){
     os<<(*pDevsLnC)<<endl;
  }
 
-//TODO: implement this!
 void FisheriesInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"fsh=list("<<endl;
@@ -1270,7 +1267,6 @@ void SurveysInfo::write(std::ostream & os){
     os<<(*pLnDQXM)<<endl;
  }
 
-//TODO: implement this!
 void SurveysInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"srv=list("<<endl;
@@ -1396,7 +1392,6 @@ void ModelParametersInfo::write(std::ostream & os){
     os<<(*ptrSrv)<<endl;
 }
 
-//TODO: implement this!
 void ModelParametersInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"mpi=list("<<endl;

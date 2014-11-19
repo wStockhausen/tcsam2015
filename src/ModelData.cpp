@@ -5,7 +5,7 @@
 #include "ModelData.hpp"
 #include "SummaryFunctions.hpp"
 
-using namespace tcsam;
+//using namespace tcsam;
 
 //**********************************************************************
 //  Includes
@@ -41,9 +41,7 @@ void AggregateCatchData::saveNLLs(dvar_vector& nlls){
  */
 void AggregateCatchData::replaceCatchData(dmatrix& newC_yx){
     if (debug) std::cout<<"starting AggregateCatchData::replaceCatchData(dmatrix& newC_yx)"<<std::endl;
-    int mnY = newC_yx.indexmin();
-    int mxY = newC_yx.indexmax();
-    C_xy.initialize();
+    //get conversion factor to millions (abundance) or thousands mt (biomass)
     double convFac = 1.0;
     if (type==KW_ABUNDANCE_DATA){
         convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_MILLIONS);
@@ -52,16 +50,70 @@ void AggregateCatchData::replaceCatchData(dmatrix& newC_yx){
         convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_KMT);
 //        rpt::echo<<"#conversion factor from "<<units<<" to 1000's MT is "<<convFac<<std::endl;
     }
-    for (int y=1;y<=ny;y++){
-        int yr = yrs(y);
+     
+    //Note that year indices for newC_yx run from mnYr:mxYr
+    //but year indices for inpC_yc and C_xy, csv_xy, stdv_xy run 1:ny.
+    
+    //year bounds for newC_yx
+    int mnY = newC_yx.indexmin();
+    int mxY = newC_yx.indexmax();
+//    cout<<"mnY = "<<mnY<<tb<<"mxY = "<<mxY<<endl;
+    
+    //copy old values
+    int oldNY = ny;
+//    cout<<"oldNY = "<<oldNY<<endl;
+    ivector oldYrs(1,oldNY);  oldYrs = yrs;
+//    cout<<"1 ";
+    dmatrix oldCVs_xy(1,tcsam::ALL_SXs,1,oldNY);      oldCVs_xy  = cvs_xy;
+//    cout<<"2 ";
+    dmatrix oldStdv_xy(1,tcsam::ALL_SXs,1,oldNY);     oldStdv_xy= stdv_xy;
+//    cout<<"3 ";
+    dmatrix oldC_xy(1,tcsam::ALL_SXs,1,oldNY);        oldC_xy = C_xy;
+//    cout<<"4 ";
+    dmatrix oldInpC_yc(1,oldNY,1,2*tcsam::ALL_SXs+1); oldInpC_yc = inpC_yc;
+//    cout<<"5 "<<endl;
+    //determine new bounds
+    ny=0;
+    for (int y=1;y<=oldNY;y++){
+        int yr = oldYrs(y);
+        if ((mnY<=yr)&&(yr<=mxY)) ny++;
+    }
+//    cout<<"new ny = "<<ny<<endl;
+    //reallocate quantities
+    yrs.deallocate();     yrs.allocate(1,ny);                   yrs.initialize();
+    inpC_yc.deallocate(); inpC_yc.allocate(1,ny,1,2*tcsam::ALL_SXs+1); inpC_yc.initialize();
+    ny=0;
+    for (int y=1;y<=oldNY;y++){
+        int yr = oldYrs(y);
         if ((mnY<=yr)&&(yr<=mxY)) {
-            for (int x=1;x<=nSXs;x++) C_xy(x,y) = newC_yx(yr,x);
-            C_xy(ALL_SXs,y) = sum(newC_yx(yr));
-            for (int x=1;x<=ALL_SXs;x++){
-                inpC_yc(y,2*x)=C_xy(x,y)/convFac;            
-            }
+            ny++;
+//            cout<<"new yindex="<<ny<<tb<<"old yindex="<<y<<tb;
+            yrs(ny)   = yr;
+//            cout<<"yr = "<<yr<<endl;
+            inpC_yc(ny) = oldInpC_yc(y);//copy 
+//            cout<<ny<<tb<<inpC_yc(ny)<<endl;
+            for (int x=1;x<=tcsam::nSXs;x++) inpC_yc(ny,2*x) = newC_yx(yr,x)/convFac;
+            inpC_yc(ny,2*tcsam::ALL_SXs) = sum(newC_yx(yr))/convFac;
+//            cout<<ny<<tb<<inpC_yc(ny)<<endl;
         }
     }
+    C_xy.deallocate();        cvs_xy.deallocate();        stdv_xy.deallocate();
+    C_xy.allocate(1,tcsam::ALL_SXs); cvs_xy.allocate(1,tcsam::ALL_SXs); stdv_xy.allocate(1,tcsam::ALL_SXs);
+    for (int x=1;x<=tcsam::ALL_SXs;x++) {
+        C_xy(x)    = convFac*column(inpC_yc,2*x);
+        cvs_xy(x)  = column(inpC_yc,2*x+1);
+        stdv_xy(x) = sqrt(log(1.0+elem_prod(cvs_xy(x),cvs_xy(x))));
+    }
+//    for (int y=1;y<=ny;y++){
+//        int yr = yrs(y);
+//        if ((mnY<=yr)&&(yr<=mxY)) {
+//            for (int x=1;x<=tcsam::nSXs;x++) C_xy(x,y) = newC_yx(yr,x);
+//            C_xy(tcsam::ALL_SXs,y) = sum(newC_yx(yr));
+//            for (int x=1;x<=tcsam::ALL_SXs;x++){
+//                inpC_yc(y,2*x)=C_xy(x,y)/convFac;            
+//            }
+//        }
+//    }
     if (debug) std::cout<<"finished AggregateCatchData::replaceCatchData(dmatrix& newC_yx)"<<std::endl;
 }
 /***************************************************************
@@ -108,16 +160,16 @@ void AggregateCatchData::read(cifstream & is){
         convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_KMT);
         rpt::echo<<"#conversion factor from "<<units<<" to 1000's MT is "<<convFac<<std::endl;
     }
-    inpC_yc.allocate(1,ny,1,7);
+    inpC_yc.allocate(1,ny,1,2*tcsam::ALL_SXs+1);
     is>>inpC_yc;
     rpt::echo<<"#year males  cv_m  females  cv_f  total  cv_t"<<std::endl<<inpC_yc<<std::endl;
     
     yrs.allocate(1,ny);
-    C_xy.allocate(1,ALL_SXs);
-    cvs_xy.allocate(1,ALL_SXs);
-    stdv_xy.allocate(1,ALL_SXs);
+    C_xy.allocate(1,tcsam::ALL_SXs);
+    cvs_xy.allocate(1,tcsam::ALL_SXs);
+    stdv_xy.allocate(1,tcsam::ALL_SXs);
     yrs = (ivector) column(inpC_yc,1);
-    for (int x=1;x<=ALL_SXs;x++) {
+    for (int x=1;x<=tcsam::ALL_SXs;x++) {
         C_xy(x)    = convFac*column(inpC_yc,2*x);
         cvs_xy(x)  = column(inpC_yc,2*x+1);
         stdv_xy(x) = sqrt(log(1.0+elem_prod(cvs_xy(x),cvs_xy(x))));
@@ -143,8 +195,9 @@ void AggregateCatchData::write(ostream & os){
 void AggregateCatchData::writeToR(ostream& os, std::string nm, int indent) {
     if (debug) std::cout<<"AggregateCatchData::writing to R"<<std::endl;
     
-    adstring x = qt+STR_MALE+qt+cc+qt+STR_FEMALE+qt+cc+qt+STR_ALL_SXs+qt;
-    adstring y  = wts::to_qcsv(yrs);
+    ivector bnds = wts::getBounds(C_xy);
+    adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+    adstring y  = "year=c("+wts::to_qcsv(yrs)+")";
     adstring str; adstring unitsp;
     if (type==KW_ABUNDANCE_DATA) {
         str="abundance"; 
@@ -191,15 +244,15 @@ void SizeFrequencyData::normalize(void){
     dvector nT(1,ny); nT.initialize();
     for (int y=1;y<=ny;y++){
         //calculate total numbers
-        for (int x=1;x<=ALL_SXs;x++){
-            for (int m=1;m<=ALL_MSs;m++){
-                for (int s=1;s<=ALL_SCs;s++) nT(y) += sum(NatZ_xmsyz(x,m,s,y));//sum over size bins
+        for (int x=1;x<=tcsam::ALL_SXs;x++){
+            for (int m=1;m<=tcsam::ALL_MSs;m++){
+                for (int s=1;s<=tcsam::ALL_SCs;s++) nT(y) += sum(NatZ_xmsyz(x,m,s,y));//sum over size bins
             }
         }
         //normalize numbers-at-size by total numbers
-        for (int x=1;x<=ALL_SXs;x++){
-            for (int m=1;m<=ALL_MSs;m++){
-                for (int s=1;s<=ALL_SCs;s++) PatZ_xmsyz(x,m,s,y) = NatZ_xmsyz(x,m,s,y)/nT(y);//norm over size bins
+        for (int x=1;x<=tcsam::ALL_SXs;x++){
+            for (int m=1;m<=tcsam::ALL_MSs;m++){
+                for (int s=1;s<=tcsam::ALL_SCs;s++) PatZ_xmsyz(x,m,s,y) = NatZ_xmsyz(x,m,s,y)/nT(y);//norm over size bins
             }
         }
     }
@@ -214,40 +267,84 @@ void SizeFrequencyData::normalize(void){
  *****************************************************/
 void SizeFrequencyData::replaceSizeFrequencyData(d5_array& newNatZ_yxmsz){
     if (debug) std::cout<<"starting SizeFrequencyData::replaceSizeFrequencyData(...) "<<this<<std::endl;
+    
+    //year limits on new data
     int mnY = newNatZ_yxmsz.indexmin();
     int mxY = newNatZ_yxmsz.indexmax();
-    //zero out old data
-    for (int y=1;y<=ny;y++){
-        int yr = yrs(y);
+    
+    //copy old values in temporary variables
+    int oldNY = ny;
+//    cout<<"oldNY = "<<oldNY<<endl;
+//    cout<<"bnds(yrs) = "<<wts::getBounds(yrs)<<endl;
+    ivector oldYrs(1,oldNY); oldYrs = yrs;
+    d5_array oldInpNatZ_xmsyc(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,oldNY,1,2+(nZCs-1));
+    for (int x=1;x<=tcsam::ALL_SXs;x++){
+        for (int m=1;m<=tcsam::ALL_MSs;m++){
+            for (int s=1;s<=tcsam::ALL_SCs;s++) {
+                oldInpNatZ_xmsyc(x,m,s) = inpNatZ_xmsyc(x,m,s);
+            }
+        }
+    }
+//    cout<<"copied old data"<<endl;
+    
+    ny = 0;//new ny
+    for (int y=1;y<=oldNY;y++){//year index for old data
+        int yr = oldYrs(y);
+        if ((mnY<=yr)&&(yr<=mxY)) ny++;
+    }
+//    cout<<"new ny = "<<ny<<endl;
+    
+    //reallocate yrs for new number of years
+    yrs.deallocate(); yrs.allocate(1,ny); yrs.initialize();
+    //reallocate inpNatZ_xmsyc for new number of years
+    inpNatZ_xmsyc.deallocate(); 
+    inpNatZ_xmsyc.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,2+(nZCs-1));
+    inpNatZ_xmsyc.initialize();
+//    cout<<"yrs, inpNatZ_xmsyc reinitialized"<<endl;
+
+    //copy old data from appropriate years
+    int yctr = 0;//year index for new data
+    for (int y=1;y<=oldNY;y++){//year index for old data
+        int yr = oldYrs(y);
         if ((mnY<=yr)&&(yr<=mxY)){
-            for (int x=1;x<=ALL_SXs;x++){
-                for (int m=1;m<=ALL_MSs;m++){
-                    for (int s=1;s<=ALL_SCs;s++) {
-                        NatZ_xmsyz(x,m,s,y) = 0.0;
-                        inpNatZ_xmsyc(x,m,s,y)(3,2+nZCs-1) = 0.0;
+            yctr++;
+            yrs(yctr) = yr;
+            for (int x=1;x<=tcsam::ALL_SXs;x++){
+                for (int m=1;m<=tcsam::ALL_MSs;m++){
+                    for (int s=1;s<=tcsam::ALL_SCs;s++) {
+                        dvector n_z = tcsam::extractFromYXMSZ(yr,x,m,s,newNatZ_yxmsz);
+                        inpNatZ_xmsyc(x,m,s,yctr)(1,2) = oldInpNatZ_xmsyc(x,m,s,y)(1,2);//old year, ss
+                        inpNatZ_xmsyc(x,m,s,yctr)(3,2+nZCs-1).shift(1) = n_z;//new size frequency
                     }
                 }
             }
         }
     }
-    //put in new data only where it existed before
+//    cout<<"new yrs = "<<yrs<<endl;
+//    cout<<"converted inpN_xmsyc"<<endl;
+    
+    //re-constitute other arrays
+    ss_xmsy.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny);
+    NatZ_xmsyz.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,nZCs-1);
+    PatZ_xmsyz.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,nZCs-1);
+    
+    ss_xmsy.initialize();
+    NatZ_xmsyz.initialize();
+    PatZ_xmsyz.initialize();
+    
     int nc = factors.indexmax();
-    for (int y=1;y<=ny;y++){
-        int yr = yrs(y);
-        if ((mnY<=yr)&&(yr<=mxY)){
-            for (int c=1;c<=nc;c++){
-                int x = tcsam::getSexType(factors(c,1));
-                int m = tcsam::getMaturityType(factors(c,2));
-                int s = tcsam::getShellType(factors(c,3));
-                dvector n_z = extractFromYXMSZ(yr,x,m,s,newNatZ_yxmsz);
-                NatZ_xmsyz(x,m,s,y) = n_z;
-                inpNatZ_xmsyc(x,m,s,y)(3,2+nZCs-1).shift(1) = n_z;
-//                            std::cout<<"Bounds NatZ_xmsyz(x,m,s,y)   : "<<wts::getBounds(NatZ_xmsyz(x,m,s,y))<<std::endl;
-//                            std::cout<<"Bounds inpNatZ_xmsyc(x,m,s,y): "<<wts::getBounds(inpNatZ_xmsyc(x,m,s,y))<<std::endl;
+    for (int i=0;i<nc;i++){
+        int x = tcsam::getSexType(factors(i+1,1));
+        int m = tcsam::getMaturityType(factors(i+1,2));
+        int s = tcsam::getShellType(factors(i+1,3));
+            ss_xmsy(x,m,s) = column(inpNatZ_xmsyc(x,m,s),2);
+            for (int y=1;y<=ny;y++){
+                NatZ_xmsyz(x,m,s,y)  = (inpNatZ_xmsyc(x,m,s,y)(3,2+(nZCs-1))).shift(1);
             }
-        }
     }
+//    cout<<"finished other arrays"<<endl;
     normalize();
+//    cout<<"finished normalization"<<endl;
     if (debug) std::cout<<"end SizeFrequencyData::replaceSizeFrequencyData(...) "<<this<<std::endl;
 }
 
@@ -298,10 +395,10 @@ void SizeFrequencyData::read(cifstream & is){
     if (debug) std::cout<<zBs<<tb<<"#zBins"<<std::endl;
     
     yrs.allocate(1,ny);
-    ss_xmsy.allocate(1,ALL_SXs,1,ALL_MSs,1,ALL_SCs,1,ny);
-    NatZ_xmsyz.allocate(1,ALL_SXs,1,ALL_MSs,1,ALL_SCs,1,ny,1,nZCs-1);
-    PatZ_xmsyz.allocate(1,ALL_SXs,1,ALL_MSs,1,ALL_SCs,1,ny,1,nZCs-1);
-    inpNatZ_xmsyc.allocate(1,ALL_SXs,1,ALL_MSs,1,ALL_SCs,1,ny,1,2+(nZCs-1));
+    ss_xmsy.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny);
+    NatZ_xmsyz.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,nZCs-1);
+    PatZ_xmsyz.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,nZCs-1);
+    inpNatZ_xmsyc.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,2+(nZCs-1));
     
     yrs.initialize();
     ss_xmsy.initialize();
@@ -358,9 +455,9 @@ void SizeFrequencyData::write(ostream & os){
     os<<"#size bin cutpoints (mm CW)"<<std::endl<<zCs<<std::endl;
     
 //    int nCs = 0;
-//    for (int x=1;x<=ALL_SXs;x++){
-//        for (int m=1;m<=ALL_MSs;m++){
-//            for (int s=1;s<=ALL_SCs;s++){
+//    for (int x=1;x<=tcsam::ALL_SXs;x++){
+//        for (int m=1;m<=tcsam::ALL_MSs;m++){
+//            for (int s=1;s<=tcsam::ALL_SCs;s++){
 //                if (sum(NatZ_xmsyz(x,m,s))>0) nCs++;
 //            }
 //        }
@@ -369,11 +466,11 @@ void SizeFrequencyData::write(ostream & os){
     int nCs = factors.indexmax();
     os<<nCs<<tb<<"#number of sex x shell x maturity factor combinations to read in"<<std::endl;
 //    adstring_array factors(1,3);
-//    for (int x=1;x<=ALL_SXs;x++){
+//    for (int x=1;x<=tcsam::ALL_SXs;x++){
 //        factors(1) = tcsam::getSexType(x);
-//        for (int m=1;m<=ALL_MSs;m++){
+//        for (int m=1;m<=tcsam::ALL_MSs;m++){
 //            factors(2) = tcsam::getMaturityType(m);
-//            for (int s=1;s<=ALL_SCs;s++){
+//            for (int s=1;s<=tcsam::ALL_SCs;s++){
 //                factors(3) = tcsam::getShellType(s);
 //                if (sum(NatZ_xmsyz(x,m,s))>0){ //only print out non-zero matrices
 //                    os<<"#-------"<<factors(1)<<cc<<factors(2)<<cc<<factors(3)<<std::endl;
@@ -399,11 +496,15 @@ void SizeFrequencyData::write(ostream & os){
 ***************************************************************/
 void SizeFrequencyData::writeToR(ostream& os, std::string nm, int indent) {
     if (debug) std::cout<<"SizeFrequencyData::writing to R"<<std::endl;
-    adstring x = qt+tcsam::STR_MALE   +qt+cc+qt+tcsam::STR_FEMALE     +qt+cc+qt+tcsam::STR_ALL_SXs+qt;
-    adstring m = qt+tcsam::STR_IMMATURE +qt+cc+qt+tcsam::STR_MATURE   +qt+cc+qt+tcsam::STR_ALL_MSs+qt;
-    adstring s = qt+tcsam::STR_NEW_SHELL+qt+cc+qt+tcsam::STR_OLD_SHELL+qt+cc+qt+tcsam::STR_ALL_SCs+qt;
-    adstring y = wts::to_qcsv(yrs);
-    adstring z = wts::to_qcsv(zBs);        
+//    adstring x = qt+tcsam::STR_MALE   +qt+cc+qt+tcsam::STR_FEMALE     +qt+cc+qt+tcsam::STR_ALL_SXs+qt;
+//    adstring m = qt+tcsam::STR_IMMATURE +qt+cc+qt+tcsam::STR_MATURE   +qt+cc+qt+tcsam::STR_ALL_MSs+qt;
+//    adstring s = qt+tcsam::STR_NEW_SHELL+qt+cc+qt+tcsam::STR_OLD_SHELL+qt+cc+qt+tcsam::STR_ALL_SCs+qt;
+    ivector bnds = wts::getBounds(NatZ_xmsyz);
+    adstring x = tcsamDims::getSXsForR(bnds(1),bnds(2));
+    adstring m = tcsamDims::getMSsForR(bnds(3),bnds(4));
+    adstring s = tcsamDims::getSCsForR(bnds(5),bnds(6));
+    adstring y = "year=c("+wts::to_qcsv(yrs)+")";
+    adstring z = "size=c("+wts::to_qcsv(zBs)+")";        
     for (int n=0;n<indent;n++) os<<tb;
         os<<"nAtZ=list(units="<<qt<<units<<qt<<cc<<std::endl;
     for (int n=0;n<indent;n++) os<<tb;
@@ -471,7 +572,7 @@ void BioData::read(cifstream & is){
     rpt::echo<<unitsWatZ<<tb<<"#unitsWatZ"<<std::endl;
     double convToKG = tcsam::getConversionMultiplier(unitsWatZ,tcsam::UNITS_KG);
     rpt::echo<<"#using conversion factor from "<<unitsWatZ<<" to kg: "<<convToKG<<std::endl;
-    wAtZ_xmz.allocate(1,nSXs,1,nMSs,1,nZBins);
+    wAtZ_xmz.allocate(1,tcsam::nSXs,1,tcsam::nMSs,1,nZBins);
     wAtZ_xmz.initialize();
     int nc;
     is>>nc; //number of factor combinations to read in data for
@@ -504,7 +605,7 @@ void BioData::read(cifstream & is){
     }}
     
     //PROBABILITY OF MATURING AT SIZE
-    {prMature_xz.allocate(1,nSXs,1,nZBins);
+    {prMature_xz.allocate(1,tcsam::nSXs,1,nZBins);
     prMature_xz.initialize();
     int nc;
     is>>nc; //number of factor combinations to read in data for
@@ -535,7 +636,7 @@ void BioData::read(cifstream & is){
     }}
     
     //FRACTION MATURE BY SEX, SHELL CONDITION
-    {frMature_xsz.allocate(1,nSXs,1,nMSs,1,nZBins);
+    {frMature_xsz.allocate(1,tcsam::nSXs,1,tcsam::nMSs,1,nZBins);
     frMature_xsz.initialize();
     int nc;
     is>>nc; //number of factor combinations to read in data for
@@ -568,7 +669,7 @@ void BioData::read(cifstream & is){
     
     //CV for mean size at min, max size bins
     {rpt::echo<<"#CV for min, max sizes"<<std::endl;
-    cvMnMxZ_xc.allocate(1,nSXs,1,2);
+    cvMnMxZ_xc.allocate(1,tcsam::nSXs,1,2);
     cvMnMxZ_xc.initialize();
     int nc;
     is>>nc; //number of factor combinations to read in data for
@@ -630,11 +731,11 @@ void BioData::write(ostream & os){
     
     {os<<"#-----------WEIGHT-AT-SIZE----------------------------#"<<std::endl;
     os<<unitsWatZ<<tb<<"#units for weight-at-size"<<std::endl;
-    os<<nSXs*nMSs<<tb<<"#number of factor combinations (sex x maturity state)"<<std::endl;
+    os<<tcsam::nSXs*tcsam::nMSs<<tb<<"#number of factor combinations (sex x maturity state)"<<std::endl;
     adstring_array factors(1,2);
-    for (int sex=1;sex<=nSXs;sex++){
+    for (int sex=1;sex<=tcsam::nSXs;sex++){
         factors(1) = tcsam::getSexType(sex);
-        for (int mat=1;mat<=nMSs;mat++){
+        for (int mat=1;mat<=tcsam::nMSs;mat++){
             factors(2) = tcsam::getMaturityType(mat);
             os<<"#-------"<<factors(1)<<cc<<factors(2)<<std::endl;
             os<<factors(1)<<tb<<factors(2)<<std::endl;
@@ -643,9 +744,9 @@ void BioData::write(ostream & os){
     }}
     
     {os<<"#-----------PROBABILITY OF MATURING-------------------#"<<std::endl;
-    os<<nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
+    os<<tcsam::nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
     adstring_array factors(1,1);
-    for (int sex=1;sex<=nSXs;sex++){
+    for (int sex=1;sex<=tcsam::nSXs;sex++){
         factors(1) = tcsam::getSexType(sex);
         os<<"#-------"<<factors(1)<<std::endl;
         os<<factors(1)<<std::endl;
@@ -653,11 +754,11 @@ void BioData::write(ostream & os){
     }}
     
     {os<<"#-----------FRACTION MATURE BY SEX, SHELL CONDITION---#"<<std::endl;
-    os<<nSXs*nSCs<<tb<<"#number of factor combinations (sex x shell condition)"<<std::endl;
+    os<<tcsam::nSXs*tcsam::nSCs<<tb<<"#number of factor combinations (sex x shell condition)"<<std::endl;
     adstring_array factors(1,2);
-    for (int sex=1;sex<=nSXs;sex++){
+    for (int sex=1;sex<=tcsam::nSXs;sex++){
         factors(1) = tcsam::getSexType(sex);
-        for (int shl=1;shl<=nSCs;shl++){
+        for (int shl=1;shl<=tcsam::nSCs;shl++){
             factors(2) = tcsam::getShellType(shl);
             os<<"#-------"<<factors(1)<<cc<<factors(2)<<std::endl;
             os<<factors(1)<<tb<<factors(2)<<std::endl;
@@ -666,9 +767,9 @@ void BioData::write(ostream & os){
     }}
     
     {os<<"#-----------CV FOR MIN, MAX SIZES---------------------#"<<std::endl;
-    os<<nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
+    os<<tcsam::nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
     adstring_array factors(1,1);
-    for (int sex=1;sex<=nSXs;sex++){
+    for (int sex=1;sex<=tcsam::nSXs;sex++){
         factors(1) = tcsam::getSexType(sex);
         os<<"#-------"<<factors(1)<<std::endl;
         os<<factors(1)<<std::endl;
@@ -703,10 +804,11 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         indent++;
             for (int n=0;n<indent;n++) os<<tb;
             os<<"data="<<std::endl;
-            adstring x = qt+tcsam::STR_MALE+qt    +cc+ qt+tcsam::STR_FEMALE+qt;
-            adstring s = qt+tcsam::STR_IMMATURE+qt+cc+ qt+tcsam::STR_MATURE+qt;
-            adstring c = wts::to_qcsv(zBins);
-            wts::writeToR(os,wAtZ_xmz,x,s,c); os<<std::endl;
+            ivector bnds = wts::getBounds(wAtZ_xmz);
+            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+            adstring m = tcsamDims::getMSsForR(bnds[3],bnds[4]);
+            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
+            wts::writeToR(os,wAtZ_xmz,x,m,z); os<<std::endl;
         indent--;}
         for (int n=0;n<indent;n++) os<<tb; os<<"),"<<std::endl;
         
@@ -715,8 +817,9 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         os<<"prMat="<<std::endl; 
         indent++;
             for (int n=0;n<indent;n++) os<<tb;
-            adstring x = qt+tcsam::STR_MALE+qt  +cc+ qt+tcsam::STR_FEMALE+qt;
-            adstring z = wts::to_qcsv(zBins);
+            ivector bnds = wts::getBounds(prMature_xz);
+            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
             wts::writeToR(os,prMature_xz,x,z); os<<","<<std::endl;
         indent--;}
         
@@ -725,9 +828,10 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         os<<"frMat="<<std::endl; 
         indent++;
             for (int n=0;n<indent;n++) os<<tb;
-            adstring x = qt+tcsam::STR_MALE+qt     +cc+ qt+tcsam::STR_FEMALE+qt;
-            adstring s = qt+tcsam::STR_NEW_SHELL+qt+cc+ qt+tcsam::STR_OLD_SHELL+qt;
-            adstring z = wts::to_qcsv(zBins);
+            ivector bnds = wts::getBounds(frMature_xsz);
+            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+            adstring s = tcsamDims::getSCsForR(bnds[3],bnds[4]);
+            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
             wts::writeToR(os,frMature_xsz,x,s,z); os<<","<<std::endl;
         indent--;}
         
@@ -736,8 +840,9 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         os<<"cvZs="<<std::endl; 
         indent++;
             for (int n=0;n<indent;n++) os<<tb;
-            adstring x = qt+tcsam::STR_MALE+qt  +cc+ qt+tcsam::STR_FEMALE+qt;
-            adstring c = "'minZ','maxZ'";
+            ivector bnds = wts::getBounds(cvMnMxZ_xc);
+            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+            adstring c = "size=c('minZ','maxZ')";
             wts::writeToR(os,cvMnMxZ_xc,x,c); os<<","<<std::endl;
         indent--;}
         
@@ -746,11 +851,12 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         os<<"timing="<<std::endl; 
         indent++;
             for (int n=0;n<indent;n++) os<<tb;
-            adstring cols = "'midptFisheries','matingTime'";
-            ivector yrs = wts::to_ivector(column(timing_yc,1));
             dmatrix tmp(1,2,1,nyTiming);
             tmp(1) = column(timing_yc,2);
             tmp(2) = column(timing_yc,3);
+            adstring cols = "type=c('midptFisheries','matingTime')";
+            ivector iyrs = wts::to_ivector(column(timing_yc,1));
+            adstring yrs = "year=c("+wts::to_qcsv(iyrs)+")";
             wts::writeToR(os,trans(tmp),yrs,cols); os<<std::endl;
         indent--;}
     indent--;

@@ -1,9 +1,37 @@
 #include <admodel.h>
+#include "wtsADMB.hpp"
 #include "ModelConstants.hpp"
 
 using namespace tcsam;
 
 std::ofstream rpt::echo("EchoData.dat",std::ios::trunc);
+
+adstring tcsamDims::getSXsForR(int mn,int mx){
+    adstring dms = "sex=c("+qt+getSexType(mn)+qt;
+    for (int i=(mn+1);i<=mx;i++) {
+        dms += cc+qt+getSexType(i)+qt;
+    }
+    dms += ")";
+    return dms;
+}
+
+adstring tcsamDims::getMSsForR(int mn,int mx){
+    adstring dms = "maturity=c("+qt+getMaturityType(mn)+qt;
+    for (int i=(mn+1);i<=mx;i++) {
+        dms += cc+qt+getMaturityType(i)+qt;
+    }
+    dms += ")";
+    return dms;
+}
+
+adstring tcsamDims::getSCsForR(int mn,int mx){
+    adstring dms = "'shell condition'=c("+qt+getShellType(mn)+qt;
+    for (int i=(mn+1);i<=mx;i++) {
+        dms += cc+qt+getShellType(i)+qt;
+    }
+    dms += ")";
+    return dms;
+}
 
 int tcsam::getMaturityType(adstring s){
     s.to_upper();
@@ -16,10 +44,12 @@ int tcsam::getMaturityType(adstring s){
     return 0;
 }
 adstring tcsam::getMaturityType(int i){
-    if (i==IMMATURE)     return STR_IMMATURE;     else
-    if (i==MATURE)       return STR_MATURE;       else
-    if (i==ALL_MSs) return STR_ALL_MSs; else
-    std::cout<<"Unrecognized MaturityType '"<<i<<"'"<<std::endl;
+    if (i<=ALL_SXs){
+        if (i==IMMATURE) return STR_IMMATURE;     else
+        if (i==MATURE)   return STR_MATURE;       else
+        if (i==ALL_MSs)  return STR_ALL_MSs; 
+    }
+    std::cout<<"Unrecognized or inappropriate MaturityType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
     return adstring("");
@@ -27,8 +57,8 @@ adstring tcsam::getMaturityType(int i){
 
 int tcsam::getSexType(adstring s){
     s.to_upper();
-    if (s==STR_FEMALE)  return FEMALE;  else
     if (s==STR_MALE)    return MALE;    else
+    if (s==STR_FEMALE)  return FEMALE;  else
     if (s==STR_ALL_SXs) return ALL_SXs; else
     std::cout<<"Unrecognized SexType '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
@@ -36,12 +66,14 @@ int tcsam::getSexType(adstring s){
     return 0;
 }
 adstring tcsam::getSexType(int i){
-    if (i==FEMALE)  return STR_FEMALE;  else
-    if (i==MALE)    return STR_MALE;    else
-    if (i==ALL_SXs) return STR_ALL_SXs; else
-    std::cout<<"Unrecognized SexType '"<<i<<"'"<<std::endl;
+    if (i<=ALL_SXs){
+        if (i==MALE)    return STR_MALE;    else
+        if (i==FEMALE)  return STR_FEMALE;  else
+        if (i==ALL_SXs) return STR_ALL_SXs; 
+    } 
+    std::cout<<"Unrecognized or inappropriate SexType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
-    exit(-1);
+    std::exit(-1);
     return adstring("");
 }
 
@@ -56,10 +88,12 @@ int tcsam::getShellType(adstring s){
     return 0;
 }
 adstring tcsam::getShellType(int i){
-    if (i==NEW_SHELL) return STR_NEW_SHELL; else
-    if (i==OLD_SHELL) return STR_OLD_SHELL; else
-    if (i==ALL_SCs) return STR_ALL_SCs; else
-    std::cout<<"Unrecognized ShellType '"<<i<<"'"<<std::endl;
+    if (i<=ALL_SCs){
+        if (i==NEW_SHELL) return STR_NEW_SHELL; else
+        if (i==OLD_SHELL) return STR_OLD_SHELL; else
+        if (i==ALL_SCs) return STR_ALL_SCs;
+    }
+    std::cout<<"Unrecognized or inappropriate ShellType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
     return adstring("");

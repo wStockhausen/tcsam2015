@@ -32,8 +32,9 @@ void IndexRange::createRangeVector(int min, int max){
 }
 /**
  * Parse a range string ("x:y" or "x") to obtain actual min, max for range.
- * If result finds x (y) <0, then the min (max) limit will be substituted for
- * x (y).
+ * If result finds x (y) < 0, then x (y) will be substituted using
+ *  if x<0, x = modMin+1+x (so x=-1->x=modMin, x=-2->x=modMin-1, etc)
+ *  if y<0, y = modMax-1-y (so y=-1->y=modMax, y=-2->y=modMax+1, etc)
  * @param str
  */
 void IndexRange::parse(adstring str){
@@ -41,8 +42,8 @@ void IndexRange::parse(adstring str){
     int i = str.pos(":");
     if (debug) cout<<"':' located at position "<<i<<endl;
     if (i){
-        mn = ::atoi(str(1,i-1));          if (mn<0){mn=modMin;}
-        mx = ::atoi(str(i+1,str.size())); if (mx<0){mx=modMax;}
+        mn = ::atoi(str(1,i-1));          if (mn<0){mn=modMin+1+mn;}
+        mx = ::atoi(str(i+1,str.size())); if (mx<0){mx=modMax-1-mx;}
     } else {
         mn = ::atoi(str);
         mx = mn;
@@ -120,17 +121,17 @@ void IndexBlock::createIndexVectors(){
     //nIDs should now be same as before
 }
 
-        /**
-         * Parse the string str1 as an index block. 
-         * String str1 must start with "[" and end with "]".
-         * Individual ranges are separated using a semi-colon (";").
-         * Individual ranges have the form "x:y" or "x".
-         * 
-         * An example is "[1962:2000;2005;-1:1959]". In this example, the 
-         * "-1" would be replaced by the specified minimum range for the block.
-         * 
-         * @param str1 - adstring to parse
-         */
+/**
+ * Parse the string str1 as an index block. 
+ * String str1 must start with "[" and end with "]".
+ * Individual ranges are separated using a semi-colon (";").
+ * Individual ranges have the form "x:y" or "x".
+ * 
+ * An example is "[1962:2000;2005;-1:1959]". In this example, the 
+ * "-1" would be replaced by the specified minimum range for the block.
+ * 
+ * @param str1 - adstring to parse
+ */
 void IndexBlock::parse(adstring str1){
     if (debug) cout<<"Parsing '"<<str1<<"'"<<endl;
     if (!(str1(1,1)=="[")) {

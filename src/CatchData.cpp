@@ -90,7 +90,7 @@ void EffortData::write(ostream & os){
 ***************************************************************/
 void EffortData::writeToR(ostream& os, std::string nm, int indent) {
     if (debug) cout<<"EffortData::writing to R"<<endl;
-    adstring y  = wts::to_qcsv(yrs);
+    adstring y  = "year=c("+wts::to_qcsv(yrs)+")";
     for (int n=0;n<indent;n++) os<<tb;
         os<<"effort=list("<<endl;
         indent++; 
