@@ -131,7 +131,8 @@ CatchData::~CatchData(){
  * @param newNatZ_yxmsz - POINTER to d5_array of catch-at-size by sex/maturity/shell condition/year
  * @param wAtZ_xmz - weight-at-size by sex/maturity
  */
-void CatchData::replaceCatchData(d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz){
+void CatchData::replaceCatchData(int iSeed,random_number_generator& rng,d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz){
+    cout<<"***Replacing catch data for "<<name<<endl;
     int mnY = newNatZ_yxmsz.indexmin();
     int mxY = newNatZ_yxmsz.indexmax();
     if (hasN) {
@@ -140,7 +141,7 @@ void CatchData::replaceCatchData(d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz){
         for (int y=mnY;y<=mxY;y++){
             for (int x=1;x<=nSXs;x++) newN_yx(y,x) = sum((newNatZ_yxmsz)(y,x));
         }
-        ptrN->replaceCatchData(newN_yx);
+        ptrN->replaceCatchData(iSeed,rng,newN_yx);
         if (debug) cout<<"replaced catch data"<<endl;
     }
     if (hasB){
@@ -153,12 +154,12 @@ void CatchData::replaceCatchData(d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz){
                 }
             }
         }
-        ptrB->replaceCatchData(newB_yx);
+        ptrB->replaceCatchData(iSeed,rng,newB_yx);
         if (debug) cout<<"replaced biomass data"<<endl;
     }
     if (hasZFD){
         if (debug) cout<<"replacing n-at-size data"<<endl;
-        ptrZFD->replaceSizeFrequencyData(newNatZ_yxmsz);
+        ptrZFD->replaceSizeFrequencyData(iSeed,rng,newNatZ_yxmsz);
         if (debug) cout<<"replaced n-at-size data"<<endl;
     }
 }
@@ -359,15 +360,15 @@ FisheryData::~FisheryData(){
  * @param newRatZ_yxmsz - new retained catch-at-size
  * @param wAtZ_xmz - weight-at-size
  */
-void FisheryData::replaceCatchData(d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxmsz,d3_array& wAtZ_xmz){
+void FisheryData::replaceCatchData(int iSeed,random_number_generator& rng,d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxmsz,d3_array& wAtZ_xmz){
     if (hasTCD) {
         if (debug) cout<<"replacing total catch data"<<endl;
-        ptrTCD->replaceCatchData(newCatZ_yxmsz,wAtZ_xmz);
+        ptrTCD->replaceCatchData(iSeed,rng,newCatZ_yxmsz,wAtZ_xmz);
         if (debug) cout<<"replaced total catch data"<<endl;
     }
     if (hasRCD) {
         if (debug) cout<<"replacing retained catch data"<<endl;
-        ptrRCD->replaceCatchData(newRatZ_yxmsz,wAtZ_xmz);
+        ptrRCD->replaceCatchData(iSeed,rng,newRatZ_yxmsz,wAtZ_xmz);
         if (debug) cout<<"replaced retained catch data"<<endl;
     }
     if (hasDCD) {
@@ -390,7 +391,7 @@ void FisheryData::replaceCatchData(d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxm
                 }
             }
         }
-        ptrDCD->replaceCatchData(newDatZ_yxmsz,wAtZ_xmz);
+        ptrDCD->replaceCatchData(iSeed,rng,newDatZ_yxmsz,wAtZ_xmz);
         if (debug) cout<<"replaced discard catch data"<<endl;
     }
 }

@@ -233,68 +233,6 @@ class IndexBlockSet{
         friend std::ostream& operator <<(std::ostream & os,IndexBlockSet & obj){obj.write(os);return os;}
 };
 
-/*-------------------------------------------------------------\n
- * Class that encapsulates several index block sets.
- *-------------------------------------------------------------*/
-class IndexBlockSets{
-    public:
-        static int debug;//debug flag (0=OFF, 1=ON)
-    protected:
-        int nIBSs;//number of index block sets
-        IndexBlockSet** ppIBSs;//pointer to a vector of pointers to IndexBlockSet objects
-    public:
-        IndexBlockSets(){nIBSs=0;ppIBSs=0;}
-        ~IndexBlockSets();
-
-        /**
-         * Creates n IndexBlockSet objects.
-         * @param n
-         */
-        void createIBSs(int n);
-        /*
-         * Sets the dimension for ith IndexBlockSet.                            TODO: remove?
-         */
-        void setType(int i, adstring dim);
-        /*
-         * Sets the model min, max index limits for ith IndexBlockSet.          TODO: remove?
-         */
-        void setIndexLimits(int i, int modMin, int modMax){}
-        
-        /* 
-         * Returns a pointer to the ith index block set.
-         * Inputs:
-         *  int i:  id (starting at 1) for the time block set to obtain
-         * Returns:
-         *  pointer to the ith IndexBlockSet
-         */
-        IndexBlockSet* getIndexBlockSet(int i){return ppIBSs[i-1];}
-        
-        /* 
-         * Returns a pointer to the index block set identified by "type".
-         * Inputs:
-         *  adstring type:  "type" identifying index block set to return
-         * Returns:
-         *  pointer to the identified IndexBlockSet
-         */
-        IndexBlockSet* getIndexBlockSet(adstring type);
-        /* 
-         * Reads an IndexBlockSets in ADMB format from an input stream.\n
-         */
-        void read(cifstream & is);      //read object in ADMB format
-        /*
-         * Writes an IndexBlockSets in ADMB format to an output stream.\n
-         */
-        void write(std::ostream & os);  //write object to file in ADMB format
-        /*
-         * Writes an IndexBlockSets as an un-named R list.\n
-         */
-        void writeToR(std::ostream& os);//write object to R file as list
-        
-    public:    
-        friend cifstream&    operator >>(cifstream & is,   IndexBlockSets & obj){obj.read(is); return is;}
-        friend std::ostream& operator <<(std::ostream & os,IndexBlockSets & obj){obj.write(os);return os;}
-};
-
 namespace tcsam {
     void getIndexLimits(adstring& idxType,int& mn,int& mx);
 }

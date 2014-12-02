@@ -24,15 +24,20 @@
     adstring fnResultFile;//results file name 
     adstring fnPin;       //pin file
     
-    //runtime flags
-    int resample  = 0;//use resampling for initial parameter values (default is 0=false)
-    int opModMode = 0;//run as operating model, no fitting
-    int usePin    = 0;//flag to initialize parameter values using a pin file
-    int doRetro   = 0;//flag to facilitate a retrospective model run
+    //runtime flags (0=false)
+    int jitter     = 0;//use jittering for initial parameter values
+    int resample   = 0;//use resampling for initial parameter values
+    int opModMode  = 0;//run as operating model, no fitting
+    int usePin     = 0;//flag to initialize parameter values using a pin file
+    int doRetro    = 0;//flag to facilitate a retrospective model run
+    int fitSimData = 0;//flag to fit model to simulated data calculated in the PRELIMINARY_CALCs section
     
     int yRetro = 0; //number of years to decrement for retrospective model run
-    int iSeed = 999;//default random number generator seed
-    random_number_generator rng(iSeed);//random number generator
+    int iSeed =  0;//default random number generator seed
+    random_number_generator rng(-1);//random number generator
+    int iSimDataSeed = 0;
+    random_number_generator rngSimData(-1);//random number generator for data simulation
+    
     //debug flags
     int debugModelConfig     = 0;
     int debugModelDatasets   = 0;
@@ -171,6 +176,36 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
+    //fitSimData
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-fitSimData"))>-1) {
+        fitSimData=1;
+        if (on+1<argc) {
+            iSimDataSeed=atoi(ad_comm::argv[on+1]);
+        } else {
+            cout<<"-------------------------------------------"<<endl;
+            cout<<"Enter iSimDataSeed for random number generator (0 -> deterministic): ";
+            cin>>iSeed;
+        }
+        if (iSimDataSeed) rng.reinitialize(iSimDataSeed);
+        rpt::echo<<"#Simulating data to fit using "<<iSimDataSeed<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
+    //jitter
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-jitter"))>-1) {
+        jitter=1;
+        if (on+1<argc) {
+            iSeed=atoi(ad_comm::argv[on+1]);
+        } else {
+            cout<<"-------------------------------------------"<<endl;
+            cout<<"Enter iSeed for random number generator: ";
+            cin>>iSeed;
+        }
+        rng.reinitialize(iSeed);
+        rpt::echo<<"#Jittering for initial parameter values using "<<iSeed<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
     //resample
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-resample"))>-1) {
         resample=1;
@@ -190,6 +225,7 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugModelConfig"))>-1) {
         debugModelConfig=1;
         rpt::echo<<"#debugModelConfig turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugModelParams
@@ -197,60 +233,70 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
         debugModelParams=1;
         cout<<"#debugModelParams turned ON"<<endl;
         rpt::echo<<"#debugModelParams turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugDATA_SECTION
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugDATA_SECTION"))>-1) {
         debugDATA_SECTION=1;
         rpt::echo<<"#debugDATA_SECTION turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugPARAMS_SECTION
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugPARAMS_SECTION"))>-1) {
         debugPARAMS_SECTION=1;
         rpt::echo<<"#debugPARAMS_SECTION turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugPRELIM_CALCS
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugPRELIM_CALCS"))>-1) {
         debugPRELIM_CALCS=1;
         rpt::echo<<"debugPRELIM_CALCS turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugPROC_SECTION
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugPROC_SECTION"))>-1) {
         debugPROC_SECTION=1;
         rpt::echo<<"#debugPROC_SECTION turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugREPORT_SECTION
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugREPORT_SECTION"))>-1) {
         debugREPORT_SECTION=1;
         rpt::echo<<"#debugREPORT_SECTION turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugRunModel
     if (option_match(ad_comm::argc,ad_comm::argv,"-debugRunModel")>-1) {
         debugRunModel=1;
         rpt::echo<<"#debugRunModel turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debugObjFun
     if (option_match(ad_comm::argc,ad_comm::argv,"-debugObjFun")>-1) {
         debugObjFun=1;
         rpt::echo<<"#debugObjFun turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //showActiveParams
     if (option_match(ad_comm::argc,ad_comm::argv,"-showActiveParams")>-1) {
         showActiveParams=1;
         rpt::echo<<"#showActiveParams turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //debuMCMC
     if (option_match(ad_comm::argc,ad_comm::argv,"-debugMCMC")>-1) {
         debugMCMC=1;
         rpt::echo<<"#debugMCMC turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     rpt::echo<<"#-----------------------------------"<<endl;
@@ -710,9 +756,13 @@ cout<<"#Starting PARAMETER_SECTION"<<endl;
   #ifndef NO_AD_INITIALIZE
     R_yz.initialize();
   #endif
-  zscrDevsLnR.allocate(mnYr,mxYr,"zscrDevsLnR");
+  stdvDevsLnR_cy.allocate(1,npcRec,mnYr,mxYr,"stdvDevsLnR_cy");
   #ifndef NO_AD_INITIALIZE
-    zscrDevsLnR.initialize();
+    stdvDevsLnR_cy.initialize();
+  #endif
+  zscrDevsLnR_cy.allocate(1,npcRec,mnYr,mxYr,"zscrDevsLnR_cy");
+  #ifndef NO_AD_INITIALIZE
+    zscrDevsLnR_cy.initialize();
   #endif
   M_cxm.allocate(1,npcNM,1,nSXs,1,nMSs,"M_cxm");
   #ifndef NO_AD_INITIALIZE
@@ -850,9 +900,9 @@ cout<<"#Starting PARAMETER_SECTION"<<endl;
   #ifndef NO_AD_INITIALIZE
     fPenDevsLnC.initialize();
   #endif
-  nllRecDevs.allocate("nllRecDevs");
+  nllRecDevs.allocate(1,npcRec,"nllRecDevs");
   #ifndef NO_AD_INITIALIZE
-  nllRecDevs.initialize();
+    nllRecDevs.initialize();
   #endif
   sdrLnR_y.allocate(mnYr,mxYr,"sdrLnR_y");
   sdrSpB_xy.allocate(1,nSXs,mnYr+5,mxYr,"sdrSpB_xy");
@@ -878,7 +928,7 @@ void model_parameters::preliminary_calculations(void)
      ptrMPI->writeToR(echo1);
     }
     
-    //calculate average effort for model fisheries over specified time periods
+    //calculate average effort for fisheries over specified time periods
     avgEff = 0.0;
     for (int f=1;f<=nFsh;f++){//fishery data object
         if (ptrMDS->ppFsh[f-1]->ptrEff){
@@ -942,20 +992,20 @@ void model_parameters::preliminary_calculations(void)
     setAllDevs(0,rpt::echo);
     if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")<0) {
         cout<<"testing calcRecruitment():"<<endl;
-        calcRecruitment(0,rpt::echo);
-        cout<<"testing calcNatMort():"<<endl;
+        calcRecruitment(dbgCalcProcs+1,rpt::echo);
+        rpt::echo<<"testing calcNatMort():"<<endl;
         calcNatMort(0,rpt::echo);
-        cout<<"testing calcGrowth():"<<endl;
+        rpt::echo<<"testing calcGrowth():"<<endl;
         calcGrowth(0,rpt::echo);
-        cout<<"testing calcMaturity():"<<endl;
+        rpt::echo<<"testing calcMaturity():"<<endl;
         calcMaturity(0,rpt::echo);
-        cout<<"testing calcSelectivities():"<<endl;
-        calcSelectivities(dbgCalcProcs,rpt::echo);
-        cout<<"testing calcFisheryFs():"<<endl;
-        calcFisheryFs(dbgCalcProcs,rpt::echo);
-        cout<<"testing calcSurveyQs():"<<endl;
-        calcSurveyQs(dbgCalcProcs,cout);
-        cout<<"testing runPopDyMod():"<<endl;
+        rpt::echo<<"testing calcSelectivities():"<<endl;
+        calcSelectivities(dbgCalcProcs+1,rpt::echo);
+        rpt::echo<<"testing calcFisheryFs():"<<endl;
+        calcFisheryFs(dbgCalcProcs+1,rpt::echo);
+        rpt::echo<<"testing calcSurveyQs():"<<endl;
+        calcSurveyQs(dbgCalcProcs+1,cout);
+        rpt::echo<<"testing runPopDyMod():"<<endl;
         runPopDyMod(0,cout);
         rpt::echo<<"n_yxm:"<<endl;
         for (int y=mnYr;y<=(mxYr+1);y++){
@@ -982,16 +1032,27 @@ void model_parameters::preliminary_calculations(void)
                 }
             }
         }
+        
+        if (fitSimData){
+            cout<<"creating sim data to fit in model"<<endl;
+            createSimData(1,rpt::echo,iSimDataSeed,ptrMDS);//stochasstic if iSimDataSeed<>0
+            {cout<<"re-writing data to R"<<endl;
+             ofstream echo1; echo1.open("ModelData.R", ios::trunc);
+             ReportToR_Data(echo1,0,cout);
+            }
+        }
+        
         cout<<"Testing calcObjFun()"<<endl;
         calcObjFun(1,rpt::echo);
         {cout<<"writing model results to R"<<endl;
             ofstream echo1; echo1.open("ModelRes0.R", ios::trunc);
             ReportToR(echo1,1,cout);
         }
+        
         {cout<<"writing model sim data to file"<<endl;
-            createSimData(1,rpt::echo);
+            createSimData(1,rpt::echo,0,ptrSimMDS);//deterministic
             ofstream echo1; echo1.open("ModelSimData0.dat", ios::trunc);
-            writeSimData(echo1,1,rpt::echo);
+            writeSimData(echo1,0,rpt::echo,ptrSimMDS);
         }
         cout<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
         rpt::echo<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
@@ -1120,7 +1181,7 @@ void model_parameters::writeMCMCtoR(ofstream& mcmc)
     
 }
 
-void model_parameters::createSimData(int debug, ostream& cout)
+void model_parameters::createSimData(int debug, ostream& cout, int iSimDataSeed, ModelDatasets* ptrSim)
 {
     if (debug)cout<<"simulating model results as data"<<endl;
     d6_array vn_vyxmsz = wts::value(n_vyxmsz);
@@ -1128,27 +1189,27 @@ void model_parameters::createSimData(int debug, ostream& cout)
     d6_array vrmN_fyxmsz = wts::value(rmN_fyxmsz);
     for (int v=1;v<=nSrv;v++) {
         if (debug) cout<<"survey "<<v<<endl;
-        (ptrSimMDS->ppSrv[v-1])->replaceCatchData(vn_vyxmsz(v),ptrSimMDS->ptrBio->wAtZ_xmz);
+        (ptrSim->ppSrv[v-1])->replaceCatchData(iSimDataSeed,rngSimData,vn_vyxmsz(v),ptrSim->ptrBio->wAtZ_xmz);
     }
     for (int f=1;f<=nFsh;f++) {
         if (debug) cout<<"fishery f: "<<f<<endl;
-        (ptrSimMDS->ppFsh[f-1])->replaceCatchData(vcN_fyxmsz(f),vrmN_fyxmsz(f),ptrSimMDS->ptrBio->wAtZ_xmz);
+        (ptrSim->ppFsh[f-1])->replaceCatchData(iSimDataSeed,rngSimData,vcN_fyxmsz(f),vrmN_fyxmsz(f),ptrSim->ptrBio->wAtZ_xmz);
     }
     if (debug) cout<<"finished simulating model results as data"<<endl;
      
 }
 
-void model_parameters::writeSimData(ostream& os, int debug, ostream& cout)
+void model_parameters::writeSimData(ostream& os, int debug, ostream& cout, ModelDatasets* ptrSim)
 {
     if (debug)cout<<"writing model results as data"<<endl;
     for (int v=1;v<=nSrv;v++) {
         os<<"#------------------------------------------------------------"<<endl;
-        os<<(*(ptrSimMDS->ppSrv[v-1]))<<endl;
+        os<<(*(ptrSim->ppSrv[v-1]))<<endl;
     }
     //     cout<<4<<endl;
     for (int f=1;f<=nFsh;f++) {
         os<<"#------------------------------------------------------------"<<endl;
-        os<<(*(ptrSimMDS->ppFsh[f-1]))<<endl;
+        os<<(*(ptrSim->ppFsh[f-1]))<<endl;
     }
     if (debug) cout<<"finished writing model results as data"<<endl;
      
@@ -1475,7 +1536,8 @@ void model_parameters::calcRecruitment(int debug, ostream& cout)
     R_yx.initialize();
     R_cz.initialize();
     R_yz.initialize();
-    zscrDevsLnR.initialize();
+    stdvDevsLnR_cy.initialize();
+    zscrDevsLnR_cy.initialize();
     
     int k; int y;
     dvector dzs = zBs+(zBs[2]-zBs[1])/2.0-zBs[1];
@@ -1517,29 +1579,32 @@ void model_parameters::calcRecruitment(int debug, ostream& cout)
         imatrix idxs = ptrRI->getModelIndices(pc);
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);
-            if (debug>dbgCalcProcs) cout<<"y,i = "<<y<<tb<<idxDevsLnR(y)<<endl;
-            if (useDevs){
-                R_y(y) = mfexp(mnLnR+dvsLnR[idxDevsLnR[y]]);
+            if ((mnYr<=y)&&(y<=mxYr)){
+                if (debug>dbgCalcProcs) cout<<"y,i = "<<y<<tb<<idxDevsLnR(y)<<endl;
+                if (useDevs){
+                    R_y(y) = mfexp(mnLnR+dvsLnR[idxDevsLnR[y]]);
+                } else {
+                    R_y(y) = mdR;
+                }
+                if (debug>dbgCalcProcs) cout<<R_y(y)<<tb;
+                R_yx(y,MALE)   = Rx_c(pc);
+                if (debug>dbgCalcProcs) cout<<R_yx(y,MALE)<<endl;
+                if (FEMALE<=nSXs) R_yx(y,FEMALE) = 1.0-R_yx(y,MALE);
+                R_yz(y) = R_cz(pc);
+                if (debug>dbgCalcProcs) cout<<R_yz(y)<<endl;
+                stdvDevsLnR_cy(pc,y) = sqrt(log(1.0+mfexp(2.0*lnRCV)));           //ln-scale std dev
+                zscrDevsLnR_cy(pc,y) = dvsLnR(idxDevsLnR(y))/stdvDevsLnR_cy(pc,y);//standardized ln-scale rec devs
             } else {
-                R_y(y) = mdR;
+                if (debug>dbgCalcProcs) cout<<"skipping y,i = "<<y<<tb<<idxDevsLnR(y)<<endl;
             }
-            if (debug>dbgCalcProcs) cout<<R_y(y)<<tb;
-            R_yx(y,MALE)   = Rx_c(pc);
-            if (debug>dbgCalcProcs) cout<<R_yx(y,MALE)<<endl;
-            if (FEMALE<=nSXs) R_yx(y,FEMALE) = 1.0-R_yx(y,MALE);
-            
-            R_yz(y) = R_cz(pc);
-            if (debug>dbgCalcProcs) cout<<R_yz(y)<<endl;
-            
-            zscrDevsLnR(y) = dvsLnR(idxDevsLnR(y))/sqrt(log(1.0+mfexp(2.0*lnRCV)));//standardized ln-scale rec devs
-        }
-    }
+        }//idx
+    }//pc
     
     if (debug>dbgCalcProcs) {
         cout<<"R_y = "<<R_y<<endl;
         cout<<"R_yx(MALE) = "<<column(R_yx,MALE)<<endl;
         cout<<"R_yz = "<<endl<<R_yz<<endl;
-        cout<<"zscr = "<<zscrDevsLnR<<endl;
+        cout<<"zscr = "<<zscrDevsLnR_cy<<endl;
         cout<<"finished calcRecruitment()"<<endl;
     }
 }
@@ -1596,9 +1661,11 @@ void model_parameters::calcNatMort(int debug, ostream& cout)
         imatrix idxs = ptrNM->getModelIndices(pc);
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);//only model index for natural mortality is year
-            for (int x=1;x<=nSXs;x++){
-                for (int m=1;m<=nMSs;m++){
-                    M_yxmz(y,x,m) = M_xmz(x,m);
+            if ((mnYr<=y)&&(y<=mxYr)){
+                for (int x=1;x<=nSXs;x++){
+                    for (int m=1;m<=nMSs;m++){
+                        M_yxmz(y,x,m) = M_xmz(x,m);
+                    }
                 }
             }
         }
@@ -1630,12 +1697,14 @@ void model_parameters::calcMaturity(int debug, ostream& cout)
         prMat_cz(pc)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrMat));
             
         imatrix idxs = ptrMI->getModelIndices(pc);
-        if (debug) cout<<"maturity indices"<<endl<<idxs<<endl;
+        if (debug>dbgCalcProcs) cout<<"maturity indices"<<endl<<idxs<<endl;
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);
-            x = idxs(idx,2);
-            if (debug) cout<<"y = "<<y<<tb<<"sex = "<<tcsam::getSexType(x)<<endl;
-            prMat_yxz(y,x) = prMat_cz(pc);//note: this change made a difference, but not sure why!
+            if ((mnYr<=y)&&(y<=mxYr)){
+                x = idxs(idx,2);
+                if (debug>dbgCalcProcs) cout<<"y = "<<y<<tb<<"sex = "<<tcsam::getSexType(x)<<endl;
+                prMat_yxz(y,x) = prMat_cz(pc);//note: this change made a difference, but not sure why!
+            }
         }
     }
     
@@ -1690,10 +1759,12 @@ void model_parameters::calcGrowth(int debug, ostream& cout)
         if (debug) cout<<"growth indices"<<endl<<idxs<<endl;
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1); //year index
-            x = idxs(idx,2); //sex index
-            for (int m=1;m<=nMSs;m++){
-                for (int z=1;z<=nZBs;z++){
-                    prGr_yxmzz(y,x,m,z) = prGr_czz(pc,z);
+            if ((mnYr<=y)&&(y<=mxYr)){
+                x = idxs(idx,2); //sex index
+                for (int m=1;m<=nMSs;m++){
+                    for (int z=1;z<=nZBs;z++){
+                        prGr_yxmzz(y,x,m,z) = prGr_czz(pc,z);
+                    }
                 }
             }
         }
@@ -1803,7 +1874,7 @@ void model_parameters::calcSelectivities(int debug, ostream& cout)
         imatrix idxs = ptrSel->getModelIndices(pc);
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);//year
-            if (y<=mxYr+1){
+            if ((mnYr<=y)&&(y<=mxYr+1)){
                 k=ptrSel->nIVs+1+6;//1st devs vector variable column
                 if (useDevsS1) {params[1] += devsS1(useDevsS1,idxDevsS1[y]);}
                 if (useDevsS2) {params[2] += devsS2(useDevsS2,idxDevsS2[y]);}
@@ -1814,7 +1885,7 @@ void model_parameters::calcSelectivities(int debug, ostream& cout)
                 sel_iyz(pc,y) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
                 if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"sel: "<<sel_iyz(pc,y)<<endl;
             } else {
-                if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"y < mxYr+1. Skipping year!"<<endl;
+                if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"y outside model range--skipping year!"<<endl;
             }
         }
     }
@@ -1912,18 +1983,20 @@ void model_parameters::calcFisheryFs(int debug, ostream& cout)
             for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
                 f = idxs(idx,1);//fishery
                 y = idxs(idx,2);//year
-                x = idxs(idx,3);//sex
-                if (debug>dbgCalcProcs) cout<<"f,y,x,useDevs = "<<f<<cc<<y<<cc<<x<<cc<<useDevs<<endl;
-                if (useDevs) C_xm = mfexp(lnC+dvsLnC[idxDevsLnC[y]]);//recalculate C_xm w/ devs
-                for (int m=1;m<=nMSs;m++){
-                    for (int s=1;s<=nSCs;s++){
-                        cF_fyxms(f,y,x,m,s)  = C_xm(x,m);                 //fully-selected capture rate
-                        cF_fyxmsz(f,y,x,m,s) = C_xm(x,m)*sel_iyz(idSel,y);//size-specific capture rate
-                        if (idRet){//fishery has retention
-                            rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_iyz(idRet,y),         cF_fyxmsz(f,y,x,m,s));//retention mortality
-                            dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_iyz(idRet,y)),cF_fyxmsz(f,y,x,m,s));//discard mortality
-                        } else {//discard only
-                            dmF_fyxmsz(f,y,x,m,s) = hm*cF_fyxmsz(f,y,x,m,s);//discard mortality
+                if ((mnYr<=y)&&(y<=mxYr)){
+                    x = idxs(idx,3);//sex
+                    if (debug>dbgCalcProcs) cout<<"f,y,x,useDevs = "<<f<<cc<<y<<cc<<x<<cc<<useDevs<<endl;
+                    if (useDevs) C_xm = mfexp(lnC+dvsLnC[idxDevsLnC[y]]);//recalculate C_xm w/ devs
+                    for (int m=1;m<=nMSs;m++){
+                        for (int s=1;s<=nSCs;s++){
+                            cF_fyxms(f,y,x,m,s)  = C_xm(x,m);                 //fully-selected capture rate
+                            cF_fyxmsz(f,y,x,m,s) = C_xm(x,m)*sel_iyz(idSel,y);//size-specific capture rate
+                            if (idRet){//fishery has retention
+                                rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_iyz(idRet,y),         cF_fyxmsz(f,y,x,m,s));//retention mortality
+                                dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_iyz(idRet,y)),cF_fyxmsz(f,y,x,m,s));//discard mortality
+                            } else {//discard only
+                                dmF_fyxmsz(f,y,x,m,s) = hm*cF_fyxmsz(f,y,x,m,s);//discard mortality
+                            }
                         }
                     }
                 }
@@ -1990,27 +2063,29 @@ void model_parameters::calcFisheryFs(int debug, ostream& cout)
             for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
                 f = idxs(idx,1);//fishery
                 y = idxs(idx,2);//year
-                x = idxs(idx,3);//sex
-                fd = mapM2DFsh(f);//index of corresponding fishery data object
-                eff = ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(y);
-                if (debug>dbgCalcProcs) cout<<"f,y,x,eff = "<<f<<tb<<y<<tb<<x<<tb<<eff<<endl;
-                for (int m=1;m<=nMSs;m++){
-                    for (int s=1;s<=nSCs;s++){
-                        //fully-selected capture rate
-                        switch(optsFcAvg(f)) {
-                            case 1:
-                                cF_fyxms(f,y,x,m,s) = avgRatioFc2Eff(f,x,m,s)*eff; break;
-                            case 2:
-                                cF_fyxms(f,y,x,m,s) = -log(1.0-avgRatioFc2Eff(f,x,m,s)*eff); break;
-                            case 3:
-                                cF_fyxms(f,y,x,m,s) = avgRatioFc2Eff(f,x,m,s)*eff; break;
-                        }
-                        cF_fyxmsz(f,y,x,m,s) = cF_fyxms(f,y,x,m,s)*sel_iyz(idSel,y);//size-specific capture rate
-                        if (idRet){//fishery has retention
-                            rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_iyz(idRet,y),         cF_fyxmsz(f,y,x,m,s));//retention mortality rate
-                            dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_iyz(idRet,y)),cF_fyxmsz(f,y,x,m,s));//discard mortality rate
-                        } else {//discard only
-                            dmF_fyxmsz(f,y,x,m,s) = hm*cF_fyxmsz(f,y,x,m,s);//discard mortality rate
+                if ((mnYr<=y)&&(y<=mxYr)){
+                    x = idxs(idx,3);//sex
+                    fd = mapM2DFsh(f);//index of corresponding fishery data object
+                    eff = ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(y);
+                    if (debug>dbgCalcProcs) cout<<"f,y,x,eff = "<<f<<tb<<y<<tb<<x<<tb<<eff<<endl;
+                    for (int m=1;m<=nMSs;m++){
+                        for (int s=1;s<=nSCs;s++){
+                            //fully-selected capture rate
+                            switch(optsFcAvg(f)) {
+                                case 1:
+                                    cF_fyxms(f,y,x,m,s) = avgRatioFc2Eff(f,x,m,s)*eff; break;
+                                case 2:
+                                    cF_fyxms(f,y,x,m,s) = -log(1.0-avgRatioFc2Eff(f,x,m,s)*eff); break;
+                                case 3:
+                                    cF_fyxms(f,y,x,m,s) = avgRatioFc2Eff(f,x,m,s)*eff; break;
+                            }
+                            cF_fyxmsz(f,y,x,m,s) = cF_fyxms(f,y,x,m,s)*sel_iyz(idSel,y);//size-specific capture rate
+                            if (idRet){//fishery has retention
+                                rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_iyz(idRet,y),         cF_fyxmsz(f,y,x,m,s));//retention mortality rate
+                                dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_iyz(idRet,y)),cF_fyxmsz(f,y,x,m,s));//discard mortality rate
+                            } else {//discard only
+                                dmF_fyxmsz(f,y,x,m,s) = hm*cF_fyxmsz(f,y,x,m,s);//discard mortality rate
+                            }
                         }
                     }
                 }
@@ -2065,12 +2140,14 @@ void model_parameters::calcSurveyQs(int debug, ostream& cout)
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             v = idxs(idx,1);//survey
             y = idxs(idx,2);//year
-            x = idxs(idx,3);//sex
-            if (y <= mxYr+1){
-                for (int m=1;m<=nMSs;m++){
-                    for (int s=1;s<=nSCs;s++){
-                        q_vyxms(v,y,x,m,s)  = Q_xm(x,m);
-                        q_vyxmsz(v,y,x,m,s) = Q_xm(x,m)*sel_iyz(idSel,y);
+            if ((mnYr<=y)&&(y<=mxYrp1)){
+                x = idxs(idx,3);//sex
+                if (y <= mxYr+1){
+                    for (int m=1;m<=nMSs;m++){
+                        for (int s=1;s<=nSCs;s++){
+                            q_vyxms(v,y,x,m,s)  = Q_xm(x,m);
+                            q_vyxmsz(v,y,x,m,s) = Q_xm(x,m)*sel_iyz(idSel,y);
+                        }
                     }
                 }
             }
@@ -2083,31 +2160,51 @@ void model_parameters::calcSurveyQs(int debug, ostream& cout)
 void model_parameters::calcPenalties(int debug, ostream& cout)
 {
     if (debug>=dbgObjFun) cout<<"Started calcPenalties()"<<endl;
+    if (debug<0) cout<<"list("<<endl;
+    if (debug<0) cout<<tb<<"maturity=list("<<endl;
     //smoothness penalties on maturity parameters (NOT maturity ogives)
     double penWgtLgtPrMat = 1.0;//TODO: read in value from input file
     fPenSmoothLgtPrMat.initialize();
-    cout<<"fPenSmooth = ";
-    for (int i=1;i<=npLgtPrMat;i++){
+    if (debug<0) cout<<tb<<tb<<"smoothness=list(";
+    for (int i=1;i<npLgtPrMat;i++){
         dvar_vector v; v = 1.0*pLgtPrMat(i);
         fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
-        cout<<fPenSmoothLgtPrMat(i)<<tb;
         objFun += penWgtLgtPrMat*fPenSmoothLgtPrMat(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtLgtPrMat<<cc<<"pen="<<fPenSmoothLgtPrMat(i)<<cc<<"objfun="<<penWgtLgtPrMat*fPenSmoothLgtPrMat(i)<<"),"<<endl;
     }
-    cout<<endl;
+    {
+        int i = npLgtPrMat;
+        dvar_vector v; v = 1.0*pLgtPrMat(i);
+        fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
+        objFun += penWgtLgtPrMat*fPenSmoothLgtPrMat(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtLgtPrMat<<cc<<"pen="<<fPenSmoothLgtPrMat(i)<<cc<<"objfun="<<penWgtLgtPrMat*fPenSmoothLgtPrMat(i)<<")"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;
     //non-decreasing penalties on maturity parameters (NOT maturity ogives)
     double penWgtNonDecLgtPrMat = 1.0;//TODO: read in value from input file
     fPenNonDecLgtPrMat.initialize();
-    cout<<"fPenNonDec = ";
-    for (int i=1;i<=npLgtPrMat;i++){
+    if (debug<0) cout<<tb<<tb<<"nondecreasing=list(";
+    for (int i=1;i<npLgtPrMat;i++){
         dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
         for (int iv=v.indexmin();iv<=v.indexmax();iv++){
             posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
         }
-        cout<<fPenNonDecLgtPrMat(i)<<tb;
         objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtNonDecLgtPrMat<<cc<<"pen="<<fPenNonDecLgtPrMat(i)<<cc<<"objfun="<<penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i)<<"),";
     }
-    cout<<endl;
+    {
+        int i = npLgtPrMat;
+        dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
+        for (int iv=v.indexmin();iv<=v.indexmax();iv++){
+            posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+        }
+        objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtNonDecLgtPrMat<<cc<<"pen="<<fPenNonDecLgtPrMat(i)<<cc<<"objfun="<<penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i)<<")";
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<endl;
+    if (debug<0) cout<<tb<<")";
     
+    if (debug<0) cout<<")";
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 }
 
@@ -2133,18 +2230,37 @@ dvar_vector model_parameters::calc2ndDiffs(const dvar_vector& d)
     return r;
 }
 
-void model_parameters::calcNLLCompRec(int debug, ostream& cout)
+void model_parameters::calcNLLs_Recruitment(int debug, ostream& cout)
 {
-    if (debug>=dbgObjFun) cout<<"Starting calcNLLCompRec"<<endl;
-    //recruitment devs
+    if (debug>=dbgObjFun) cout<<"Starting calcNLLs_Recruitment"<<endl;
     double nllWgtRecDevs = 1.0;//TODO: read in from input file (as vector?))
     nllRecDevs.initialize();
-    nllRecDevs = 0.5*norm2(zscrDevsLnR);//
-    objFun += nllWgtRecDevs*nllRecDevs;
-    if (debug<0){
-        cout<<"list(type='normal',nll="<<nllRecDevs<<cc; wts::writeToR(cout,value(zscrDevsLnR)); cout<<")";
-    }
-    if (debug>=dbgObjFun) cout<<"Finished calcNLLCompRec"<<endl;
+    if (debug<0) cout<<"list("<<endl;
+    if (debug<0) cout<<tb<<"recDevs=list("<<endl;
+    for (int pc=1;pc<npcRec;pc++){
+        nllRecDevs(pc) = 0.5*norm2(zscrDevsLnR_cy(pc));
+        for (int y=mnYr;y<=mxYr;y++) if (value(stdvDevsLnR_cy(pc,y))>0) {nllRecDevs(pc) += log(stdvDevsLnR_cy(pc,y));}
+        objFun += nllWgtRecDevs*nllRecDevs(pc);
+        if (debug<0){
+            cout<<tb<<tb<<"'"<<pc<<"'=list(type='normal',wgt="<<nllWgtRecDevs<<cc<<"nll="<<nllRecDevs(pc)<<cc<<"objfun="<<nllWgtRecDevs*nllRecDevs(pc)<<cc;
+            cout<<"zscrs="; wts::writeToR(cout,value(zscrDevsLnR_cy(pc))); cout<<cc;
+            cout<<"stdvs="; wts::writeToR(cout,value(stdvDevsLnR_cy(pc))); cout<<")"<<cc<<endl;
+        }
+    }//pc
+    {
+        int pc = npcRec;
+        nllRecDevs(pc) = 0.5*norm2(zscrDevsLnR_cy(pc));
+        for (int y=mnYr;y<=mxYr;y++) if (value(stdvDevsLnR_cy(pc,y))>0) {nllRecDevs(pc) += log(stdvDevsLnR_cy(pc,y));}
+        objFun += nllWgtRecDevs*nllRecDevs(pc);
+        if (debug<0){
+            cout<<tb<<tb<<"'"<<pc<<"'=list(type='normal',wgt="<<nllWgtRecDevs<<cc<<"nll="<<nllRecDevs(pc)<<cc<<"objfun="<<nllWgtRecDevs*nllRecDevs(pc)<<cc;
+            cout<<"zscrs="; wts::writeToR(cout,value(zscrDevsLnR_cy(pc))); cout<<cc;
+            cout<<"stdvs="; wts::writeToR(cout,value(stdvDevsLnR_cy(pc))); cout<<")"<<endl;
+        }
+    }//pc
+    if (debug<0) cout<<tb<<")";//recDevs
+    if (debug<0) cout<<")";
+    if (debug>=dbgObjFun) cout<<"Finished calcNLLs_Recruitment"<<endl;
 }
 
 void model_parameters::calcObjFun(int debug, ostream& cout)
@@ -2155,7 +2271,7 @@ void model_parameters::calcObjFun(int debug, ostream& cout)
     //prior likelihoods
     calcAllPriors(debug,cout);
     //recruitment component
-    calcNLLCompRec(debug,cout);
+    calcNLLs_Recruitment(debug,cout);
     
     //data components
     calcNLLs_Fisheries(debug,cout);
@@ -2181,8 +2297,9 @@ dvariable model_parameters::calcNorm2NLL(dvar_vector& mod, dvector& obs, dvector
     }
     nll += 0.5*norm2(zscr);
     if (debug<0){
+        double wgt = 1.0;//TODO: implement likelihood weights
         adstring yrs = str(mod.indexmin())+":"+str(mod.indexmax());
-        cout<<"list(type='norm2',nll="<<nll<<cc; 
+        cout<<"list(nll.type='norm2',wgt="<<wgt<<cc<<"nll="<<nll<<cc<<"objfun="<<wgt*nll<<cc; 
         cout<<"zscrs="; wts::writeToR(cout,value(zscr),yrs); cout<<")";
     }
     if (debug>=dbgAll) cout<<"Finished calcNorm2NLL()"<<endl;
@@ -2208,8 +2325,9 @@ dvariable model_parameters::calcNormalNLL(dvar_vector& mod, dvector& obs, dvecto
     }
     nll += 0.5*norm2(zscr);
     if (debug<0){
+        double wgt = 1.0;//TODO: implement likelihood weights
         adstring yrs = str(mod.indexmin())+":"+str(mod.indexmax());
-        cout<<"list(type='normal',nll="<<nll<<cc;
+        cout<<"list(nll.type='normal',wgt="<<wgt<<cc<<"nll="<<nll<<cc<<"objfun="<<wgt*nll<<cc; 
         cout<<"zscrs="; wts::writeToR(cout,value(zscr),yrs); cout<<")";
     }
    if (debug>=dbgAll) cout<<"Finished calcNormalNLL()"<<endl;
@@ -2235,8 +2353,9 @@ dvariable model_parameters::calcLognormalNLL(dvar_vector& mod, dvector& obs, dve
     }
     nll += 0.5*norm2(zscr);
     if (debug<0){
+        double wgt = 1.0;//TODO: implement likelihood weights
         adstring yrs = str(mod.indexmin())+":"+str(mod.indexmax());
-        cout<<"list(type='lognormal',nll="<<nll<<cc; 
+        cout<<"list(nll.type='lognormal',wgt="<<wgt<<cc<<"nll="<<nll<<cc<<"objfun="<<wgt*nll<<cc; 
         cout<<"zscrs="; wts::writeToR(cout,value(zscr),yrs); cout<<")";
     }
    if (debug>=dbgAll) cout<<"Finished calcLognormalNLL()"<<endl;
@@ -2253,7 +2372,7 @@ dvar_vector model_parameters::calcNLLs_CatchAbundance(AggregateCatchData* ptrA, 
     dvar_matrix tA_xy;
     int mny = mA_yxmsz.indexmin();
     int mxy = mA_yxmsz.indexmax();//may NOT be mxYr
-    if (debug<0) cout<<"list(type='"<<tcsam::getFitType(ptrA->optFit)<<"',fits=list("<<endl;
+    if (debug<0) cout<<"list(fit.type='"<<tcsam::getFitType(ptrA->optFit)<<"',fits=list("<<endl;
     if (ptrA->optFit==tcsam::FIT_BY_SEX){
         nlls.allocate(1,nSXs); nlls.initialize();
         tA_xy.allocate(1,nSXs,mny,mxy); tA_xy.initialize();
@@ -2261,7 +2380,7 @@ dvar_vector model_parameters::calcNLLs_CatchAbundance(AggregateCatchData* ptrA, 
         for (int x=1;x<=nSXs;x++){
             for (int y=mny;y<=mxy;y++) tA_xy(x,y) = sum(mA_yxmsz(y,x));//sum by sex
             if (debug<0) cout<<tcsam::getSexType(x)<<"=";
-            nlls(x) = calcNLL(ptrA->llType, tA_xy(x), ptrA->C_xy(x), ptrA->stdv_xy(x), ptrA->yrs, debug, cout); 
+            nlls(x) = calcNLL(ptrA->llType, tA_xy(x), ptrA->C_xy(x), ptrA->sd_xy(x), ptrA->yrs, debug, cout); 
             if (debug<0) cout<<","<<endl;
         }
         if (debug<0) cout<<"NULL)";
@@ -2272,7 +2391,7 @@ dvar_vector model_parameters::calcNLLs_CatchAbundance(AggregateCatchData* ptrA, 
         tA_xy.initialize();
         for (int y=mny;y<=mxy;y++) tA_xy(ALL_SXs,y) = sum(mA_yxmsz(y));//sum over sexes
         if (debug<0) cout<<tcsam::getSexType(ALL_SXs)<<"=";
-        nlls(ALL_SXs) = calcNLL(ptrA->llType, tA_xy(ALL_SXs), ptrA->C_xy(ALL_SXs), ptrA->stdv_xy(ALL_SXs), ptrA->yrs, debug, cout);                
+        nlls(ALL_SXs) = calcNLL(ptrA->llType, tA_xy(ALL_SXs), ptrA->C_xy(ALL_SXs), ptrA->sd_xy(ALL_SXs), ptrA->yrs, debug, cout);                
         if (debug<0) cout<<")";
     } else {
         std::cout<<"Calling calcNLLs_CatchAbundance with invalid fit option."<<endl;
@@ -2298,7 +2417,7 @@ dvar_vector model_parameters::calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dv
     dvar_matrix tB_xy;
     int mny = mA_yxmsz.indexmin();
     int mxy = mA_yxmsz.indexmax();//may NOT be mxYr
-    if (debug<0) cout<<"list(type='"<<tcsam::getFitType(ptrB->optFit)<<"',fits=list("<<endl;
+    if (debug<0) cout<<"list(fit.type='"<<tcsam::getFitType(ptrB->optFit)<<"',fits=list("<<endl;
     if (ptrB->optFit==tcsam::FIT_BY_SEX){
         nlls.allocate(1,nSXs); nlls.initialize();
         tB_xy.allocate(1,nSXs,mny,mxy); tB_xy.initialize();
@@ -2312,7 +2431,7 @@ dvar_vector model_parameters::calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dv
                 }
             }
             if (debug<0) cout<<tcsam::getSexType(x)<<"=";
-            nlls(x) = calcNLL(ptrB->llType, tB_xy(x), ptrB->C_xy(x), ptrB->stdv_xy(x), ptrB->yrs, debug, cout); 
+            nlls(x) = calcNLL(ptrB->llType, tB_xy(x), ptrB->C_xy(x), ptrB->sd_xy(x), ptrB->yrs, debug, cout); 
             if (debug<0) cout<<","<<endl;
         }
         if (debug<0) cout<<"NULL)";
@@ -2330,7 +2449,7 @@ dvar_vector model_parameters::calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dv
             }
         }
         if (debug<0) cout<<tcsam::getSexType(ALL_SXs)<<"=";
-        nlls(ALL_SXs) = calcNLL(ptrB->llType, tB_xy(ALL_SXs), ptrB->C_xy(ALL_SXs), ptrB->stdv_xy(ALL_SXs), ptrB->yrs, debug, cout);                
+        nlls(ALL_SXs) = calcNLL(ptrB->llType, tB_xy(ALL_SXs), ptrB->C_xy(ALL_SXs), ptrB->sd_xy(ALL_SXs), ptrB->yrs, debug, cout);                
         if (debug<0) cout<<")";
     } else {
         std::cout<<"Calling calcNLLs_CatchBiomass with invalid fit option."<<endl;
@@ -2354,11 +2473,12 @@ dvariable model_parameters::calcMultinomialNLL(dvar_vector& mod, dvector& obs, d
     if (debug>=dbgAll) cout<<"Starting calcMultinomialNLL()"<<endl;
     dvariable nll = -ss*(obs*(log(mod+smlVal)-log(obs+smlVal)));//note dot-product sums
     if (debug<0){
+        double wgt = 1.0;//TODO: incorporate weights
         dvector vmod = value(mod);
         dvector nlls = -ss*(elem_prod(obs,log(vmod+smlVal)-log(obs+smlVal)));
         dvector zscrs = elem_div(obs-vmod,sqrt(elem_prod((vmod+smlVal),1.0-(vmod+smlVal))/ss));//pearson residuals
         double effN = (vmod*(1.0-vmod))/norm2(obs-vmod);
-        cout<<"list(type='multinomial',nll="<<nll<<cc<<"ss="<<ss<<cc<<"effN="<<effN<<cc<<endl; 
+        cout<<"list(nll.type='multinomial',wgt="<<wgt<<cc<<"nll="<<nll<<cc<<"objfun="<<wgt*nll<<cc<<"ss="<<ss<<cc<<"effN="<<effN<<cc<<endl; 
         adstring dzbs = "size=c("+ptrMC->csvZBs+")";
         cout<<"nlls=";  wts::writeToR(cout,nlls, dzbs); cout<<cc<<endl;
         cout<<"zscrs="; wts::writeToR(cout,zscrs,dzbs); cout<<endl;
@@ -2479,7 +2599,8 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                     if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
                     if (debug<0) {
                         cout<<"'"<<y<<"'=list(";
-                        cout<<"fit.type="<<ptrZFD->optFit<<cc;
+                        cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                        cout<<"yr="<<y<<cc;
                         cout<<"sx='ALL_SEX'"<<cc;
                         cout<<"ms='ALL_MATURITY'"<<cc;
                         cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
@@ -2514,7 +2635,8 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                         if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
                         if (debug<0) {
                             cout<<"'"<<y<<"'=list(";
-                            cout<<"fit.type="<<ptrZFD->optFit<<cc;
+                            cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                            cout<<"yr="<<y<<cc;
                             cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
                             cout<<"ms='ALL_MATURITY'"<<cc;
                             cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
@@ -2558,7 +2680,8 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                         dvector oPt = oP_z(mnz,mxz);
                         if (debug<0) {
                             cout<<"'"<<y<<"'=list(";
-                            cout<<"fit.type="<<ptrZFD->optFit<<cc;
+                            cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                            cout<<"yr="<<y<<cc;
                             cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
                             cout<<"ms='ALL_MATURITY'"<<cc;
                             cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
@@ -2605,7 +2728,8 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                             dvector oPt = oP_z(mnz,mxz);
                             if (debug<0) {
                                 cout<<"'"<<y<<"'=list(";
-                                cout<<"fit.type="<<ptrZFD->optFit<<cc;
+                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                cout<<"yr="<<y<<cc;
                                 cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
                                 cout<<"ms='"<<tcsam::getMaturityType(m)<<"'"<<cc;
                                 cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
@@ -2758,58 +2882,74 @@ void model_parameters::calcNLLs_Surveys(int debug, ostream& cout)
 void model_parameters::calcAllPriors(int debug, ostream& cout)
 {
     if (debug>=dbgPriors) cout<<"Starting calcAllPriors()"<<endl;
+    if (debug<0) cout<<"list("<<endl;
     //recruitment parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnR,  pLnR,  debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRCV,pLnRCV,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLgtRX,pLgtRX,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRa, pLnRa, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRb, pLnRb, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrRec->pDevsLnR,devsLnR,debug,cout);
+    if (debug) cout<<tb<<"recruitment=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnR,  pLnR,  debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRCV,pLnRCV,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLgtRX,pLgtRX,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRa, pLnRa, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrRec->pLnRb, pLnRb, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrRec->pDevsLnR,devsLnR,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<cc<<endl;
    
     //natural mortality parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnM,   pLnM,   debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMT, pLnDMT, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMX, pLnDMX, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMM, pLnDMM, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMXM,pLnDMXM,debug,cout);
+    if (debug) cout<<tb<<"nat.mort=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnM,   pLnM,   debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMT, pLnDMT, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMX, pLnDMX, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMM, pLnDMM, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMXM,pLnDMXM,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<cc<<endl;
     
     //growth parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrA,   pLnGrA,   debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrB,   pLnGrB,   debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,debug,cout);
+    if (debug) cout<<tb<<"growth=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrA,   pLnGrA,   debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrB,   pLnGrB,   debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<cc<<endl;
     
     //maturity parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,debug,cout);
+    if (debug) cout<<tb<<"maturity=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<cc<<endl;
     
     //selectivity parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS1,pS1,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS2,pS2,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS3,pS3,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS4,pS4,debug,cout);     
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS5,pS5,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS6,pS6,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS1,devsS1,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS2,devsS2,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS3,devsS3,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS4,devsS4,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS5,devsS5,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS6,devsS6,debug,cout);
+    if (debug) cout<<tb<<"selfcns=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS1,pS1,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS2,pS2,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS3,pS3,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS4,pS4,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS5,pS5,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS6,pS6,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS1,devsS1,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS2,devsS2,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS3,devsS3,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS4,devsS4,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS5,devsS5,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pDevsS6,devsS6,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<cc<<endl;
     
     //fishing mortality parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnC,    pLnC,   debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCT,  pLnDCT, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCX,  pLnDCX, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCM,  pLnDCM, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCXM, pLnDCXM,debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pDevsLnC,devsLnC,debug,cout);
+    if (debug) cout<<tb<<"fisheries=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnC,    pLnC,   debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCT,  pLnDCT, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCX,  pLnDCX, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCM,  pLnDCM, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pLnDCXM, pLnDCXM,debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrFsh->pDevsLnC,devsLnC,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<cc<<endl;
    
     //survey catchability parameters
-    tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnQ,    pLnQ,   debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQT,  pLnDQT, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQX,  pLnDQX, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQM,  pLnDQM, debug,cout);
-    tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQXM, pLnDQXM,debug,cout);
+    if (debug) cout<<tb<<"surveys=list("<<endl;
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnQ,    pLnQ,   debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQT,  pLnDQT, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQX,  pLnDQX, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQM,  pLnDQM, debug,cout); if (debug){cout<<cc<<endl;}
+    if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSrv->pLnDQXM, pLnDQXM,debug,cout); if (debug){cout<<endl;}
+    if (debug) cout<<tb<<")"<<endl;
     
+    if (debug<0) cout<<")"<<endl;
     if (debug>=dbgPriors) cout<<"Finished calcAllPriors()"<<endl;
 }
 
@@ -2818,14 +2958,6 @@ void model_parameters::ReportToR_Data(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Starting ReportToR_Data(...)"<<endl;
     ptrMDS->writeToR(os,"data",0);
     if (debug) cout<<"Finished ReportToR_Data(...)"<<endl;
-}
-
-void model_parameters::ReportToR_NLLs(ostream& os, int debug, ostream& cout)
-{
-    if (debug) cout<<"Starting ReportToR_NLLs(...)"<<endl;
-    os<<"ofcs=list("<<endl;
-    os<<")";
-    if (debug) cout<<"Finished ReportToR_NLLs(...)"<<endl;
 }
 
 void model_parameters::ReportToR_Params(ostream& os, int debug, ostream& cout)
@@ -2989,9 +3121,15 @@ void model_parameters::ReportToR_SrvQuants(ostream& os, int debug, ostream& cout
 void model_parameters::ReportToR_ModelFits(ostream& os, int debug, ostream& cout)
 {
     if (debug) cout<<"Starting ReportToR_ModelFits(...)"<<endl;
+    //recalc objective function components and and write results to os
     os<<"model.fits=list("<<endl;
-    os<<"fisheries="; calcNLLs_Fisheries(-1,os); os<<","<<endl; //recalc and write results to os
-    os<<"surveys="; calcNLLs_Surveys(-1,os); os<<endl; //recalc and write results to os
+        os<<tb<<"penalties="; calcPenalties(-1,os);      os<<cc<<endl;
+        os<<tb<<"priors=";    calcAllPriors(-1,os);      os<<cc<<endl;
+        os<<tb<<"components=list("<<endl;
+            os<<tb<<tb<<"recruitment="; calcNLLs_Recruitment(-1,os); os<<endl;
+        os<<tb<<")"<<cc<<endl;
+        os<<tb<<"fisheries="; calcNLLs_Fisheries(-1,os);  os<<cc<<endl; 
+        os<<tb<<"surveys=";   calcNLLs_Surveys(-1,os);    os<<endl;  
     os<<")";
     if (debug) cout<<"Finished ReportToR_ModelFits(...)"<<endl;
 }
@@ -3076,9 +3214,6 @@ void model_parameters::ReportToR(ostream& os, int debug, ostream& cout)
         //model data
         ptrMDS->writeToR(os,"data",0); os<<","<<endl;
         
-        //objective function values
-        ReportToR_NLLs(os,debug,cout); os<<","<<endl;
-        
         //parameter values
         ReportToR_Params(os,debug,cout); os<<","<<endl;
         //selectivity functions
@@ -3093,7 +3228,7 @@ void model_parameters::ReportToR(ostream& os, int debug, ostream& cout)
         ReportToR_ModelFits(os,debug,cout); os<<","<<endl;
         
         //simulated model data
-        createSimData(debug, cout);
+        createSimData(debug, cout, 0, ptrSimMDS);//deterministic
         ptrSimMDS->writeToR(os,"sim.data",0); 
         os<<endl;
     os<<")"<<endl;
@@ -3125,7 +3260,7 @@ void model_parameters::final_calcs()
 {
     {cout<<"writing model sim data to file"<<endl;
         ofstream echo1; echo1.open("ModelSimData.dat", ios::trunc);
-        writeSimData(echo1,0,cout);
+        writeSimData(echo1,0,cout,ptrSimMDS);
     }
     if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")>-1) {
         mcmc.open((char*)(fnMCMC),ofstream::out|ofstream::app);

@@ -829,6 +829,16 @@ void NumberVectorInfo::writeFinalValsToR(ostream& os){
 /*------------------------------------------------------------------------------
  *  BoundedNumberVectorInfo
  *----------------------------------------------------------------------------*/
+/**
+ * Get a pointer to the ith BoundedNumberInfo element in the vector. 
+ * i mustbe in the interval 1<=i<=nNIs.
+ * @param i - index (1-based) to BoundedNumberInfo
+ * @return pointer to ith BoundedNumberInfo object
+ */
+BoundedNumberInfo* BoundedNumberVectorInfo::operator[](int i){
+    if (ppNIs&&(i<=nNIs)) return (static_cast<BoundedNumberInfo*>(ppNIs[i-1])); 
+    return 0;
+}
 /***************************************************************
 *   get lower bounds for parameters as vector                  *
 ***************************************************************/

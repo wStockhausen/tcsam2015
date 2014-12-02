@@ -8,7 +8,6 @@
 int IndexRange::debug = 0;
 int IndexBlock::debug = 0;
 int IndexBlockSet::debug = 0;
-int IndexBlockSets::debug = 0;
 /*----------------------------------------------------------------------------*/
 /**
  * Construct an IndexRange that will substitute the given 
@@ -42,10 +41,18 @@ void IndexRange::parse(adstring str){
     int i = str.pos(":");
     if (debug) cout<<"':' located at position "<<i<<endl;
     if (i){
-        mn = ::atoi(str(1,i-1));          if (mn<0){mn=modMin+1+mn;}
-        mx = ::atoi(str(i+1,str.size())); if (mx<0){mx=modMax-1-mx;}
+        mn = ::atoi(str(1,i-1));          
+        if (mn<0){mn=modMin+1+mn;} else
+        if (mn<modMin){mn=modMin;} else
+        if (mn>modMax){mn=modMax;}
+        mx = ::atoi(str(i+1,str.size())); 
+        if (mx<0){mx=modMax-1-mx;} else
+        if (mx<modMin){mx=modMin;} else
+        if (mx>modMax){mx=modMax;}
     } else {
         mn = ::atoi(str);
+        if (mn<modMin){mn=modMin;} else
+        if (mn>modMax){mn=modMax;}
         mx = mn;
     }
     if (debug) cout<<"mn,mx = "<<mn<<cc<<mx<<endl;
@@ -221,7 +228,7 @@ void IndexBlockSet::setType(adstring theType){
     type = theType;
     int p = theType.pos("_");
     if (p)  type = theType(1,p-1);//strip off type
-    if (type=="YEAR"){
+    if (type==tcsam::STR_YEAR){
         modMin = ModelConfiguration::mnYr;
         modMax = ModelConfiguration::mxYr;
     } else
@@ -231,11 +238,11 @@ void IndexBlockSet::setType(adstring theType){
     } else
     if (type==tcsam::STR_MATURITY_STATE){
         modMin = 1;
-        modMax = tcsam::nSXs;
+        modMax = tcsam::nMSs;
     } else
     if (type==tcsam::STR_SHELL_CONDITION){
         modMin = 1;
-        modMax = tcsam::nSXs;
+        modMax = tcsam::nSCs;
     } else 
     if (type==tcsam::STR_SIZE){
         modMin = 1;
@@ -296,112 +303,7 @@ void IndexBlockSet::writeToR(std::ostream& os){
     
 }
 
-/*----------------------------------------------------------------------------*/
-IndexBlockSets::~IndexBlockSets(){
-    if (ppIBSs) {
-        for (int i=0;i<nIBSs;i++) delete ppIBSs[i]; 
-        delete ppIBSs;
-        nIBSs=0;
-    }
-}
 
-/**
- * Creates n IndexBlockSet objects.
- * @param n
- */
-void IndexBlockSets::createIBSs(int n){
-    if (debug) cout<<"starting IndexBlockSets::createIBSs("<<n<<")"<<endl;
-    nIBSs=n; 
-    ppIBSs = new IndexBlockSet*[n];
-    for (int i=1;i<=nIBSs;i++){
-        ppIBSs[i-1] = new IndexBlockSet();
-    }
-    if (debug) cout<<"starting IndexBlockSets::createIBSs("<<n<<")"<<endl;
-}
-
-/*
- * Sets the type for the ith IndexBlockSet.
- */
-void IndexBlockSets::setType(int i, adstring type){
-    if (debug) cout<<"starting  IndexBlockSets::setType("<<i<<cc<<type<<")"<<endl;
-    ppIBSs[i-1]->setType(type);
-    if (debug) cout<<"finished  IndexBlockSets::setType("<<i<<cc<<type<<")"<<endl;
-}
-
-/* 
- * Returns a pointer to the index block set identified by "type".
- * Inputs:
- *  adstring type:  "type" identifying index block set to return
- * Returns:
- *  pointer to the identified IndexBlockSet
- */
-IndexBlockSet* IndexBlockSets::getIndexBlockSet(adstring type){
-    if (debug) cout<<"starting  IndexBlockSets::getIndexBlockSet("<<type<<")"<<endl;
-    IndexBlockSet* p = 0;
-    int s=1;
-    while(s<=nIBSs){
-        p = getIndexBlockSet(s);
-        if (p->getType()==type) break;
-        s++;
-    }
-    if (debug) cout<<"finished  IndexBlockSets::getIndexBlockSet("<<type<<")"<<endl;
-    return p;
-}
-
-/* 
- * Reads info for an IndexBlockSets object in ADMB format from an input stream.
- */
-void IndexBlockSets::read(cifstream & is){
-    if (debug) cout<<"Starting IndexBlockSets::read(cifstream & is)"<<endl;
-    adstring str1; adstring str2; int k;
-    is>>str1;
-    rpt::echo<<str1<<tb<<"#Required keyword"<<endl;
-    if (!(str1=="INDEX_BLOCK_SETS")) {
-        cout<<"Error reading "<<is.get_file_name()<<endl;
-        cout<<"Expected key word 'INDEX_BLOCK_SETS' and got '"<<str1<<"' instead."<<endl;
-        cout<<"Aborting..."<<endl;
-        exit(-1);
-    }
-    is>>nIBSs;//number of index block sets to define
-    rpt::echo<<nIBSs<<tb<<"#number of IndexBlockSets to define"<<endl;
-    if (nIBSs>0){
-        ppIBSs = new IndexBlockSet*[nIBSs];
-        for (int i=1;i<=nIBSs;i++){
-            is>>str1; is>>k;
-            rpt::echo<<str1<<tb<<k<<tb<<"#defining this IndexBlockSet"<<endl;
-            if ((str1=="INDEX_BLOCK_SET")&&(k<=nIBSs)) {
-                ppIBSs[k-1] = new IndexBlockSet();
-                is>>(*ppIBSs[k-1]); 
-                rpt::echo<<(*ppIBSs[k-1])<<endl;
-            } else {
-                cout<<"Error reading "<<i<<"th INDEX_BLOCK_SET in an INDEX_BLOCK_SETS"<<endl;
-                cout<<"in file "<<is.get_file_name()<<endl;
-                cout<<"Expected key word 'INDEX_BLOCK_SET' and got '"<<str1<<"' instead."<<endl;
-                cout<<"Expected max block id < "<<nIBSs<<" but got "<<k<<" instead."<<endl;
-                cout<<"Aborting..."<<endl;
-                exit(-1);
-            }
-        }
-    }
-    if (debug) cout<<"Finished IndexBlockSets::read(cifstream & is)"<<endl;
-}
-/*
- * Writes an IndexBlockSets in ADMB format to an output stream.
- */
-void IndexBlockSets::write(std::ostream & os){
-    os<<"INDEX_BLOCK_SETS"<<endl;
-    os<<nIBSs<<tb<<"#number of index block sets to be defined"<<endl;
-    if (nIBSs){
-        for (int i=1;i<nIBSs;i++) os<<"INDEX_BLOCK_SET"<<tb<<i<<endl<<(*ppIBSs[i-1])<<endl;
-        os<<"INDEX_BLOCK_SET"<<tb<<nIBSs<<endl<<(*ppIBSs[nIBSs-1]);
-    }
-}
-/*
- * Writes an IndexBlockSets as an un-named R list.
- */
-void IndexBlockSets::writeToR(std::ostream& os){
-    
-}
 
 void tcsam::getIndexLimits(adstring& idxType,int& mn,int& mx){
     if (idxType==tcsam::STR_YEAR) {

@@ -39,7 +39,7 @@ void AggregateCatchData::saveNLLs(dvar_vector& nlls){
  * 
  * @param dmatrix newC_yx
  */
-void AggregateCatchData::replaceCatchData(dmatrix& newC_yx){
+void AggregateCatchData::replaceCatchData(int iSeed,random_number_generator& rng,dmatrix& newC_yx){
     if (debug) std::cout<<"starting AggregateCatchData::replaceCatchData(dmatrix& newC_yx)"<<std::endl;
     //get conversion factor to millions (abundance) or thousands mt (biomass)
     double convFac = 1.0;
@@ -57,63 +57,48 @@ void AggregateCatchData::replaceCatchData(dmatrix& newC_yx){
     //year bounds for newC_yx
     int mnY = newC_yx.indexmin();
     int mxY = newC_yx.indexmax();
-//    cout<<"mnY = "<<mnY<<tb<<"mxY = "<<mxY<<endl;
     
     //copy old values
     int oldNY = ny;
-//    cout<<"oldNY = "<<oldNY<<endl;
     ivector oldYrs(1,oldNY);  oldYrs = yrs;
-//    cout<<"1 ";
-    dmatrix oldCVs_xy(1,tcsam::ALL_SXs,1,oldNY);      oldCVs_xy  = cvs_xy;
-//    cout<<"2 ";
-    dmatrix oldStdv_xy(1,tcsam::ALL_SXs,1,oldNY);     oldStdv_xy= stdv_xy;
-//    cout<<"3 ";
-    dmatrix oldC_xy(1,tcsam::ALL_SXs,1,oldNY);        oldC_xy = C_xy;
-//    cout<<"4 ";
+    dmatrix oldSD_xy(1,tcsam::ALL_SXs,1,oldNY);     oldSD_xy = sd_xy;
     dmatrix oldInpC_yc(1,oldNY,1,2*tcsam::ALL_SXs+1); oldInpC_yc = inpC_yc;
-//    cout<<"5 "<<endl;
     //determine new bounds
     ny=0;
     for (int y=1;y<=oldNY;y++){
         int yr = oldYrs(y);
         if ((mnY<=yr)&&(yr<=mxY)) ny++;
     }
-//    cout<<"new ny = "<<ny<<endl;
+    
     //reallocate quantities
-    yrs.deallocate();     yrs.allocate(1,ny);                   yrs.initialize();
+    yrs.deallocate();     yrs.allocate(1,ny);                          yrs.initialize();
     inpC_yc.deallocate(); inpC_yc.allocate(1,ny,1,2*tcsam::ALL_SXs+1); inpC_yc.initialize();
     ny=0;
     for (int y=1;y<=oldNY;y++){
         int yr = oldYrs(y);
         if ((mnY<=yr)&&(yr<=mxY)) {
             ny++;
-//            cout<<"new yindex="<<ny<<tb<<"old yindex="<<y<<tb;
             yrs(ny)   = yr;
-//            cout<<"yr = "<<yr<<endl;
             inpC_yc(ny) = oldInpC_yc(y);//copy 
-//            cout<<ny<<tb<<inpC_yc(ny)<<endl;
-            for (int x=1;x<=tcsam::nSXs;x++) inpC_yc(ny,2*x) = newC_yx(yr,x)/convFac;
+            for (int x=1;x<=tcsam::nSXs;x++) {
+                double v = newC_yx(yr,x);
+                if (iSeed) {
+                    double sd = oldSD_xy(x,y);
+                    v *= mfexp(wts::drawSampleNormal(rng,0.0,sd)-0.5*sd*sd);
+                }
+                inpC_yc(ny,2*x) = v/convFac;
+            }
             inpC_yc(ny,2*tcsam::ALL_SXs) = sum(newC_yx(yr))/convFac;
 //            cout<<ny<<tb<<inpC_yc(ny)<<endl;
         }
     }
-    C_xy.deallocate();        cvs_xy.deallocate();        stdv_xy.deallocate();
-    C_xy.allocate(1,tcsam::ALL_SXs); cvs_xy.allocate(1,tcsam::ALL_SXs); stdv_xy.allocate(1,tcsam::ALL_SXs);
+    C_xy.deallocate();               cv_xy.deallocate();               sd_xy.deallocate();
+    C_xy.allocate(1,tcsam::ALL_SXs); cv_xy.allocate(1,tcsam::ALL_SXs); sd_xy.allocate(1,tcsam::ALL_SXs);
     for (int x=1;x<=tcsam::ALL_SXs;x++) {
-        C_xy(x)    = convFac*column(inpC_yc,2*x);
-        cvs_xy(x)  = column(inpC_yc,2*x+1);
-        stdv_xy(x) = sqrt(log(1.0+elem_prod(cvs_xy(x),cvs_xy(x))));
+        C_xy(x)   = convFac*column(inpC_yc,2*x);
+        cv_xy(x)  = column(inpC_yc,2*x+1);
+        sd_xy(x) = sqrt(log(1.0+elem_prod(cv_xy(x),cv_xy(x))));
     }
-//    for (int y=1;y<=ny;y++){
-//        int yr = yrs(y);
-//        if ((mnY<=yr)&&(yr<=mxY)) {
-//            for (int x=1;x<=tcsam::nSXs;x++) C_xy(x,y) = newC_yx(yr,x);
-//            C_xy(tcsam::ALL_SXs,y) = sum(newC_yx(yr));
-//            for (int x=1;x<=tcsam::ALL_SXs;x++){
-//                inpC_yc(y,2*x)=C_xy(x,y)/convFac;            
-//            }
-//        }
-//    }
     if (debug) std::cout<<"finished AggregateCatchData::replaceCatchData(dmatrix& newC_yx)"<<std::endl;
 }
 /***************************************************************
@@ -166,13 +151,13 @@ void AggregateCatchData::read(cifstream & is){
     
     yrs.allocate(1,ny);
     C_xy.allocate(1,tcsam::ALL_SXs);
-    cvs_xy.allocate(1,tcsam::ALL_SXs);
-    stdv_xy.allocate(1,tcsam::ALL_SXs);
+    cv_xy.allocate(1,tcsam::ALL_SXs);
+    sd_xy.allocate(1,tcsam::ALL_SXs);
     yrs = (ivector) column(inpC_yc,1);
     for (int x=1;x<=tcsam::ALL_SXs;x++) {
-        C_xy(x)    = convFac*column(inpC_yc,2*x);
-        cvs_xy(x)  = column(inpC_yc,2*x+1);
-        stdv_xy(x) = sqrt(log(1.0+elem_prod(cvs_xy(x),cvs_xy(x))));
+        C_xy(x)   = convFac*column(inpC_yc,2*x);
+        cv_xy(x)  = column(inpC_yc,2*x+1);
+        sd_xy(x) = sqrt(log(1.0+elem_prod(cv_xy(x),cv_xy(x))));
     }
     if (debug) std::cout<<"end AggregateCatchData::read(...) "<<this<<std::endl;
 }
@@ -219,7 +204,7 @@ void AggregateCatchData::writeToR(ostream& os, std::string nm, int indent) {
             for (int n=0;n<indent;n++) os<<tb;
             os<<"data="; wts::writeToR(os,C_xy,x,y); os<<cc<<std::endl;
             for (int n=0;n<indent;n++) os<<tb;
-            os<<"cvs="; wts::writeToR(os,cvs_xy,x,y); os<<std::endl;
+            os<<"cvs="; wts::writeToR(os,cv_xy,x,y); os<<std::endl;
         indent--;
     for (int n=0;n<indent;n++) os<<tb; os<<")";
     if (debug) std::cout<<"AggregateCatchData::done writing to R"<<std::endl;
@@ -265,7 +250,7 @@ void SizeFrequencyData::normalize(void){
  * 
  * @param d5_array newNatZ_yxmsz
  *****************************************************/
-void SizeFrequencyData::replaceSizeFrequencyData(d5_array& newNatZ_yxmsz){
+void SizeFrequencyData::replaceSizeFrequencyData(int iSeed,random_number_generator& rng,d5_array& newNatZ_yxmsz){
     if (debug) std::cout<<"starting SizeFrequencyData::replaceSizeFrequencyData(...) "<<this<<std::endl;
     
     //year limits on new data
@@ -313,6 +298,19 @@ void SizeFrequencyData::replaceSizeFrequencyData(d5_array& newNatZ_yxmsz){
                 for (int m=1;m<=tcsam::ALL_MSs;m++){
                     for (int s=1;s<=tcsam::ALL_SCs;s++) {
                         dvector n_z = tcsam::extractFromYXMSZ(yr,x,m,s,newNatZ_yxmsz);
+                        if (iSeed){
+                            //add stochastic component by resampling using input sample size
+                            double n = sum(n_z);
+                            if ((n>0)&&(ss_xmsy(x,m,s,y)>0)){
+                                cout<<"org n_z = "<<n_z<<endl;
+                                dvector p_z = n_z/n;
+                                cout<<"p_z = "<<p_z<<endl;
+                                dvector pr_z = wts::rmvlogistic(p_z,ss_xmsy(x,m,s,y),rng);//resample
+                                cout<<"pr_z = "<<n_z<<endl;
+                                n_z = n*pr_z; //re-scale to original size
+                                cout<<"new n_z = "<<n_z<<endl;
+                            }
+                        }
                         inpNatZ_xmsyc(x,m,s,yctr)(1,2) = oldInpNatZ_xmsyc(x,m,s,y)(1,2);//old year, ss
                         inpNatZ_xmsyc(x,m,s,yctr)(3,2+nZCs-1).shift(1) = n_z;//new size frequency
                     }

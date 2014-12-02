@@ -33,7 +33,7 @@ class ParameterGroupInfo{
         
         int nIBSs;              //number of index variables (IVs) that are blocks
         ivector ibsIdxs;        //indices corresponding to index variables (IVs) that are blocks
-        IndexBlockSets* ptrIBSs;//index blocks sets
+        IndexBlockSet** ppIBSs;//pointer to a vector of pointers to IndexBlockSet objects
         
         int nPCs;  //number of rows in parameter combinations matrix
         imatrix in;//input parameter combinations matrix    
@@ -42,14 +42,23 @@ class ParameterGroupInfo{
         ParameterGroupInfo();
         ~ParameterGroupInfo();
         
-        /*******************************************\n
-         * get indices for parameter combination.\n
-         * pc : id for desired parameter combination\n
+        /* 
+         * Returns a pointer to the index block set identified by "type".
+         * Inputs:
+         *  adstring type:  "type" identifying index block set to return
+         * Returns:
+         *  pointer to the identified IndexBlockSet
+         */
+        IndexBlockSet* getIndexBlockSet(adstring type);
+        
+        /*******************************************
+         * get indices for parameter combination.
+         * @param pc : id for desired parameter combination
          ******************************************/
         ivector getPCIDs(int pc);
-        /*******************************************\n
-         * get model indices for parameter combination.\n
-         * pc: id for desired parameter combination
+        /*******************************************
+         * get model indices for parameter combination.
+         * @param pc: id for desired parameter combination
          ******************************************/
         imatrix getModelIndices(int pc);
         
@@ -309,7 +318,6 @@ class SurveysInfo : public ParameterGroupInfo {
 class ModelParametersInfo{
     public:
         static int debug;        
-        static IndexBlockSets* ptrGIBS;//global index block sets
     public:
         ModelConfiguration* ptrMC;
         

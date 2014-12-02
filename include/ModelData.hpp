@@ -44,8 +44,8 @@ class IndexRange;
         adstring units; //units for aggregate catch data
         ivector yrs;    //years for aggregate catch data
         dmatrix C_xy;   //aggregate catch by sex, year (converted from units to THOUSANDS of crab or MT))
-        dmatrix cvs_xy; //aggregate catch cv's by sex, year
-        dmatrix stdv_xy;//aggregate catch stdv's by sex, year
+        dmatrix cv_xy; //aggregate catch cv's by sex, year
+        dmatrix sd_xy;//aggregate catch stdv's by sex, year
         
     public:
         AggregateCatchData(){}
@@ -57,7 +57,7 @@ class IndexRange;
          * 
          * @param dmatrix newC_yx (note index order)
          */
-        void replaceCatchData(dmatrix& newC_yx);
+        void replaceCatchData(int iSeed,random_number_generator& rng,dmatrix& newC_yx);
         /**
          * Save the negative log-likelihoods from a model fit (values only).
          * 
@@ -131,7 +131,7 @@ class IndexRange;
          * 
          * @param d5_array newNatZ_yxmsz
          */
-        void replaceSizeFrequencyData(d5_array& newNatZ_xmsyz);
+        void replaceSizeFrequencyData(int iSeed,random_number_generator& rng,d5_array& newNatZ_xmsyz);
         /**
          * Save the negative log-likelihoods from a model fit (values only).
          * 
@@ -210,7 +210,7 @@ class IndexRange;
          * @param newNatZ_yxmsz - catch-at-size by sex/maturity/shell condition/year
          * @param wAtZ_xmz - weight-at-size by sex/maturity
          */
-        virtual void replaceCatchData(d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz);
+        virtual void replaceCatchData(int iSeed,random_number_generator& rng,d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz);
         virtual void read(cifstream & is);//read file in ADMB format
         virtual void write(ostream & os); //write object to file in ADMB format
         virtual void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
@@ -260,7 +260,7 @@ class SurveyData: public CatchData {
          * @param newRatZ_yxmsz - new retained catch-at-size
          * @param wAtZ_xmz - weight-at-size
          */
-        void replaceCatchData(d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxmsz,d3_array& wAtZ_xmz);
+        void replaceCatchData(int iSeed,random_number_generator& rng,d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxmsz,d3_array& wAtZ_xmz);
         void read(cifstream & is);//read file in ADMB format
         void write(ostream & os); //write object to file in ADMB format
         void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list

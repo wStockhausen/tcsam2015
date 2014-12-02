@@ -37,13 +37,17 @@ int ModelParametersInfo::debug  = 0;
  */
 ParameterGroupInfo::ParameterGroupInfo(){
     nIVs=0; nPVs=0; nXIs=0; nIBSs=0; nPCs=0;
-    ptrIBSs=0; ppIdxs=0;
+    ppIBSs=0; ppIdxs=0;
 }
 /**
  * Destructor.
  */
 ParameterGroupInfo::~ParameterGroupInfo(){
-    if (ptrIBSs) {delete ptrIBSs; ptrIBSs=0;}
+    if (ppIBSs) {
+        for (int i=0;i<nIBSs;i++) delete ppIBSs[i]; 
+        delete ppIBSs;
+        nIBSs=0;
+    }
     if (ppIdxs) {
         for (int p=0;p<nPCs;p++) delete ppIdxs[p]; 
         delete ppIdxs;
@@ -101,10 +105,32 @@ imatrix ParameterGroupInfo::getModelIndices(int pc){
 void ParameterGroupInfo::createIndexBlockSets(){
     if (debug) cout<<"starting ParameterGroupInfo::createIndexBlockSets() "<<nIBSs<<endl;
     if (nIBSs){
-        ptrIBSs = new IndexBlockSets();
-        ptrIBSs->createIBSs(nIBSs);
+        ppIBSs = new IndexBlockSet*[nIBSs];
+        for (int i=1;i<=nIBSs;i++){
+            ppIBSs[i-1] = new IndexBlockSet();
+        }
     }
     if (debug) cout<<"finished ParameterGroupInfo::createIndexBlockSets()"<<endl;
+}
+
+/* 
+ * Returns a pointer to the index block set identified by "type".
+ * Inputs:
+ *  adstring type:  "type" identifying index block set to return
+ * Returns:
+ *  pointer to the identified IndexBlockSet
+ */
+IndexBlockSet* ParameterGroupInfo::getIndexBlockSet(adstring type){
+    if (debug) cout<<"starting  IndexBlockSets::getIndexBlockSet("<<type<<")"<<endl;
+    IndexBlockSet* p = 0;
+    int s=0;
+    while(s<nIBSs){
+        p = ppIBSs[s];
+        if (p->getType()==type) break;
+        s++;
+    }
+    if (debug) cout<<"finished  IndexBlockSets::getIndexBlockSet("<<type<<")"<<endl;
+    return p;
 }
 
 /**
@@ -153,8 +179,8 @@ void ParameterGroupInfo::createIndices(void){
                     int id = in(p,i);//block index in IndexBlockSet
                     IndexBlockSet* pIBS = 0;
                     if (debug) cout<<"Checking local IndexBlockSets using type '"<<type<<"'."<<endl;
-                    pIBS = ptrIBSs->getIndexBlockSet(type);
-                    pIBS = ptrIBSs->getIndexBlockSet(in(p,i));
+//                    pIBS = ptrIBSs->getIndexBlockSet(type);
+                    pIBS = ppIBSs[in(p,i)-1];
                     if (pIBS){
                         ivector idxs = pIBS->getFwdIndexVector(p);
                         tmp(i).allocate(idxs.indexmin(),idxs.indexmax());
@@ -289,7 +315,7 @@ void ParameterGroupInfo::read(cifstream& is){
         for (int i=1;i<=nPVs;i++) rpt::echo<<lblPVs(i)<<tb; 
         for (int i=1;i<=nXIs;i++) rpt::echo<<lblXIs(i)<<tb; 
         rpt::echo<<endl;
-        for (int i=1;i<=nIBSs;i++) ptrIBSs->getIndexBlockSet(i)->allocate(nPCs);
+        for (int i=0;i<nIBSs;i++) ppIBSs[i]->allocate(nPCs);
         //read parameters combinations definition matrix
         int ibsIdx=1;
         in.allocate(1,nPCs,1,nIVs+nPVs+nXIs);
@@ -303,7 +329,7 @@ void ParameterGroupInfo::read(cifstream& is){
                 if (lblIVs(i)==tcsam::STR_MATURITY_STATE)  {in(r,i) = tcsam::getMaturityType(str);} else
                 if (lblIVs(i)==tcsam::STR_SHELL_CONDITION) {in(r,i) = tcsam::getShellType(str);}    else
                 if (i==ibsIdxs(ibsIdx)){//variable is a block
-                    ptrIBSs->getIndexBlockSet(ibsIdx)->getIndexBlock(r)->parse(str);
+                    ppIBSs[ibsIdx-1]->getIndexBlock(r)->parse(str);
                     in(r,i)=ibsIdx;//index to associated IndexBlockSet
                     if (ibsIdx<nIBSs) ibsIdx++;//increment to next IBS
                 } else {in(r,i)=::atoi(str);}
@@ -355,7 +381,7 @@ void ParameterGroupInfo::write(std::ostream& os){
             if (lblIVs(i)==tcsam::STR_MATURITY_STATE)  {os<<tcsam::getMaturityType(in(r,i))<<tb;} else
             if (lblIVs(i)==tcsam::STR_SHELL_CONDITION) {os<<tcsam::getShellType(in(r,i))<<tb;} else 
             if (i==ibsIdxs(ibsIdx)){
-                os<<(*ptrIBSs->getIndexBlockSet(ibsIdx)->getIndexBlock(r))<<tb;
+                os<<(*ppIBSs[ibsIdx-1]->getIndexBlock(r))<<tb;
                 if (ibsIdx<nIBSs) ibsIdx++;//increment to next
             } else {os<<in(r,i)<<tb;}
         }
@@ -412,7 +438,7 @@ RecruitmentInfo::RecruitmentInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 1;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs = 6;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -536,7 +562,7 @@ NaturalMortalityInfo::NaturalMortalityInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 1;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs=5;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -659,7 +685,7 @@ GrowthInfo::GrowthInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 1;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs=3;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -762,7 +788,7 @@ MaturityInfo::MaturityInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 1;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs = 1;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -846,7 +872,7 @@ SelectivityInfo::SelectivityInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 1;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs=12;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -1034,7 +1060,7 @@ FisheriesInfo::FisheriesInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 2;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs=7;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -1175,7 +1201,7 @@ SurveysInfo::SurveysInfo(){
     ibsIdxs.allocate(1,nIBSs);
     ibsIdxs(1) = 2;
     ParameterGroupInfo::createIndexBlockSets();
-    for (int i=1;i<=nIBSs;i++) ptrIBSs->setType(i,lblIVs(ibsIdxs(i)));
+    for (int i=1;i<=nIBSs;i++) ppIBSs[i-1]->setType(lblIVs(ibsIdxs(i)));
     
     nPVs=5;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
@@ -1282,7 +1308,6 @@ void SurveysInfo::writeToR(std::ostream & os){
 /*------------------------------------------------------------------------------
  * ModelParametersInfo
  -----------------------------------------------------------------------------*/
-IndexBlockSets* ModelParametersInfo::ptrGIBS = 0;
 ModelParametersInfo::ModelParametersInfo(ModelConfiguration& mc){
     ptrMC=&mc;
     ptrRec=0;
@@ -1499,15 +1524,25 @@ void tcsam::setParameterInfo(BoundedVectorVectorInfo* pBVVI,
         mxs = pBVVI->getMaxIndices();
         lb  = pBVVI->getLowerBounds();
         ub  = pBVVI->getUpperBounds();
-        os<<"parameter vector"<<pBVVI->name<<":"<<endl;
+        os<<"parameter vector "<<pBVVI->name<<":"<<endl;
         os<<"#mnIdx  mxIdx  lower  upper  phase"<<endl;
         for (int n=1;n<=np;n++) os<<n<<tb<<mns(n)<<tb<<mxs(n)<<tb<<lb(n)<<tb<<ub(n)<<tb<<phs(n)<<endl;
         idxs.allocate(1,np);
         for (int n=1;n<=np;n++) idxs(n) = (*pBVVI)[n]->getRevIndices();
         os<<"Reverse indices:"<<endl;
-        for (int i=idxs(1).indexmin();i<=idxs(1).indexmax();i++) {
-            os<<i<<tb; for (int n=1;n<=np;n++) os<<idxs(n,i)<<tb;  os<<endl;
+        int mnc = idxs(1).indexmin(); int mxc = idxs(1).indexmax();
+        for (int n=2;n<=np;n++) {
+            mnc = min(mnc,idxs(n).indexmin());
+            mxc = max(mxc,idxs(n).indexmax());
         }
+        os<<"mnc = "<<mnc<<tb<<"mxc = "<<mxc<<endl;
+        imatrix idxps(mnc,mxc,1,np); idxps = -1;
+        for (int c=mnc;c<=mxc;c++){
+            for (int n=1;n<=np;n++){
+                if ((idxs(n).indexmin()<=c)&&(c<=idxs(n).indexmax())) idxps(c,n) = idxs(n,c);
+            }
+        }
+        for (int c=mnc;c<=mxc;c++) os<<c<<tb<<idxps(c)<<endl;
     } else {
         mns =  0;
         mxs =  0;
@@ -1545,10 +1580,24 @@ void tcsam::setParameterInfo(DevsVectorVectorInfo* pDVVI,
         for (int n=1;n<=np;n++) os<<n<<tb<<mns(n)<<tb<<mxs(n)<<tb<<lb(n)<<tb<<ub(n)<<tb<<phs(n)<<endl;
         idxs.allocate(1,np);
         for (int n=1;n<=np;n++) idxs(n) = (*pDVVI)[n]->getRevIndices();
+//        os<<"Reverse indices:"<<endl;
+//        for (int i=idxs(1).indexmin();i<=idxs(1).indexmax();i++) {
+//            os<<i<<tb; for (int n=1;n<=np;n++) os<<idxs(n,i)<<tb;  os<<endl;
+//        }
         os<<"Reverse indices:"<<endl;
-        for (int i=idxs(1).indexmin();i<=idxs(1).indexmax();i++) {
-            os<<i<<tb; for (int n=1;n<=np;n++) os<<idxs(n,i)<<tb;  os<<endl;
+        int mnc = idxs(1).indexmin(); int mxc = idxs(1).indexmax();
+        for (int n=2;n<=np;n++) {
+            mnc = min(mnc,idxs(n).indexmin());
+            mxc = max(mxc,idxs(n).indexmax());
         }
+        os<<"mnc = "<<mnc<<tb<<"mxc = "<<mxc<<endl;
+        imatrix idxps(mnc,mxc,1,np); idxps = -1;
+        for (int c=mnc;c<=mxc;c++){
+            for (int n=1;n<=np;n++){
+                if ((idxs(n).indexmin()<=c)&&(c<=idxs(n).indexmax())) idxps(c,n) = idxs(n,c);
+            }
+        }
+        for (int c=mnc;c<=mxc;c++) os<<c<<tb<<idxps(c)<<endl;
     } else {
         mns =  0;
         mxs =  0;

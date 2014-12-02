@@ -309,7 +309,8 @@ private:
   param_matrix R_yx;
   param_matrix R_cz;
   param_matrix R_yz;
-  param_vector zscrDevsLnR;
+  param_matrix stdvDevsLnR_cy;
+  param_matrix zscrDevsLnR_cy;
   param_3array M_cxm;
   param_4array M_yxmz;
   param_matrix prMat_cz;
@@ -344,7 +345,7 @@ private:
   param_vector fPenDevsS5;
   param_vector fPenDevsS6;
   param_vector fPenDevsLnC;
-  param_number nllRecDevs;
+  param_vector nllRecDevs;
   param_stddev_vector sdrLnR_y;
   param_stddev_matrix sdrSpB_xy;
 public:
@@ -359,8 +360,8 @@ public:
  void writeMCMCtoR(ostream& mcmc,BoundedVectorVectorInfo* ptr);
  void writeMCMCtoR(ostream& mcmc,DevsVectorVectorInfo* ptr);
  void writeMCMCtoR(ofstream& mcmc);
- void createSimData(int debug, ostream& cout);
- void writeSimData(ostream& os, int debug, ostream& cout);
+ void createSimData(int debug, ostream& cout, int iSimDataSeed, ModelDatasets* ptrSim);
+ void writeSimData(ostream& os, int debug, ostream& cout, ModelDatasets* ptrSim);
  void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout);
  void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
  void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
@@ -383,7 +384,7 @@ public:
  void calcPenalties(int debug, ostream& cout);
  dvar_vector calc1stDiffs(const dvar_vector& d);
  dvar_vector calc2ndDiffs(const dvar_vector& d);
- void calcNLLCompRec(int debug, ostream& cout);
+ void calcNLLs_Recruitment(int debug, ostream& cout);
  void calcObjFun(int debug, ostream& cout);
  dvariable calcNorm2NLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout);
  dvariable calcNormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout);
@@ -398,7 +399,6 @@ public:
  void calcNLLs_Surveys(int debug, ostream& cout);
  void calcAllPriors(int debug, ostream& cout);
  void ReportToR_Data(ostream& os, int debug, ostream& cout);
- void ReportToR_NLLs(ostream& os, int debug, ostream& cout);
  void ReportToR_Params(ostream& os, int debug, ostream& cout);
  void ReportToR_PopQuants(ostream& os, int debug, ostream& cout);
  void ReportToR_SelFuncs(ostream& os, int debug, ostream& cout);

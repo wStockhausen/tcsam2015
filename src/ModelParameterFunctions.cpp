@@ -184,6 +184,22 @@ void calcPriors(objective_function_value& objFun, NumberVectorInfo* ptrVI,param_
         dvar_vector pri = ptrVI->calcLogPriors(tmp);//ln-scale prior (NOT NLL!)
         if (debug>=tcsam::dbgPriors) cout<<"priors("<<ptrVI->name<<") = "<<pri<<std::endl;
         objFun += -ptrVI->getPriorWgts()*pri;
+        if (debug<0){
+            dvector wts = ptrVI->getPriorWgts();
+            cout<<ptrVI->name<<"=list("<<endl;
+            for (int i=pri.indexmin();i<pri.indexmax();i++){
+                adstring type = (*ptrVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgt="<<wts(i)<<cc<<"nll="<<-sum(pri)<<cc<<"objfun="<<-wts(i)*sum(pri)<<"),"<<endl;
+            }
+            {
+                int i=pri.indexmax();
+                adstring type = (*ptrVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgt="<<wts(i)<<cc<<"nll="<<-pri(i)<<cc<<"objfun="<<-wts(i)*pri(i)<<")"<<endl;
+            }
+            cout<<")";
+        }
+    } else {
+        if (debug<0) cout<<ptrVI->name<<"=NULL";
     }
 }
 
@@ -208,6 +224,22 @@ void calcPriors(objective_function_value& objFun, BoundedNumberVectorInfo* ptrVI
         dvar_vector pri = ptrVI->calcLogPriors(tmp);//ln-scale prior (NOT NLL!)
         if (debug>=tcsam::dbgPriors) cout<<"priors("<<ptrVI->name<<") = "<<pri<<std::endl;
         objFun += -ptrVI->getPriorWgts()*pri;
+        if (debug<0){
+            dvector wts = ptrVI->getPriorWgts();
+            cout<<ptrVI->name<<"=list("<<endl;
+            for (int i=pri.indexmin();i<pri.indexmax();i++){
+                adstring type = (*ptrVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgt="<<wts(i)<<cc<<"nll="<<-sum(pri)<<cc<<"objfun="<<-wts(i)*sum(pri)<<"),"<<endl;
+            }
+            {
+                int i=pri.indexmax();
+                adstring type = (*ptrVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgt="<<wts(i)<<cc<<"nll="<<-pri(i)<<cc<<"objfun="<<-wts(i)*pri(i)<<")"<<endl;
+            }
+            cout<<")";
+        }
+    } else {
+        if (debug<0) cout<<ptrVI->name<<"=NULL";
     }
 }
 
@@ -228,8 +260,9 @@ void calcPriors(objective_function_value& objFun, BoundedNumberVectorInfo* ptrVI
  */                                      
 void calcPriors(objective_function_value& objFun, BoundedVectorVectorInfo* ptrVVI, param_init_bounded_vector_vector& pm, int debug, std::ostream& cout){
     if (ptrVVI->getSize()){
+        if (debug<0) cout<<ptrVVI->name<<"=list("<<endl;        
         dvector wts = ptrVVI->getPriorWgts();
-        for (int i=1;i<=pm.indexmax();i++) {
+        for (int i=pm.indexmin();i<pm.indexmax();i++) {
             dvar_vector tmp = 1.0*pm(i);
             dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
             if (debug>=tcsam::dbgPriors){
@@ -237,8 +270,29 @@ void calcPriors(objective_function_value& objFun, BoundedVectorVectorInfo* ptrVV
                 cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
             }
             objFun += -wts(i)*sum(pri);
+            if (debug<0) {
+                adstring type = (*ptrVVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgts="<<wts(i)<<cc<<"nlls="<<-sum(pri)<<cc<<"objfun="<<-wts(i)*sum(pri)<<"),"<<endl;
+            }
         }
-    }    
+        {
+            int i = pm.indexmax();
+            dvar_vector tmp = 1.0*pm(i);
+            dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
+            if (debug>=tcsam::dbgPriors){
+                cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<std::endl;
+                cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
+            }
+            objFun += -wts(i)*sum(pri);
+            if (debug<0) {
+                adstring type = (*ptrVVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgt="<<wts(i)<<cc<<"nll="<<-sum(pri)<<cc<<"objfun="<<-wts(i)*sum(pri)<<")"<<endl;
+            }
+        }
+        if (debug<0) cout<<")";
+    } else {
+        if (debug<0) cout<<ptrVVI->name<<"=NULL";
+    }
 }
 
 /**
@@ -258,8 +312,9 @@ void calcPriors(objective_function_value& objFun, BoundedVectorVectorInfo* ptrVV
  */                                      
 void calcPriors(objective_function_value& objFun, DevsVectorVectorInfo* ptrVVI, dvar_matrix& pm, int debug, std::ostream& cout){
     if (ptrVVI->getSize()){
+        if (debug<0) cout<<ptrVVI->name<<"=list("<<endl;        
         dvector wts = ptrVVI->getPriorWgts();
-        for (int i=1;i<=pm.indexmax();i++) {
+        for (int i=1;i<pm.indexmax();i++) {
             dvar_vector tmp = 1.0*pm(i);
             dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
             if (debug>=tcsam::dbgPriors){
@@ -267,8 +322,29 @@ void calcPriors(objective_function_value& objFun, DevsVectorVectorInfo* ptrVVI, 
                 cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
             }
             objFun += -wts(i)*sum(pri);
+            if (debug<0) {
+                adstring type = (*ptrVVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgts="<<wts(i)<<cc<<"nlls="<<-sum(pri)<<cc<<"objfun="<<-wts(i)*sum(pri)<<"),"<<endl;
+            }
         }
-    }    
+        {
+            int i = pm.indexmax();
+            dvar_vector tmp = 1.0*pm(i);
+            dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
+            if (debug>=tcsam::dbgPriors){
+                cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<std::endl;
+                cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
+            }
+            objFun += -wts(i)*sum(pri);
+            if (debug<0) {
+                adstring type = (*ptrVVI)[i]->getPriorType();
+                cout<<tb<<"'"<<i<<"'=list(type='"<<type<<"'"<<cc<<"wgt="<<wts(i)<<cc<<"nll="<<-sum(pri)<<cc<<"objfun="<<-wts(i)*sum(pri)<<")"<<endl;
+            }
+        }
+        if (debug<0) cout<<")";
+    } else {
+        if (debug<0) cout<<ptrVVI->name<<"=NULL";
+    }
 }
 
 } //namespace tcsam

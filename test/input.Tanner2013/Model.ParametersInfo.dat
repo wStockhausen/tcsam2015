@@ -10,7 +10,7 @@ PARAMETER_COMBINATIONS
 2  #number of rows defining parameter combinations
 #id  YEAR_BLOCK    pLnR    pLnRCV  pLgtRF   pLnRa   pLnRb    pDevsLnR
   1    [-1:1974]     1        1        1       1       1        1      #model spin-up period
-  2    [1975:-1]     2        1        1       1       1        2      #data-informed model period  
+  2    [1975:2012]   2        1        1       1       1        2      #data-informed model period  
 PARAMETERS
 pLnR #ln-scale mean recruitment parameter (2013 ok)
 2  #number of parameters
@@ -38,7 +38,7 @@ pDevsLnR #annual ln-scale recruitment deviations
 2    #number of parameter vectors
 #id  idx.type  block      read?   lower   upper  jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
 1     YEAR   [-1:1974]    FALSE   -10      10     OFF      0         1         OFF           1        1stdiff_normal 0 1   #spin-up period (ok 2013)
-2     YEAR   [1975:-1]    FALSE   -10      10     OFF      0         1         OFF           1        none   #model period   (ok 2013)
+2     YEAR   [1975:2012]  FALSE   -10      10     OFF      0         1         OFF           1        none   #model period   (ok 2013)
 #initial values vectors go here
 #-------------------------------
 # Natural mortality parameters
@@ -123,8 +123,8 @@ PARAMETER_COMBINATIONS
 #survey 
   1    [1975:1981]   1    1    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1975-1981 males
   2    [1975:1981]   2    2    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1975-1981 females
-  3    [1982:2013]   3    3    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1982+ males
-  4    [1982:2013]   4    4    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1982+ females
+  3    [1982:-2]   3    3    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1982+ males
+  4    [1982:-2]   4    4    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1982+ females
 #TCF  
   5    [-1:-1]       5    5    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for TCF females (entire model period)
   6    [-1:1990]     6    6    0    0    0    0     0      0        0      0        0       0    -1  asclogisticLn50   #ln(z50), slope for TCF males pre-1991
@@ -364,8 +364,8 @@ PARAMETER_COMBINATIONS
  2    1     [1975:1981]  FEMALE    1        1      1        0       0          2        #AFSC bottom trawl survey pre-1982
  3    1     [1982:1987]  MALE      1        0      2        0       0          3        #AFSC bottom trawl survey 1982-1987 (pre northwest extension) 
  4    1     [1982:1987]  FEMALE    1        0      2        0       0          4        #AFSC bottom trawl survey 1982-1987
- 5    1     [1988:2013]  MALE      1        0      2        0       0          3        #AFSC bottom trawl survey 1988+     (post northwest extension) 
- 6    1     [1988:2013]  FEMALE    1        0      2        0       0          4        #AFSC bottom trawl survey 1988+
+ 5    1     [1988:-2]  MALE      1        0      2        0       0          3        #AFSC bottom trawl survey 1988+     (post northwest extension) 
+ 6    1     [1988:-2]  FEMALE    1        0      2        0       0          4        #AFSC bottom trawl survey 1988+
 PARAMETERS
 pLnQ #base (ln-scale) survey catchability (mature males)
 1  #number of parameters
