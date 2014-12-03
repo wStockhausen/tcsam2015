@@ -2240,6 +2240,7 @@ void model_parameters::calcPenalties(int debug, ostream& cout)
     }
     if (debug<0) cout<<tb<<tb<<")"<<endl;//end of non-decreasing penalties list    
     if (debug<0) cout<<tb<<")";//end of maturity penalties list
+    
     if (debug<0) cout<<")";//end of penalties list
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 }

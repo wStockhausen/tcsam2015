@@ -1,6 +1,10 @@
 #include <admodel.h>
 #include "wtsADMB.hpp"
 #include "ModelConstants.hpp"
+/**
+ * Changes:
+ * 2014-12-03: 1. Changed std::exit(-1) to exit(-1) for MinGW compatibility.
+*/
 
 using namespace tcsam;
 
@@ -73,7 +77,7 @@ adstring tcsam::getSexType(int i){
     } 
     std::cout<<"Unrecognized or inappropriate SexType '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
-    std::exit(-1);
+    exit(-1);
     return adstring("");
 }
 
