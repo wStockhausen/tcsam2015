@@ -19,18 +19,13 @@
                     <name>Release-MacOSX</name>
                     <type>1</type>
                 </confElem>
-                <confElem>
-                    <name>Debug-Win</name>
-                    <type>1</type>
-                </confElem>
-                <confElem>
-                    <name>Releaase-Win</name>
-                    <type>1</type>
-                </confElem>
             </confList>
             <formatting>
                 <project-formatting-style>false</project-formatting-style>
             </formatting>
         </data>
+        <spellchecker-wordlist xmlns="http://www.netbeans.org/ns/spellchecker-wordlist/1">
+            <word>cutpoints</word>
+        </spellchecker-wordlist>
     </configuration>
 </project>
