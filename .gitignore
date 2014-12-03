@@ -2,8 +2,6 @@ Makefile
 /build/
 /dist/
 /docs/
-/test/input.PriorsTest/
-/test/input.Tanner2013orig/
 /nbproject/
 /nbproject/private/
 /test/input.RetrospectiveTest/
