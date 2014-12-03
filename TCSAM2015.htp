@@ -354,6 +354,7 @@ public:
   virtual void final_calcs(void);
   model_parameters(int sz,int argc, char * argv[]);
   virtual void initializationfunction(void);
+  void setInitVals(void);
   void writeMCMCHeader(void);
  void writeMCMCtoR(ostream& mcmc,NumberVectorInfo* ptr);
  void writeMCMCtoR(ostream& mcmc,BoundedNumberVectorInfo* ptr);
@@ -362,6 +363,7 @@ public:
  void writeMCMCtoR(ofstream& mcmc);
  void createSimData(int debug, ostream& cout, int iSimDataSeed, ModelDatasets* ptrSim);
  void writeSimData(ostream& os, int debug, ostream& cout, ModelDatasets* ptrSim);
+ void setInitVals(NumberVectorInfo* pI, param_init_number_vector& p, int debug, ostream& cout);
  void setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout);
  void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
  void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);

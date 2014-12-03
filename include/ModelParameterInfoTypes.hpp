@@ -38,13 +38,13 @@
             double initVal;     //initial value on "natural" scale
             double finlVal;     //final value (for output to R)
             int phase;          //phase in which to turn on parameter
-            bool resample;      //flag to do resampling of initial values
             double priorWgt;    //weight to assign to prior probability
             adstring priorType; //pdf type for prior
             dvector priorParams;//specified on "natural" scale
             dvector priorConsts;//specified on "natural" scale
         public:
             adstring      name;
+            bool          resample; //flag to do resampling of initial values
             ModelPDFInfo* pMPI;
         public:
             NumberInfo(){this->name="";pMPI=0;}
@@ -86,9 +86,10 @@
         public:
             static int debug;
         protected:
-            int jitter;  //flag to jitter
             double lower;//lower bound
             double upper;//upper bound
+        public:
+            int jitter;  //flag to jitter
         public:
             BoundedNumberInfo():NumberInfo(){}
             BoundedNumberInfo(adstring& name):NumberInfo(name){}

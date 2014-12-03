@@ -15,8 +15,8 @@ PARAMETERS
 pLnR #ln-scale mean recruitment parameter (2013 ok)
 2  #number of parameters
 #id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
-1      0      10     OFF      4.31        1       OFF           1        normal      6 3   #spin-up period  (0608)
-2      0      10     OFF      4.31        1       OFF           1        normal      6 3   #model period    (0608)
+1      0      10     ON      4.31        1       OFF           1        normal      6 3   #spin-up period  (0608)
+2      0      10     ON      4.31        1       OFF           1        normal      6 3   #model period    (0608)
 pLnRCV #ln-scale parameter for cv of recruitment
 2  #number of parameters
 #id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
@@ -37,8 +37,8 @@ pLnRb #ln-scale gamma distribution scale paramter for pr(size-at-recruitment)
 pDevsLnR #annual ln-scale recruitment deviations
 2    #number of parameter vectors
 #id  idx.type  block      read?   lower   upper  jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
-1     YEAR   [-1:1974]    FALSE   -10      10     OFF      0         1         OFF           1        1stdiff_normal 0 1   #spin-up period (ok 2013)
-2     YEAR   [1975:2012]  FALSE   -10      10     OFF      0         1         OFF           1        none   #model period   (ok 2013)
+1     YEAR   [-1:1974]    FALSE   -10      10     ON      0         1         OFF           1        1stdiff_normal 0 1   #spin-up period (ok 2013)
+2     YEAR   [1975:2012]  FALSE   -10      10     ON      0         1         OFF           1        none   #model period   (ok 2013)
 #initial values vectors go here
 #-------------------------------
 # Natural mortality parameters

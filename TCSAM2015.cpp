@@ -183,41 +183,39 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
             iSimDataSeed=atoi(ad_comm::argv[on+1]);
         } else {
             cout<<"-------------------------------------------"<<endl;
-            cout<<"Enter iSimDataSeed for random number generator (0 -> deterministic): ";
-            cin>>iSeed;
+            cout<<"Enter random number seed (0 -> deterministic) for data simulation: ";
+            cin>>iSimDataSeed;
         }
         if (iSimDataSeed) rng.reinitialize(iSimDataSeed);
         rpt::echo<<"#Simulating data to fit using "<<iSimDataSeed<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
-    //jitter
-    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-jitter"))>-1) {
-        jitter=1;
+    //seed
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-seed"))>-1) {
         if (on+1<argc) {
             iSeed=atoi(ad_comm::argv[on+1]);
         } else {
             cout<<"-------------------------------------------"<<endl;
-            cout<<"Enter iSeed for random number generator: ";
+            cout<<"Enter random number seed for jittering/resampling: ";
             cin>>iSeed;
         }
         rng.reinitialize(iSeed);
-        rpt::echo<<"#Jittering for initial parameter values using "<<iSeed<<endl;
+        rpt::echo<<"#Random number seed set to "<<iSeed<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
+    //jitter
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-jitter"))>-1) {
+        jitter=1;
+        rpt::echo<<"#Jittering for initial parameter values turned ON "<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
     //resample
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-resample"))>-1) {
         resample=1;
-        if (on+1<argc) {
-            iSeed=atoi(ad_comm::argv[on+1]);
-        } else {
-            cout<<"-------------------------------------------"<<endl;
-            cout<<"Enter iSeed for random number generator: ";
-            cin>>iSeed;
-        }
-        rng.reinitialize(iSeed);
-        rpt::echo<<"#Resampling for initial parameter values using "<<iSeed<<endl;
+        rpt::echo<<"#Resampling for initial parameter values turned ON "<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
@@ -309,6 +307,8 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
     mnYr   = ptrMC->mnYr;
     mxYr   = ptrMC->mxYr;
     if (doRetro){mxYr = mxYr-yRetro; ptrMC->setMaxModelYear(mxYr);}
+    if (jitter)   {ptrMC->jitter=1;}
+    if (resample) {ptrMC->resample = 1;}
     
     rpt::echo<<"#------------------ModelConfiguration-----------------"<<endl;
     rpt::echo<<(*ptrMC);
@@ -917,6 +917,16 @@ void model_parameters::preliminary_calculations(void)
     rpt::echo<<"#Starting PRELIMINARY_CALCS_SECTION"<<endl;
     cout<<"#Starting PRELIMINARY_CALCS_SECTION"<<endl;
     int debug=1;
+    
+    //set initial values for all parameters
+    if (usePin) {
+        rpt::echo<<"NOTE: setting initial values for parameters using pin file"<<endl;
+    } else {
+        rpt::echo<<"NOTE: setting initial values for parameters using setInitVals(...)"<<endl;
+        setInitVals();
+    }
+    cout<<"testing setAllDevs()"<<endl;
+    setAllDevs(0,rpt::echo);
         
     {cout<<"writing data to R"<<endl;
      ofstream echo1; echo1.open("ModelData.R", ios::trunc);
@@ -940,56 +950,6 @@ void model_parameters::preliminary_calculations(void)
         }
     }
     if (debug) rpt::echo<<"avgEff = "<<avgEff<<endl;
-    
-    //set initial values for all parameters
-    //recruitment parameters
-    setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
-    //natural mortality parameters
-    setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
-    //growth parameters
-    setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
-    //maturity parameters
-    setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
-    //selectivity parameters
-    setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
-    setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
-    //fully-selected fishing capture rate parameters
-    setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
-    //survey catchability parameters
-    setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
-    setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
-    cout<<"testing setAllDevs()"<<endl;
-    setAllDevs(0,rpt::echo);
     if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")<0) {
         cout<<"testing calcRecruitment():"<<endl;
         calcRecruitment(dbgCalcProcs+1,rpt::echo);
@@ -1084,6 +1044,56 @@ void model_parameters::userfunction(void)
         updateMPI(0, cout);
         writeMCMCtoR(mcmc);
     }
+}
+
+void model_parameters::setInitVals(void)
+{
+    //recruitment parameters
+    setInitVals(ptrMPI->ptrRec->pLnR,    pLnR,    0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRCV,  pLnRCV,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLgtRX,  pLgtRX,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRa,   pLnRa,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pLnRb,   pLnRb,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrRec->pDevsLnR,pDevsLnR,0,rpt::echo);
+    //natural mortality parameters
+    setInitVals(ptrMPI->ptrNM->pLnM,   pLnM,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMT, pLnDMT, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMX, pLnDMX, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMM, pLnDMM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
+    //growth parameters
+    setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
+    //maturity parameters
+    setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
+    //selectivity parameters
+    setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS2, pS2,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS3, pS3,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS4, pS4,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS5, pS5,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pS6, pS6,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS1, pDevsS1,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS2, pDevsS2,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS3, pDevsS3,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS4, pDevsS4,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS5, pDevsS5,0,rpt::echo);
+    setInitVals(ptrMPI->ptrSel->pDevsS6, pDevsS6,0,rpt::echo);
+    //fully-selected fishing capture rate parameters
+    setInitVals(ptrMPI->ptrFsh->pHM,     pHM,     0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnC,    pLnC,    0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCT,  pLnDCT,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCX,  pLnDCX,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCM,  pLnDCM,  0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pLnDCXM, pLnDCXM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrFsh->pDevsLnC,pDevsLnC,0,rpt::echo);
+    //survey catchability parameters
+    setInitVals(ptrMPI->ptrSrv->pLnQ,   pLnQ,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQT, pLnDQT, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQX, pLnDQX, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQM, pLnDQM, 0,rpt::echo);
+    setInitVals(ptrMPI->ptrSrv->pLnDQXM,pLnDQXM,0,rpt::echo);
 }
 
 void model_parameters::writeMCMCHeader(void)
@@ -1215,18 +1225,68 @@ void model_parameters::writeSimData(ostream& os, int debug, ostream& cout, Model
      
 }
 
+void model_parameters::setInitVals(NumberVectorInfo* pI, param_init_number_vector& p, int debug, ostream& cout)
+{
+    if (debug>=dbgAll) std::cout<<"Starting setInitVals(NumberVectorInfo* pI, param_init_number_vector& p) for "<<p(1).label()<<endl; 
+    int np = pI->getSize();
+    if (np){
+        dvector vls = pI->getInitVals();//initial values from parameter info
+        dvector def = pI->getInitVals();//defaults are initial values
+        for (int i=1;i<=np;i++) {
+            p(i) = vls(i);  //assign initial value from parameter info
+            NumberInfo* ptrI = (*pI)[i];
+            if ((p(i).get_phase_start()>0)&&(ptrMC->resample)&&(ptrI->resample)){
+                p(i) = ptrI->drawInitVal(rng,ptrMC->vif);//assign initial value based on resampling prior pdf
+            }
+        }
+        //p.set_initial_value(vls);
+        rpt::echo<<"InitVals for "<<p(1).label()<<": "<<endl;
+        rpt::echo<<tb<<"inits  : "<<vls<<endl;
+        rpt::echo<<tb<<"default: "<<def<<endl;
+        rpt::echo<<tb<<"actual : "<<p<<endl;
+        if (debug>=dbgAll) {
+            std::cout<<"InitVals for "<<p(1).label()<<": "<<endl;
+            std::cout<<tb<<p<<std::endl;
+        }
+    } else {
+        rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
+    }
+    
+    if (debug>=dbgAll) {
+        std::cout<<"Enter 1 to continue >>";
+        std::cin>>np;
+        if (np<0) exit(-1);
+        std::cout<<"Finished setInitVals(NumberVectorInfo* pI, param_init_number_vector& p) for "<<p(1).label()<<endl; 
+    }
+     
+}
+
 void model_parameters::setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p, int debug, ostream& cout)
 {
     if (debug>=dbgAll) std::cout<<"Starting setInitVals(BoundedNumberVectorInfo* pI, param_init_bounded_number_vector& p) for "<<p(1).label()<<endl; 
     int np = pI->getSize();
     if (np){
-        dvector vls = pI->getInitVals();
-        for (int i=1;i<=np;i++) p(i)=vls(i);
+        dvector vls = pI->getInitVals();//initial values from parameter info
+        dvector def = 0.5*(pI->getUpperBounds()+pI->getLowerBounds());//defaults are midpoints of ranges
+        for (int i=1;i<=np;i++) {
+            p(i) = vls(i);  //assign initial value from parameter info
+            BoundedNumberInfo* ptrI = (*pI)[i];
+            if ((p(i).get_phase_start()>0)&&(ptrMC->jitter)&&(ptrI->jitter)){
+                rpt::echo<<"jittering "<<p(i).label()<<endl;
+                p(i) = wts::jitterParameter(p(i), ptrMC->jitFrac, rng);//only done if parameter phase > 0
+            } else 
+            if ((p(i).get_phase_start()>0)&&(ptrMC->resample)&&(ptrI->resample)){
+                p(i) = ptrI->drawInitVal(rng,ptrMC->vif);
+            }
+        }
         //p.set_initial_value(vls);
-        rpt::echo<<"InitVals for "<<p(1).label()<<": "<<p<<endl;
+        rpt::echo<<"InitVals for "<<p(1).label()<<": "<<endl;
+        rpt::echo<<tb<<"inits  : "<<vls<<endl;
+        rpt::echo<<tb<<"default: "<<def<<endl;
+        rpt::echo<<tb<<"actual : "<<p<<endl;
         if (debug>=dbgAll) {
-            std::cout<<"p   = "<<p<<std::endl;
-            std::cout<<"vls = "<<vls<<std::endl;
+            std::cout<<"InitVals for "<<p(1).label()<<": "<<endl;
+            std::cout<<tb<<p<<std::endl;
         }
     } else {
         rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
@@ -1246,15 +1306,41 @@ void model_parameters::setInitVals(BoundedVectorVectorInfo* pI, param_init_bound
     int np = pI->getSize();
     if (np){
         for (int i=1;i<=np;i++) {
-            dvector vls = (*pI)[i]->getInitVals();
+            rpt::echo<<"InitVals "<<p(i).label()<<":"<<endl;
+            dvector pns = value(p(i));
+            dvector vls = (*pI)[i]->getInitVals();//initial values from parameter info
             if (debug>=dbgAll) std::cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<endl;
-            for (int j=vls.indexmin();j<=vls.indexmax();j++) p(i,j)=vls(j);
+            for (int j=p(i).indexmin();j<=p(i).indexmax();j++) p(i,j)=vls(j);
+            BoundedVectorInfo* ptrI = (*pI)[i];
+            if ((p(i).get_phase_start()>0)&&(ptrMC->jitter)&&(ptrI->jitter)){
+                rpt::echo<<tb<<"jittering "<<p(i).label()<<endl;
+                dvector rvs = wts::jitterParameter(p(i), ptrMC->jitFrac, rng);//get jittered values
+                for (int j=p(i).indexmin();j<=p(i).indexmax();j++) p(i,j)=rvs(j);
+                rpt::echo<<tb<<"pin values       = "<<pns<<endl;
+                rpt::echo<<tb<<"info values      = "<<vls<<endl;
+                rpt::echo<<tb<<"resampled values = "<<rvs<<endl;
+                rpt::echo<<tb<<"final values     = "<<p(i)<<endl;
+            } else
+            if ((p(i).get_phase_start()>0)&&(ptrMC->resample)&&(ptrI->resample)){
+                rpt::echo<<tb<<"resampling "<<p(i).label()<<endl;
+                dvector rvs = ptrI->drawInitVals(rng,ptrMC->vif);//get resampled values
+                for (int j=p(i).indexmin();j<=p(i).indexmax();j++) p(i,j)=rvs(j);
+                rpt::echo<<tb<<"pin values       = "<<pns<<endl;
+                rpt::echo<<tb<<"info values      = "<<vls<<endl;
+                rpt::echo<<tb<<"resampled values = "<<rvs<<endl;
+                rpt::echo<<tb<<"final values     = "<<p(i)<<endl;
+            } else {
+                rpt::echo<<tb<<"No jittering or resampling "<<p(i).label()<<endl;
+                rpt::echo<<tb<<"pin values       = "<<pns<<endl;
+                rpt::echo<<tb<<"info values      = "<<vls<<endl;
+                rpt::echo<<tb<<"final values     = "<<p(i)<<endl;
+            }
             if (debug>=dbgAll){
-                std::cout<<"p(i)   = "<<p(i)<<endl;
+                std::cout<<"pns(i) = "<<pns<<endl;
                 std::cout<<"vls(i) = "<<vls<<endl;
+                std::cout<<"p(i)   = "<<p(i)<<endl;
             }
         }
-        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).label()<<":"<<tb<<p(i)<<endl;
     } else {
         rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
     }
@@ -1273,15 +1359,41 @@ void model_parameters::setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_
     int np = pI->getSize();
     if (np){
         for (int i=1;i<=np;i++) {
-            dvector vls = (*pI)[i]->getInitVals();
+            rpt::echo<<"InitVals "<<p(i).label()<<":"<<endl;
+            dvector pns = value(p(i));
+            dvector vls = (*pI)[i]->getInitVals();//initial values from parameter info
             if (debug>=dbgAll) std::cout<<"pc "<<i<<" :"<<tb<<p(i).indexmin()<<tb<<p(i).indexmax()<<tb<<vls.indexmin()<<tb<<vls.indexmax()<<endl;
-            for (int j=vls.indexmin();j<=(vls.indexmax()-1);j++) p(i,j)=vls(j);
+            for (int j=p(i).indexmin();j<=p(i).indexmax();j++) p(i,j)=vls(j);
+            DevsVectorInfo* ptrI = (*pI)[i];
+            if ((p(i).get_phase_start()>0)&&(ptrMC->jitter)&&(ptrI->jitter)){
+                rpt::echo<<tb<<"jittering "<<p(i).label()<<endl;
+                dvector rvs = wts::jitterParameter(p(i), ptrMC->jitFrac, rng);//get jittered values
+                for (int j=p(i).indexmin();j<=p(i).indexmax();j++) p(i,j)=rvs(j);
+                rpt::echo<<tb<<"pin values       = "<<pns<<endl;
+                rpt::echo<<tb<<"info values      = "<<vls<<endl;
+                rpt::echo<<tb<<"resampled values = "<<rvs<<endl;
+                rpt::echo<<tb<<"final values     = "<<p(i)<<endl;
+            } else
+            if ((p(i).get_phase_start()>0)&&(ptrMC->resample)&&(ptrI->resample)){
+                rpt::echo<<tb<<"resampling "<<p(i).label()<<endl;
+                dvector rvs = ptrI->drawInitVals(rng,ptrMC->vif);//get resampled values
+                for (int j=p(i).indexmin();j<=p(i).indexmax();j++) p(i,j)=rvs(j);
+                rpt::echo<<tb<<"pin values       = "<<pns<<endl;
+                rpt::echo<<tb<<"info values      = "<<vls<<endl;
+                rpt::echo<<tb<<"resampled values = "<<rvs<<endl;
+                rpt::echo<<tb<<"final values     = "<<p(i)<<endl;
+            } else {
+                rpt::echo<<tb<<"No jittering or resampling "<<p(i).label()<<endl;
+                rpt::echo<<tb<<"pin values       = "<<pns<<endl;
+                rpt::echo<<tb<<"info values      = "<<vls<<endl;
+                rpt::echo<<tb<<"final values     = "<<p(i)<<endl;
+            }
             if (debug>=dbgAll){
-                std::cout<<"p(i)   = "<<p(i)<<endl;
+                std::cout<<"pns(i) = "<<pns<<endl;
                 std::cout<<"vls(i) = "<<vls<<endl;
+                std::cout<<"p(i)   = "<<p(i)<<endl;
             }
         }
-        for (int i=1;i<=np;i++) rpt::echo<<"InitVals "<<p(i).label()<<":"<<tb<<p(i)<<endl;
     } else {
         rpt::echo<<"InitVals for "<<p(1).label()<<" not defined because np = "<<np<<endl;
     }
@@ -2160,12 +2272,12 @@ void model_parameters::calcSurveyQs(int debug, ostream& cout)
 void model_parameters::calcPenalties(int debug, ostream& cout)
 {
     if (debug>=dbgObjFun) cout<<"Started calcPenalties()"<<endl;
-    if (debug<0) cout<<"list("<<endl;
-    if (debug<0) cout<<tb<<"maturity=list("<<endl;
+    if (debug<0) cout<<"list("<<endl;//start list of penalties by category
+    if (debug<0) cout<<tb<<"maturity=list("<<endl;//start of maturity penalties list
     //smoothness penalties on maturity parameters (NOT maturity ogives)
     double penWgtLgtPrMat = 1.0;//TODO: read in value from input file
     fPenSmoothLgtPrMat.initialize();
-    if (debug<0) cout<<tb<<tb<<"smoothness=list(";
+    if (debug<0) cout<<tb<<tb<<"smoothness=list(";//start of smoothness penalties list
     for (int i=1;i<npLgtPrMat;i++){
         dvar_vector v; v = 1.0*pLgtPrMat(i);
         fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
@@ -2179,11 +2291,11 @@ void model_parameters::calcPenalties(int debug, ostream& cout)
         objFun += penWgtLgtPrMat*fPenSmoothLgtPrMat(i);
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtLgtPrMat<<cc<<"pen="<<fPenSmoothLgtPrMat(i)<<cc<<"objfun="<<penWgtLgtPrMat*fPenSmoothLgtPrMat(i)<<")"<<endl;
     }
-    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;//end of smoothness penalties list
     //non-decreasing penalties on maturity parameters (NOT maturity ogives)
     double penWgtNonDecLgtPrMat = 1.0;//TODO: read in value from input file
     fPenNonDecLgtPrMat.initialize();
-    if (debug<0) cout<<tb<<tb<<"nondecreasing=list(";
+    if (debug<0) cout<<tb<<tb<<"nondecreasing=list(";//start of non-decreasing penalties list
     for (int i=1;i<npLgtPrMat;i++){
         dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
         for (int iv=v.indexmin();iv<=v.indexmax();iv++){
@@ -2201,10 +2313,134 @@ void model_parameters::calcPenalties(int debug, ostream& cout)
         objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtNonDecLgtPrMat<<cc<<"pen="<<fPenNonDecLgtPrMat(i)<<cc<<"objfun="<<penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i)<<")";
     }
-    if (debug<0) cout<<tb<<tb<<")"<<endl;
-    if (debug<0) cout<<tb<<")";
+    if (debug<0) cout<<tb<<tb<<")"<<endl;//end of non-decreasing penalties list    
+    if (debug<0) cout<<tb<<")";//end of maturity penalties list
+    if (debug<0) cout<<tb<<"selectivity=list("<<endl;//start of selectivity penalties list
+    double penWgtDevsS1 = 1.0;//TODO: read in value from input file
+    fPenDevsS1.initialize();
+    if (debug<0) cout<<tb<<tb<<"S1=list(";//start of S1 penalties list
+    for (int i=1;i<npDevsS1;i++){
+        dvar_vector v; v = 1.0*pDevsS1(i);
+        fPenDevsS1(i) = norm2(v);
+        objFun += penWgtDevsS1*fPenDevsS1(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS1<<cc<<"pen="<<fPenDevsS1(i)<<cc<<"objfun="<<penWgtDevsS1*fPenDevsS1(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsS1;
+        dvar_vector v; v = 1.0*pDevsS1(i);
+        fPenDevsS1(i) = norm2(v);
+        objFun += penWgtDevsS1*fPenDevsS1(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS1<<cc<<"pen="<<fPenDevsS1(i)<<cc<<"objfun="<<penWgtDevsS1*fPenDevsS1(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;//end of S1 devs penalties list
+    double penWgtDevsS2 = 1.0;//TODO: read in value from input file
+    fPenDevsS2.initialize();
+    if (debug<0) cout<<tb<<tb<<"S2=list(";//start of S2 penalties list
+    for (int i=1;i<npDevsS2;i++){
+        dvar_vector v; v = 1.0*pDevsS2(i);
+        fPenDevsS2(i) = norm2(v);
+        objFun += penWgtDevsS2*fPenDevsS2(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS2<<cc<<"pen="<<fPenDevsS2(i)<<cc<<"objfun="<<penWgtDevsS2*fPenDevsS2(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsS2;
+        dvar_vector v; v = 1.0*pDevsS2(i);
+        fPenDevsS2(i) = norm2(v);
+        objFun += penWgtDevsS2*fPenDevsS2(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS2<<cc<<"pen="<<fPenDevsS2(i)<<cc<<"objfun="<<penWgtDevsS2*fPenDevsS2(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;//end of S2 devs penalties list
+    double penWgtDevsS3 = 1.0;//TODO: read in value from input file
+    fPenDevsS3.initialize();
+    if (debug<0) cout<<tb<<tb<<"S3=list(";//start of S3 penalties list
+    for (int i=1;i<npDevsS3;i++){
+        dvar_vector v; v = 1.0*pDevsS3(i);
+        fPenDevsS3(i) = norm2(v);
+        objFun += penWgtDevsS3*fPenDevsS3(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS3<<cc<<"pen="<<fPenDevsS3(i)<<cc<<"objfun="<<penWgtDevsS3*fPenDevsS3(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsS3;
+        dvar_vector v; v = 1.0*pDevsS3(i);
+        fPenDevsS3(i) = norm2(v);
+        objFun += penWgtDevsS3*fPenDevsS3(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS3<<cc<<"pen="<<fPenDevsS3(i)<<cc<<"objfun="<<penWgtDevsS3*fPenDevsS3(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;//end of S3 devs penalties list
+    double penWgtDevsS4 = 1.0;//TODO: read in value from input file
+    fPenDevsS4.initialize();
+    if (debug<0) cout<<tb<<tb<<"S4=list(";//start of S4 penalties list
+    for (int i=1;i<npDevsS4;i++){
+        dvar_vector v; v = 1.0*pDevsS4(i);
+        fPenDevsS4(i) = norm2(v);
+        objFun += penWgtDevsS4*fPenDevsS4(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS4<<cc<<"pen="<<fPenDevsS4(i)<<cc<<"objfun="<<penWgtDevsS4*fPenDevsS4(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsS4;
+        dvar_vector v; v = 1.0*pDevsS4(i);
+        fPenDevsS4(i) = norm2(v);
+        objFun += penWgtDevsS4*fPenDevsS4(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS4<<cc<<"pen="<<fPenDevsS4(i)<<cc<<"objfun="<<penWgtDevsS4*fPenDevsS4(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;//end of S4 devs penalties list
+    double penWgtDevsS5 = 1.0;//TODO: read in value from input file
+    fPenDevsS5.initialize();
+    if (debug<0) cout<<tb<<tb<<"S5=list(";//start of S5 penalties list
+    for (int i=1;i<npDevsS5;i++){
+        dvar_vector v; v = 1.0*pDevsS5(i);
+        fPenDevsS5(i) = norm2(v);
+        objFun += penWgtDevsS5*fPenDevsS5(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS5<<cc<<"pen="<<fPenDevsS5(i)<<cc<<"objfun="<<penWgtDevsS5*fPenDevsS5(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsS5;
+        dvar_vector v; v = 1.0*pDevsS5(i);
+        fPenDevsS5(i) = norm2(v);
+        objFun += penWgtDevsS5*fPenDevsS5(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS5<<cc<<"pen="<<fPenDevsS5(i)<<cc<<"objfun="<<penWgtDevsS5*fPenDevsS5(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<cc<<endl;//end of S5 devs penalties list
+    double penWgtDevsS6 = 1.0;//TODO: read in value from input file
+    fPenDevsS6.initialize();
+    if (debug<0) cout<<tb<<tb<<"S6=list(";//start of S6 penalties list
+    for (int i=1;i<npDevsS6;i++){
+        dvar_vector v; v = 1.0*pDevsS6(i);
+        fPenDevsS6(i) = norm2(v);
+        objFun += penWgtDevsS6*fPenDevsS6(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS6<<cc<<"pen="<<fPenDevsS6(i)<<cc<<"objfun="<<penWgtDevsS6*fPenDevsS6(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsS6;
+        dvar_vector v; v = 1.0*pDevsS6(i);
+        fPenDevsS6(i) = norm2(v);
+        objFun += penWgtDevsS6*fPenDevsS6(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsS6<<cc<<"pen="<<fPenDevsS6(i)<<cc<<"objfun="<<penWgtDevsS6*fPenDevsS6(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<endl;//end of S6 devs penalties list
+    if (debug<0) cout<<tb<<")"<<endl;//end of selectivity penalties list
     
-    if (debug<0) cout<<")";
+    if (debug<0) cout<<tb<<"fisheries=list("<<endl;//start of fishery penalties list
+    double penWgtDevsLnC = 1.0;//TODO: read in value from input file
+    fPenDevsLnC.initialize();
+    if (debug<0) cout<<tb<<tb<<"DevsLnC=list(";//start of LnC devs penalties list
+    for (int i=1;i<npDevsLnC;i++){
+        dvar_vector v; v = 1.0*pDevsLnC(i);
+        fPenDevsLnC(i) = norm2(v);
+        objFun += penWgtDevsLnC*fPenDevsLnC(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsLnC<<cc<<"pen="<<fPenDevsLnC(i)<<cc<<"objfun="<<penWgtDevsLnC*fPenDevsLnC(i)<<"),"<<endl;
+    }
+    {
+        int i = npDevsLnC;
+        dvar_vector v; v = 1.0*pDevsLnC(i);
+        fPenDevsLnC(i) = norm2(v);
+        objFun += penWgtDevsLnC*fPenDevsLnC(i);
+        if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtDevsLnC<<cc<<"pen="<<fPenDevsLnC(i)<<cc<<"objfun="<<penWgtDevsLnC*fPenDevsLnC(i)<<"),"<<endl;
+    }
+    if (debug<0) cout<<tb<<tb<<")"<<endl;//end of pDevsLnC penalties list
+    if (debug<0) cout<<tb<<")"<<endl;//end of fisheries penalties list
+    
+    if (debug<0) cout<<")";//end of penalties list
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 }
 
@@ -2894,7 +3130,7 @@ void model_parameters::calcAllPriors(int debug, ostream& cout)
     if (debug) cout<<tb<<")"<<cc<<endl;
    
     //natural mortality parameters
-    if (debug) cout<<tb<<"nat.mort=list("<<endl;
+    if (debug) cout<<tb<<"'natural mortality'=list("<<endl;
     if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnM,   pLnM,   debug,cout); if (debug){cout<<cc<<endl;}
     if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMT, pLnDMT, debug,cout); if (debug){cout<<cc<<endl;}
     if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrNM->pLnDMX, pLnDMX, debug,cout); if (debug){cout<<cc<<endl;}
@@ -2915,7 +3151,7 @@ void model_parameters::calcAllPriors(int debug, ostream& cout)
     if (debug) cout<<tb<<")"<<cc<<endl;
     
     //selectivity parameters
-    if (debug) cout<<tb<<"selfcns=list("<<endl;
+    if (debug) cout<<tb<<"'selectivity functions'=list("<<endl;
     if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS1,pS1,debug,cout); if (debug){cout<<cc<<endl;}
     if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS2,pS2,debug,cout); if (debug){cout<<cc<<endl;}
     if (debug) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrSel->pS3,pS3,debug,cout); if (debug){cout<<cc<<endl;}
