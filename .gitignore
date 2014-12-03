@@ -1,12 +1,11 @@
-/test/input/
-/test/runMac/
-/nbproject/private/
+Makefile
 /build/
 /dist/
 /docs/
 /test/input.PriorsTest/
 /test/input.Tanner2013orig/
 /nbproject/
+/nbproject/private/
 /test/input.RetrospectiveTest/
 /test/run.RetrospectiveTest/
 /test/run.Tanner2013/
