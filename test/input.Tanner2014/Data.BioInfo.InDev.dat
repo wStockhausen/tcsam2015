@@ -1,0 +1,68 @@
+#####################################################################                                                       
+#TCSAM2015 Tanner Crab Biological Data File                         #                                                       
+#####################################################################               
+BIO_DATA     #required keyword              
+#recruitment lag (in years)             
+5  #recLag              
+#WEIGHT-AT-SIZE             
+KG   #units             
+4    #number of factor combinations (sex x maturity state)              
+#sex    maturity    a             b     
+MALE    IMMATURE    0.000163    3.136   
+MALE    MATURE      0.000163    3.136   
+FEMALE  IMMATURE    0.000637    2.794   
+FEMALE  MATURE      0.000344    2.956   
+#------------------             
+#PROBABILITY OF MATURING                
+1    #number of factor combinations (sex)               
+#sex    slope   Z50%        
+MALE    0.07754 130.854     #Zheng coefficients
+#------------------             
+#cv for mean length female male at min and max length bins              
+2    #number of factor combinations (sex)               
+#sex    cvMin   cvMax       
+MALE    0.05    0.05        
+FEMALE  0.05    0.05        
+#------------------             
+#Timing of fisheries and mating             
+#all set equal to 0.625y = 7.5m from start biological year (01 July) to nominal mating (15 Feb)             
+0.625   #typical midPtFisheries         
+0.625   #typical matingTime         
+0   #number of atypical year            
+#data for atypical years                
+#year   midPtFisheries  matingTime      
+                
+#####################################################################                                                       
+#TCSAM2015 Tanner Crab Biological Data File                         #                                                       
+#####################################################################               
+BIO_DATA     #required keyword              
+#recruitment lag (in years)             
+5  #recLag              
+#WEIGHT-AT-SIZE             
+KG   #units             
+4    #number of factor combinations (sex x maturity state)              
+#sex    maturity    a   b   
+male    immature    0.000163    3.136   
+male    mature  0.000163    3.136   
+female  immature    0.000637    2.794   
+female  mature  0.000344    2.956   
+#------------------             
+#PROBABILITY OF MATURING                
+1    #number of factor combinations (sex)               
+#sex    slope   Z50%        
+male    0.07754 130.854     #Zheng coefficients
+#------------------             
+#cv for mean length female male at min and max length bins              
+2    #number of factor combinations (sex)               
+#sex    cvMin   cvMax       
+MALE    0.05    0.05        
+FEMALE  0.05    0.05        
+#------------------             
+#Timing of fisheries and mating             
+#all set equal to 0.625y = 7.5m from start biological year (01 July) to nominal mating (15 Feb)             
+0.625   #typical midPtFisheries         
+0.625   #typical matingTime         
+0   #number of atypical years           
+#data for atypical years                
+#year   midPtFisheries  matingTime      
+                

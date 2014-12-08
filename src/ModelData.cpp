@@ -215,14 +215,6 @@ void AggregateCatchData::writeToR(ostream& os, std::string nm, int indent) {
 //----------------------------------------------------------------------
 const adstring SizeFrequencyData::KW_SIZEFREQUENCY_DATA = "SIZE_FREQUENCY_DATA";
 /**
- * Save the negative log-likelihoods from a model fit (values only).
- * 
- * @param nlls - matrix of negativie log-likelihood components
- */
-void SizeFrequencyData::saveNLLs(dvar_matrix& nlls){
-    this->nlls = value(nlls);
-}
-/**
  * Normalize the size frequency data to sum to 1 over x,m,s,z.
  */
 void SizeFrequencyData::normalize(void){
@@ -698,14 +690,24 @@ void BioData::read(cifstream & is){
     
     //MIDPOINTS OF FISHERY SEASONS BY YEAR
     rpt::echo<<"#Timing of fisheries and mating"<<std::endl;
-    is>>nyTiming;
-    rpt::echo<<nyTiming<<tb<<"#number of years"<<std::endl;
-    timing_yc.allocate(1,nyTiming,1,3);
-    is>>timing_yc;
-    rpt::echo<<"#timing"<<std::endl<<timing_yc<<std::endl;
-    fshTiming_y.allocate(timing_yc(1)(1),timing_yc(nyTiming)(1));
-    matTiming_y.allocate(timing_yc(1)(1),timing_yc(nyTiming)(1));
-    for (int i=1;i<=nyTiming;i++){
+    is>>fshTimingTypical;
+    rpt::echo<<fshTimingTypical<<tb<<"#timing of midpoint of typical fishing season"<<std::endl;
+    is>>matTimingTypical;
+    rpt::echo<<matTimingTypical<<tb<<"#typical mating timing"<<std::endl;
+    is>>nyAtypicalT;
+    rpt::echo<<nyAtypicalT<<tb<<"#number of years of atypical timing"<<std::endl;
+    if (nyAtypicalT){
+        timing_yc.allocate(1,nyAtypicalT,1,3);
+        is>>timing_yc;
+        rpt::echo<<"#atypical timing"<<std::endl<<timing_yc<<std::endl;
+    }
+    //now construct timing for all model years
+    fshTiming_y.allocate(ModelConfiguration::mnYr,ModelConfiguration::mxYr);
+    matTiming_y.allocate(ModelConfiguration::mnYr,ModelConfiguration::mxYr);
+    fshTiming_y = fshTimingTypical;
+    matTiming_y = matTimingTypical;
+    for (int i=1;i<=nyAtypicalT;i++){
+        //substitute values for atypical years
         fshTiming_y(timing_yc(i,1)) = timing_yc(i,2);
         matTiming_y(timing_yc(i,1)) = timing_yc(i,3);
     }
@@ -775,9 +777,11 @@ void BioData::write(ostream & os){
     }}
     
     {os<<"#-----------TIMING------------------------------------#"<<std::endl;
-    os<<nyTiming<<tb<<"#number of years"<<std::endl;
+    os<<fshTimingTypical<<tb<<"#timing of midpoint of typical fishing season"<<std::endl;
+    os<<matTimingTypical<<tb<<"#typical mating timing"<<std::endl;
+    os<<nyAtypicalT<<tb<<"#number of years"<<std::endl;
     os<<"#year   midptFisheries  matingTime"<<std::endl;
-    os<<timing_yc<<std::endl;}
+    if (nyAtypicalT>0) os<<timing_yc<<std::endl;}
     
     if (debug) std::cout<<"end BioData::write(...) "<<this<<std::endl;
 }
@@ -849,12 +853,11 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         os<<"timing="<<std::endl; 
         indent++;
             for (int n=0;n<indent;n++) os<<tb;
-            dmatrix tmp(1,2,1,nyTiming);
-            tmp(1) = column(timing_yc,2);
-            tmp(2) = column(timing_yc,3);
+            dmatrix tmp(1,2,ModelConfiguration::mnYr,ModelConfiguration::mxYr);
+            tmp(1) = fshTiming_y;
+            tmp(2) = matTiming_y;
             adstring cols = "type=c('midptFisheries','matingTime')";
-            ivector iyrs = wts::to_ivector(column(timing_yc,1));
-            adstring yrs = "year=c("+wts::to_qcsv(iyrs)+")";
+            adstring yrs = "year="+str(ModelConfiguration::mnYr)+":"+str(ModelConfiguration::mxYr);
             wts::writeToR(os,trans(tmp),yrs,cols); os<<std::endl;
         indent--;}
     indent--;

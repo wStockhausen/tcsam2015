@@ -50,7 +50,10 @@ class IndexRange{
          */
         ivector getRangeVector(){return iv;}
         /**
-         * Parse string str to obtain range ("mn:mx" or "mn").
+         * Parse a range string ("x:y" or "y") to obtain actual min, max for range.
+         * If result finds x (y) < 0, then x (y) will be substituted using
+         *  if x<0, x = modMin+1+x (so x=-1->x=modMin, x=-2->x=modMin-1, etc)
+         *  if y<0, y = modMax-1-y (so y=-1->y=modMax, y=-2->y=modMax+1, etc)
          * @param str
          */
         void parse(adstring str);

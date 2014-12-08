@@ -81,16 +81,22 @@ namespace tcsam{
 //    const adstring_array STR_SCs(1,nSCs);  //string array
     
     //objective function fitting option types
-    const adstring STR_FIT_NONE            = "NONE";
-    const adstring STR_FIT_BY_TOTAL        = "BY_TOTAL";
-    const adstring STR_FIT_BY_SEX          = "BY_SEX";
-    const adstring STR_FIT_BY_SEX_EXTENDED = "BY_SEX_EXTENDED";
-    const adstring STR_FIT_BY_SEX_MAT_EXTENDED = "BY_SEX_MATURITY_EXTENDED";
-    const int FIT_NONE            = 0;
-    const int FIT_BY_TOTAL        = 1;
-    const int FIT_BY_SEX          = 2;
-    const int FIT_BY_SEX_EXTENDED = 3;
-    const int FIT_BY_SEX_MAT_EXTENDED = 4;
+    const adstring STR_FIT_NONE   = "NONE";
+    const adstring STR_FIT_BY_TOT = "BY_TOTAL";
+    const adstring STR_FIT_BY_X   = "BY_SEX";
+    const adstring STR_FIT_BY_XE  = "BY_SEX_EXTENDED";
+    const adstring STR_FIT_BY_XM  = "BY_SEX_MATURITY";
+    const adstring STR_FIT_BY_XME = "BY_SEX_MATURITY_EXTENDED";
+    const adstring STR_FIT_BY_XS  = "BY_SEX_SHELL_CONDITON";
+    const adstring STR_FIT_BY_XMS = "BY_SEX_MATURITY_SHELL_CONDITON";
+    const int FIT_NONE   = 0;
+    const int FIT_BY_TOT = 1;
+    const int FIT_BY_X   = 2;
+    const int FIT_BY_XE  = 3;
+    const int FIT_BY_XM  = 4;
+    const int FIT_BY_XME = 5;
+    const int FIT_BY_XS  = 5;
+    const int FIT_BY_XMS = 5;
     
     //likelihood types
     const adstring STR_LL_NONE        = "NONE";

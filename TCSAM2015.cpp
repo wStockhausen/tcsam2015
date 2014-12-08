@@ -2485,7 +2485,7 @@ dvar_vector model_parameters::calcNLLs_CatchAbundance(AggregateCatchData* ptrA, 
     int mny = mA_yxmsz.indexmin();
     int mxy = mA_yxmsz.indexmax();//may NOT be mxYr
     if (debug<0) cout<<"list(fit.type='"<<tcsam::getFitType(ptrA->optFit)<<"',fits=list("<<endl;
-    if (ptrA->optFit==tcsam::FIT_BY_SEX){
+    if (ptrA->optFit==tcsam::FIT_BY_X){
         nlls.allocate(1,nSXs); nlls.initialize();
         tA_xy.allocate(1,nSXs,mny,mxy); tA_xy.initialize();
         ivector yrs = ptrA->yrs;
@@ -2497,7 +2497,7 @@ dvar_vector model_parameters::calcNLLs_CatchAbundance(AggregateCatchData* ptrA, 
         }
         if (debug<0) cout<<"NULL)";
     } else 
-    if (ptrA->optFit==tcsam::FIT_BY_TOTAL){
+    if (ptrA->optFit==tcsam::FIT_BY_TOT){
         nlls.allocate(ALL_SXs,ALL_SXs); nlls.initialize();
         tA_xy.allocate(ALL_SXs,ALL_SXs,mny,mxy);
         tA_xy.initialize();
@@ -2530,7 +2530,7 @@ dvar_vector model_parameters::calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dv
     int mny = mA_yxmsz.indexmin();
     int mxy = mA_yxmsz.indexmax();//may NOT be mxYr
     if (debug<0) cout<<"list(fit.type='"<<tcsam::getFitType(ptrB->optFit)<<"',fits=list("<<endl;
-    if (ptrB->optFit==tcsam::FIT_BY_SEX){
+    if (ptrB->optFit==tcsam::FIT_BY_X){
         nlls.allocate(1,nSXs); nlls.initialize();
         tB_xy.allocate(1,nSXs,mny,mxy); tB_xy.initialize();
         ivector yrs = ptrB->yrs;
@@ -2548,7 +2548,7 @@ dvar_vector model_parameters::calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dv
         }
         if (debug<0) cout<<"NULL)";
     } else 
-    if (ptrB->optFit==tcsam::FIT_BY_TOTAL){
+    if (ptrB->optFit==tcsam::FIT_BY_TOT){
         nlls.allocate(ALL_SXs,ALL_SXs); nlls.initialize();
         tB_xy.allocate(ALL_SXs,ALL_SXs,mny,mxy);
         tB_xy.initialize();
@@ -2593,6 +2593,8 @@ dvariable model_parameters::calcMultinomialNLL(dvar_vector& mod, dvector& obs, d
         cout<<"list(nll.type='multinomial',wgt="<<wgt<<cc<<"nll="<<nll<<cc<<"objfun="<<wgt*nll<<cc<<"ss="<<ss<<cc<<"effN="<<effN<<cc<<endl; 
         adstring dzbs = "size=c("+ptrMC->csvZBs+")";
         cout<<"nlls=";  wts::writeToR(cout,nlls, dzbs); cout<<cc<<endl;
+        cout<<"obs=";   wts::writeToR(cout,obs,  dzbs); cout<<cc<<endl;
+        cout<<"mod=";   wts::writeToR(cout,vmod, dzbs); cout<<cc<<endl;
         cout<<"zscrs="; wts::writeToR(cout,zscrs,dzbs); cout<<endl;
         cout<<")";
     }
@@ -2649,49 +2651,44 @@ dvariable model_parameters::calcNLL(int llType, dvar_vector& mod, dvector& obs, 
     return nll;
 }
 
-dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout)
+void model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout)
 {
-    RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgAll) cout<<"Starting calcNLLs_CatchNatZ()"<<endl;
+    if (ptrZFD->optFit==tcsam::FIT_NONE) return;
     ivector yrs = ptrZFD->yrs;
-    dvar_matrix nlls;
     int y;
     double ss;
     dvariable nT;
+    dvariable nlls;
     int mny = mA_yxmsz.indexmin();
     int mxy = mA_yxmsz.indexmax();//may NOT be mxYr
-    if (ptrZFD->optFit==tcsam::FIT_BY_TOTAL){
-        nlls.allocate(ALL_SXs,ALL_SXs,1,yrs.size()); nlls.initialize();
-    } else
-    if (ptrZFD->optFit==tcsam::FIT_BY_SEX){
-        nlls.allocate(1,nSXs,1,yrs.size()); nlls.initialize();
-    } else
-    if (ptrZFD->optFit==tcsam::FIT_BY_SEX_EXTENDED){
-        nlls.allocate(1,nSXs,1,yrs.size()); nlls.initialize();
-    } else
-    if (ptrZFD->optFit==tcsam::FIT_BY_SEX_MAT_EXTENDED){
-        nlls.allocate(1,nSXs*nMSs,1,yrs.size()); nlls.initialize();
-    } else
-    {
-        std::cout<<"Calling calcNLLs_CatchNatZ with invalid fit option."<<endl;
-        std::cout<<"Invalid fit option was '"<<tcsam::getFitType(ptrZFD->optFit)<<qt<<endl;
-        std::cout<<"Aborting..."<<endl;
-        exit(-1);
+    dvector     oP_z;//observed size comp.
+    dvar_vector mP_z;//model size comp.
+    if (ptrZFD->optFit==tcsam::FIT_BY_XE){
+        oP_z.allocate(1,nSXs*nZBs);
+        mP_z.allocate(1,nSXs*nZBs);
+    } else 
+    if (ptrZFD->optFit==tcsam::FIT_BY_XME){
+        oP_z.allocate(1,nSXs*nMSs*nZBs);
+        mP_z.allocate(1,nSXs*nMSs*nZBs);
+    } else {
+        oP_z.allocate(1,nZBs);
+        mP_z.allocate(1,nZBs);
     }
     if (debug<0) cout<<"list("<<endl;
     for (int iy=1;iy<=yrs.size();iy++) {
         y = yrs[iy];
         if (debug>0) cout<<"y = "<<y<<endl;
         if ((mny<=y)&&(y<=mxy)) {
-            if (ptrZFD->optFit==tcsam::FIT_BY_TOTAL){
+            if (ptrZFD->optFit==tcsam::FIT_BY_TOT){
                 ss = 0;
                 nT = sum(mA_yxmsz[y]);//=0 if not calculated
                 if (value(nT)>0){
-                    dvector     oP_z(1,nZBs); oP_z.initialize();//observed size comp.
-                    dvar_vector mP_z(1,nZBs); mP_z.initialize();//model size comp.
-                    for (int x=1;x<=(nSXs+1);x++){
-                        for (int m=1;m<=(nMSs+1);m++) {
-                            for (int s=1;s<=(nSCs+1);s++) {
+                    oP_z.initialize();//observed size comp.
+                    mP_z.initialize();//model size comp.
+                    for (int x=1;x<=ALL_SXs;x++){
+                        for (int m=1;m<=ALL_MSs;m++) {
+                            for (int s=1;s<=ALL_SCs;s++) {
                                 ss   += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
@@ -2718,19 +2715,21 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                         cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                         cout<<"fit=";
                     }
-                    nlls(ALL_SXs,iy) = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                    nlls = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                    objFun += nlls;//TODO: add in likelihood weights
                     if (debug<0) cout<<")"<<cc<<endl;
                 }
+                //FIT_BY_TOT
             } else
-            if (ptrZFD->optFit==tcsam::FIT_BY_SEX){
+            if (ptrZFD->optFit==tcsam::FIT_BY_X){
                 for (int x=1;x<=nSXs;x++) {
                     ss = 0;
                     nT = sum(mA_yxmsz(y,x));//=0 if not calculated
                     if (value(nT)>0){
-                        dvector     oP_z(1,nZBs); oP_z.initialize();//observed size comp.
-                        dvar_vector mP_z(1,nZBs); mP_z.initialize();//model size comp.
-                        for (int m=1;m<=(nMSs+1);m++) {
-                            for (int s=1;s<=(nSCs+1);s++) {
+                        oP_z.initialize();//observed size comp.
+                        mP_z.initialize();//model size comp.
+                        for (int m=1;m<=ALL_MSs;m++) {
+                            for (int s=1;s<=ALL_SCs;s++) {
                                 ss   += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
@@ -2754,22 +2753,24 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                             cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                             cout<<"fit=";
                         }
-                        nlls(x,iy) = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                        nlls = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                        objFun += nlls;//TODO: add in likelihood weights
                         if (debug<0) cout<<")"<<cc<<endl;
                     }//nT>0
                 }//x
+                //FIT_BY_X
             } else 
-            if (ptrZFD->optFit==tcsam::FIT_BY_SEX_EXTENDED){
+            if (ptrZFD->optFit==tcsam::FIT_BY_XE){
                 ss = 0;
                 nT = sum(mA_yxmsz[y]);//=0 if not calculated
                 if (value(nT)>0){
-                    dvector     oP_z(1,nSXs*nZBs); oP_z.initialize();//observed size comp.
-                    dvar_vector mP_z(1,nSXs*nZBs); mP_z.initialize();//model size comp.
+                    oP_z.initialize();//observed size comp.
+                    mP_z.initialize();//model size comp.
                     for (int x=1;x<=nSXs;x++) {
                         int mnz = 1+(x-1)*nZBs;
                         int mxz = x*nZBs;
-                        for (int m=1;m<=(nMSs+1);m++) {
-                            for (int s=1;s<=(nSCs+1);s++) {
+                        for (int m=1;m<=ALL_MSs;m++) {
+                            for (int s=1;s<=ALL_SCs;s++) {
                                 ss += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
@@ -2799,22 +2800,61 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                             cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                             cout<<"fit=";
                         }
-                        nlls(x,iy) = calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                        nlls = calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                        objFun += nlls;//TODO: add in likelihood weights
                         if (debug<0) cout<<")"<<cc<<endl;
                     }//x
                 }//nT>0
+                //FIT_BY_XE
             } else
-            if (ptrZFD->optFit==tcsam::FIT_BY_SEX_MAT_EXTENDED){
+            if (ptrZFD->optFit==tcsam::FIT_BY_XM){
+                for (int x=1;x<=nSXs;x++) {
+                    for (int m=1;m<=nMSs;m++){
+                        ss = 0;
+                        nT = sum(mA_yxmsz(y,x,m));//=0 if not calculated
+                        if (value(nT)>0){
+                            oP_z.initialize();//observed size comp.
+                            mP_z.initialize();//model size comp.
+                            for (int s=1;s<=ALL_SCs;s++) {
+                                ss   += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                            }
+                            oP_z /= sum(oP_z);
+                            if (debug>0){
+                                cout<<"ss = "<<ss<<endl;
+                                cout<<"oP_Z = "<<oP_z<<endl;
+                            }
+                            for (int s=1;s<=nSCs;s++) mP_z += mA_yxmsz(y,x,m,s);
+                            mP_z /= nT;//normalize model size comp
+                            if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                            if (debug<0) {
+                                cout<<"'"<<y<<"'=list(";
+                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                cout<<"yr="<<y<<cc;
+                                cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                cout<<"ms='"<<tcsam::getMaturityType(x)<<"'"<<cc;
+                                cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
+                                cout<<"fit=";
+                            }
+                            nlls = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                            objFun += nlls;//TODO: add in likelihood weights
+                            if (debug<0) cout<<")"<<cc<<endl;
+                        }//nT>0
+                    }//m
+                }//x
+                //FIT_BY_XM
+            } else 
+            if (ptrZFD->optFit==tcsam::FIT_BY_XME){
                 ss = 0;
                 nT = sum(mA_yxmsz[y]);//=0 if not calculated
                 if (value(nT)>0){
-                    dvector     oP_z(1,nSXs*nMSs*nZBs); oP_z.initialize();//observed size comp.
-                    dvar_vector mP_z(1,nSXs*nMSs*nZBs); mP_z.initialize();//model size comp.
+                    oP_z.initialize();//observed size comp.
+                    mP_z.initialize();//model size comp.
                     for (int x=1;x<=nSXs;x++) {
-                        for (int m=1;m<=(nMSs+1);m++) {
+                        for (int m=1;m<=nMSs;m++) {
                             int mnz = 1+(m-1)*nZBs+(x-1)*nMSs*nZBs;
                             int mxz = mnz+nZBs-1;
-                            for (int s=1;s<=(nSCs+1);s++) {
+                            for (int s=1;s<=ALL_SCs;s++) {
                                 ss += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
@@ -2847,22 +2887,102 @@ dvar_matrix model_parameters::calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar
                                 cout<<"sc='ALL_SHELL_CONDITION'"<<cc;
                                 cout<<"fit=";
                             }
-                            nlls(m+(x-1)*nMSs,iy) = calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                            nlls = calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                            objFun += nlls;//TODO: add in likelihood weights
                             if (debug<0) cout<<")"<<cc<<endl;
                         }//m
                     }//x
+                    //FIT_BY_XME
                 }//nT>0
-            }//FIT_BY_SEX_MAT_EXTENDED
+            } else 
+            if (ptrZFD->optFit==tcsam::FIT_BY_XS){
+                for (int x=1;x<=nSXs;x++) {
+                    for (int s=1;s<=nSCs;s++){
+                        ss = 0;
+                        nT.initialize();
+                        for (int m=1;m<=ALL_MSs;m++) nT += sum(mA_yxmsz(y,x,m,s));//=0 if not calculated
+                        if (value(nT)>0){
+                            oP_z.initialize();//observed size comp.
+                            mP_z.initialize();//model size comp.
+                            for (int m=1;m<=ALL_MSs;m++) {
+                                ss   += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                            }
+                            oP_z /= sum(oP_z);
+                            if (debug>0){
+                                cout<<"ss = "<<ss<<endl;
+                                cout<<"oP_Z = "<<oP_z<<endl;
+                            }
+                            for (int m=1;m<=nMSs;m++) mP_z += mA_yxmsz(y,x,m,s);
+                            mP_z /= nT;//normalize model size comp
+                            if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                            if (debug<0) {
+                                cout<<"'"<<y<<"'=list(";
+                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                cout<<"yr="<<y<<cc;
+                                cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                cout<<"ms='ALL_MATURITY'"<<cc;
+                                cout<<"sc='"<<tcsam::getShellType(x)<<"'"<<cc;
+                                cout<<"fit=";
+                            }
+                            nlls = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                            objFun += nlls;//TODO: add in likelihood weights
+                            if (debug<0) cout<<")"<<cc<<endl;
+                        }//nT>0
+                    }//m
+                }//x
+                //FIT_BY_XS
+            } else 
+            if (ptrZFD->optFit==tcsam::FIT_BY_XMS){
+                for (int x=1;x<=nSXs;x++) {
+                    for (int m=1;m<=nMSs;m++){
+                        for (int s=1;s<=nSCs;s++) {
+                            ss = 0;
+                            nT = sum(mA_yxmsz(y,x,m));//=0 if not calculated
+                            if (value(nT)>0){
+                                oP_z.initialize();//observed size comp.
+                                mP_z.initialize();//model size comp.                            
+                                ss   += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                                oP_z /= sum(oP_z);
+                                if (debug>0){
+                                    cout<<"ss = "<<ss<<endl;
+                                    cout<<"oP_Z = "<<oP_z<<endl;
+                                }
+                                mP_z += mA_yxmsz(y,x,m,s);
+                                mP_z /= nT;//normalize model size comp
+                                if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                                if (debug<0) {
+                                    cout<<"'"<<y<<"'=list(";
+                                    cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                    cout<<"yr="<<y<<cc;
+                                    cout<<"sx='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                    cout<<"ms='"<<tcsam::getMaturityType(m)<<"'"<<cc;
+                                    cout<<"sc='"<<tcsam::getShellType(s)<<"'"<<cc;
+                                    cout<<"fit=";
+                                }
+                                nlls = calcNLL(ptrZFD->llType,mP_z,oP_z,ss,debug,cout);
+                                objFun += nlls;//TODO: add in likelihood weights
+                                if (debug<0) cout<<")"<<cc<<endl;
+                            }//nT>0
+                        }//s
+                    }//m
+                }//x
+                //FIT_BY_XMS
+            } else 
+            {
+                std::cout<<"Calling calcNLLs_CatchNatZ with invalid fit option."<<endl;
+                std::cout<<"Invalid fit option was '"<<tcsam::getFitType(ptrZFD->optFit)<<qt<<endl;
+                std::cout<<"Aborting..."<<endl;
+                exit(-1);
+            }
         } //if ((mny<=y)&&(y<=mxy))
     } //loop over iy
     if (debug<0) cout<<"NULL)";
     if (debug>0) cout<<"nlls:"<<endl<<nlls<<endl;
-    ptrZFD->saveNLLs(nlls);
     if (debug>=dbgAll){
         cout<<"Finished calcNLLs_CatchNatZ()"<<endl;
     }
-    RETURN_ARRAYS_DECREMENT();
-    return nlls;
 }
 
 void model_parameters::calcNLLs_Fisheries(int debug, ostream& cout)
@@ -2893,8 +3013,7 @@ void model_parameters::calcNLLs_Fisheries(int debug, ostream& cout)
             if (ptrObs->ptrRCD->hasZFD && ptrObs->ptrRCD->ptrZFD->optFit){
                 if (debug>0) cout<<"---retained catch size frequencies"<<endl;
                 if (debug<0) cout<<"n.at.z="<<endl;
-                dvar_matrix nlls = calcNLLs_CatchNatZ(ptrObs->ptrRCD->ptrZFD,rmN_fyxmsz(f),debug,cout);
-                objFun += sum(nlls);//TODO: incorporate likelihood weights
+                calcNLLs_CatchNatZ(ptrObs->ptrRCD->ptrZFD,rmN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (debug<0) cout<<"NULL),"<<endl;
@@ -2918,8 +3037,7 @@ void model_parameters::calcNLLs_Fisheries(int debug, ostream& cout)
             if (ptrObs->ptrTCD->hasZFD && ptrObs->ptrTCD->ptrZFD->optFit){
                 if (debug>0) cout<<"---total catch size frequencies"<<endl;
                 if (debug<0) cout<<"n.at.z="<<endl;
-                dvar_matrix nlls = calcNLLs_CatchNatZ(ptrObs->ptrTCD->ptrZFD,cN_fyxmsz(f),debug,cout);
-                objFun += sum(nlls);//TODO: incorporate likelihood weights
+                calcNLLs_CatchNatZ(ptrObs->ptrTCD->ptrZFD,cN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (debug<0) cout<<"NULL),"<<endl;
@@ -2943,8 +3061,7 @@ void model_parameters::calcNLLs_Fisheries(int debug, ostream& cout)
             if (ptrObs->ptrDCD->hasZFD && ptrObs->ptrDCD->ptrZFD->optFit){
                 if (debug>0) cout<<"---discard catch size frequencies"<<endl;
                 if (debug<0) cout<<"n.at.z="<<endl;
-                dvar_matrix nlls = calcNLLs_CatchNatZ(ptrObs->ptrDCD->ptrZFD,dN_fyxmsz(f),debug,cout);
-                objFun += sum(nlls);//TODO: incorporate likelihood weights
+                calcNLLs_CatchNatZ(ptrObs->ptrDCD->ptrZFD,dN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (debug<0) cout<<"NULL),"<<endl;
@@ -2981,8 +3098,7 @@ void model_parameters::calcNLLs_Surveys(int debug, ostream& cout)
         if (ptrObs->hasZFD && ptrObs->ptrZFD->optFit){
             if (debug>0) cout<<"---survey size frequencies"<<endl;
             if (debug<0) cout<<"n.at.z="<<endl;
-            dvar_matrix nlls = calcNLLs_CatchNatZ(ptrObs->ptrZFD,n_vyxmsz(v),debug,cout);
-            objFun += sum(nlls);//TODO: incorporate likelihood weights
+            calcNLLs_CatchNatZ(ptrObs->ptrZFD,n_vyxmsz(v),debug,cout);
             if (debug<0) cout<<","<<endl;
         }
         if (debug<0) cout<<"NULL),"<<endl;

@@ -396,7 +396,7 @@ public:
  dvariable calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout);
  dvariable calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout);
  dvariable calcNLL(int llType, dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout);
- dvar_matrix calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout);
+ void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout);
  void calcNLLs_Fisheries(int debug, ostream& cout);
  void calcNLLs_Surveys(int debug, ostream& cout);
  void calcAllPriors(int debug, ostream& cout);

@@ -142,24 +142,40 @@ adstring tcsam::getScaleType(int i){
     return adstring("");
 }
 
+/**
+ * Translate from adstring fit type to int version.
+ * @param fitType
+ * @return 
+ */
 int tcsam::getFitType(adstring s){
-    if (s==STR_FIT_NONE)     return FIT_NONE;
-    if (s==STR_FIT_BY_TOTAL) return FIT_BY_TOTAL;
-    if (s==STR_FIT_BY_SEX)   return FIT_BY_SEX;
-    if (s==STR_FIT_BY_SEX_EXTENDED)   return FIT_BY_SEX_EXTENDED;
-    if (s==STR_FIT_BY_SEX_MAT_EXTENDED) return FIT_BY_SEX_MAT_EXTENDED;
+    if (s==STR_FIT_NONE)   return FIT_NONE;
+    if (s==STR_FIT_BY_TOT) return FIT_BY_TOT;
+    if (s==STR_FIT_BY_X)   return FIT_BY_X;
+    if (s==STR_FIT_BY_XE)  return FIT_BY_XE;
+    if (s==STR_FIT_BY_XM)  return FIT_BY_XM;
+    if (s==STR_FIT_BY_XME) return FIT_BY_XME;
+    if (s==STR_FIT_BY_XS)  return FIT_BY_XS;
+    if (s==STR_FIT_BY_XMS) return FIT_BY_XMS;
     std::cout<<"Unrecognized fit type '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
     return -1;
 }
 
+/**
+ * Translate from int fit type to adstring version.
+ * @param fitType
+ * @return 
+ */
 adstring tcsam::getFitType(int i){
-    if (i==FIT_NONE)     return STR_FIT_NONE;
-    if (i==FIT_BY_TOTAL) return STR_FIT_BY_TOTAL;
-    if (i==FIT_BY_SEX)   return STR_FIT_BY_SEX;
-    if (i==FIT_BY_SEX_EXTENDED)   return STR_FIT_BY_SEX_EXTENDED;
-    if (i==FIT_BY_SEX_MAT_EXTENDED) return STR_FIT_BY_SEX_MAT_EXTENDED;
+    if (i==FIT_NONE)    return STR_FIT_NONE;
+    if (i==FIT_BY_TOT)  return STR_FIT_BY_TOT;
+    if (i==FIT_BY_X)    return STR_FIT_BY_X;
+    if (i==FIT_BY_XE)   return STR_FIT_BY_XE;
+    if (i==FIT_BY_XM)   return STR_FIT_BY_XM;
+    if (i==FIT_BY_XME)  return STR_FIT_BY_XME;
+    if (i==FIT_BY_XS)   return STR_FIT_BY_XS;
+    if (i==FIT_BY_XMS)  return STR_FIT_BY_XMS;
     std::cout<<"Unrecognized fit type '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);

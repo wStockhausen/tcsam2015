@@ -16,6 +16,7 @@ int ModelOptions::debug      =0;
 //          ModelConfiguration
 //--------------------------------------------------------------------------------
 int    ModelConfiguration::mnYr     = -1;//min model year
+int    ModelConfiguration::asYr     = -1;//model assessment year
 int    ModelConfiguration::mxYr     = -1;//max model year
 int    ModelConfiguration::nSrv     = -1;//number of model surveys
 int    ModelConfiguration::nFsh     = -1;//number of model fisheries
@@ -66,9 +67,10 @@ void ModelConfiguration::read(cifstream & is) {
     if (debug) cout<<"ModelConfiguration::read(cifstream & is)"<<endl;
     is>>cfgName;
     if (debug) cout<<cfgName<<endl;
-    is>>mnYr; //min model year
-    is>>mxYr; //max model year
-    is>>nZBs; //number of model size bins
+    is>>mnYr;      //min model year
+    is>>asYr;      //assessment year
+    mxYr = asYr-1; //max model year
+    is>>nZBs;      //number of model size bins
     if (debug){
         cout<<mnYr <<tb<<"#model min year"<<endl;
         cout<<mxYr <<tb<<"#model max year"<<endl;
@@ -135,7 +137,7 @@ void ModelConfiguration::read(cifstream & is) {
     dimYrsP1ToR = "year=c("+csvYrsP1+")";
     dimSXsToR   = "sex=c("+csvSXs+")";
     dimMSsToR   = "maturity=c("+csvMSs+")";
-    dimSCsToR   = "'shell condition'=c("+csvSCs+")";
+    dimSCsToR   = "shell_condition=c("+csvSCs+")";
     dimZCsToR   = "size=c("+wts::to_qcsv(zCutPts)+")";
     dimZBsToR   = "size=c("+wts::to_qcsv(zMidPts)+")";
     dimFshToR   = "fishery=c("+wts::to_qcsv(lblsFsh)+")";
@@ -181,7 +183,7 @@ void ModelConfiguration::write(ostream & os) {
     os<<"#######################################################"<<endl;
     os<<cfgName<<tb<<"#Model configuration name"<<endl;
     os<<mnYr<<tb<<"#Min model year"<<endl;
-    os<<mxYr<<tb<<"#Max model year"<<endl;
+    os<<asYr<<tb<<"#Assessment year"<<endl;
     os<<nZBs<<tb<<"#Number of model size classes"<<endl;
     os<<"#size bin cut points"<<endl;
     os<<zCutPts <<endl;
@@ -217,7 +219,7 @@ void ModelConfiguration::writeToR(ostream& os, std::string nm, int indent) {
     indent++;
     for (int n=0;n<indent;n++) os<<tb;
         os<<"configName='"<<cfgName<<"'"<<cc;
-        os<<"mnYr="<<mnYr<<", mxYr="<<mxYr<<cc;
+        os<<"mnYr="<<mnYr<<cc<<"asYr="<<asYr<<cc<<"mxYr="<<mxYr<<cc;
         os<<"SXs=c("<<csvSXs<<")"<<cc;
         os<<"MSs=c("<<csvMSs<<")"<<cc;
         os<<"SCs=c("<<csvSCs<<")"<<cc;

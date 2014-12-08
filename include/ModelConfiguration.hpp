@@ -12,6 +12,7 @@
  * 2014-10-30: 1. Removed nSXs, nSCs, nMSs as static variables that were set through
  *                the model configuration file. These should now be changed in ModelConstants.hpp
  *                and the model recompiled for different configurations.
+ * 2014-12-03: 1. Added asYr (assessment year) as input, replacing mxYr. Now, mxYr = asYr-1.
  */
 
 #ifndef MODELCONFIGURATION_HPP
@@ -26,7 +27,8 @@
         
         static int nZBs;//number of size bins 
         static int mnYr;//min model year
-        static int mxYr;//max model year
+        static int asYr;//assessment year (final pop numbers given for July 1, asYr)
+        static int mxYr;//max model year (mxYr = asYr-1)
         static int nFsh;//number of fisheries 
         static int nSrv;//number of surveys 
         

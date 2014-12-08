@@ -44,8 +44,8 @@ class IndexRange;
         adstring units; //units for aggregate catch data
         ivector yrs;    //years for aggregate catch data
         dmatrix C_xy;   //aggregate catch by sex, year (converted from units to THOUSANDS of crab or MT))
-        dmatrix cv_xy; //aggregate catch cv's by sex, year
-        dmatrix sd_xy;//aggregate catch stdv's by sex, year
+        dmatrix cv_xy;  //aggregate catch cv's by sex, year
+        dmatrix sd_xy;  //aggregate catch stdv's by sex, year
         
     public:
         AggregateCatchData(){}
@@ -109,7 +109,6 @@ class IndexRange;
     public:
         int optFit; //objective function fitting option
         int llType; //likelihood function type
-        dmatrix nlls; //negative log-likelihood values from model fit
         
         int nZCs;    //number of size bin cut pts
         dvector zCs; //cut points for size bins
@@ -164,9 +163,11 @@ class IndexRange;
         dmatrix cvMnMxZ_xc;   //cv of min size, max size by sex
         
         int recLag;         //recruitment lag (in years)
-        int nyTiming;       //number of years for fishery season midpoints, time-at-mating
-        dvector fshTiming_y;//timing of midpoint of fisheries seasons
-        dvector matTiming_y;//timing of mating
+        double fshTimingTypical;//typical midpoint of fishery seasons
+        double matTimingTypical;//typical timing of mating
+        int nyAtypicalT;        //number of years for atypical fishery season midpoints, time-at-mating
+        dvector fshTiming_y;    //timing of midpoint of fisheries seasons
+        dvector matTiming_y;    //timing of mating
     protected:
         dmatrix timing_yc;//midpoint of fishery season, time-at-mating by year
     public:
