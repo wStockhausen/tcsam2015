@@ -218,6 +218,40 @@ dvector tcsam::extractFromXMSYZ(int x, int m, int s, int y, d5_array& n_xmsyz){
 }
 
 /**
+ * Extract (possibly summary) value from 4d array w/ indices
+ * y,x,m,s.
+ * 
+ * @param y - year index
+ * @param x - sex index             (tcsam::ALL_SXs yields sum over sex)
+ * @param m - maturity index        (tcsam::ALL_MSs yields sum over maturity state)
+ * @param s - shell condition index (tcsam::ALL_SCs yields sum over shell condition)
+ * @param n_yxms - d4_array from which to extract value
+ * 
+ * @return extracted double value
+ */
+double tcsam::extractFromYXMS(int y, int x, int m, int s, d4_array& n_yxms){
+//    rpt::echo<<"in extractFromYXMS"<<endl;
+//    rpt::echo<<y<<" "<<x<<" "<<m<<" "<<" "<<s<<endl;
+    int xmn, xmx;
+    xmn = xmx = x; if (x==tcsam::ALL_SXs) {xmn = 1; xmx = tcsam::nSXs;}
+    int mmn, mmx;
+    mmn = mmx = m; if (m==tcsam::ALL_MSs) {mmn = 1; mmx = tcsam::nMSs;}
+    int smn, smx;
+    smn = smx = s; if (s==tcsam::ALL_SCs) {smn = 1; smx = tcsam::nSCs;}
+    double v = 0.0;
+    for (int xp=xmn;xp<=xmx;xp++){
+        for (int mp=mmn;mp<=mmx;mp++){
+            for (int sp=smn;sp<=smx;sp++){
+//                rpt::echo<<xp<<" "<<mp<<" "<<sp<<endl;
+                v += n_yxms(y,xp,mp,sp);
+            }
+        }
+    }
+//    rpt::echo<<"finished extractFromYXMS"<<endl;
+    return(v);
+}
+
+/**
  * Extract (possibly summary) vector from 5d array w/ indices
  * y,x,m,s,z.
  * 

@@ -27,6 +27,12 @@ class IndexRange;
 
 //--------------------------------------------------------------------------------
 //          AggregateCatchData
+// Change notes:
+//  2014-12-08: 1. changed input data row format for so columns are now
+//                  year, sex, maturity, shell_condition, value, cv
+//              2. changed inpC_yc dimensions from yc to yxmsc to match new input format
+//              3. changed C_xy, cv_xy, sd_xy dimensions from xy to xmsy (and renamed them accordingly)
+//
 //--------------------------------------------------------------------------------
     class AggregateCatchData {
     public:
@@ -34,42 +40,43 @@ class IndexRange;
         const static adstring KW_ABUNDANCE_DATA;//keyword indicating abundance (numbers) data
         const static adstring KW_BIOMASS_DATA;  //keyword indicating biomass (weight) data
     protected:
-        dmatrix inpC_yc; //input aggregate catch data (year, female abundance, female cv, male abundance, male cv)
+        d5_array inpC_xmsyc; //input aggregate catch data (value, cv by xmsy)
     public:
         adstring type;  //type (abundance, biomass) of data (matches one of the keywords above)
         int optFit;     //objective function fitting option
         int llType;     //likelihood function type
-        dvector nlls;   //negative log-likelihood components
-        int ny;         //number of years of aggregate catch
+        int ny;         //number of data rows for aggregate catch
         adstring units; //units for aggregate catch data
         ivector yrs;    //years for aggregate catch data
-        dmatrix C_xy;   //aggregate catch by sex, year (converted from units to THOUSANDS of crab or MT))
-        dmatrix cv_xy;  //aggregate catch cv's by sex, year
-        dmatrix sd_xy;  //aggregate catch stdv's by sex, year
+        wts::adstring_matrix factors;//factor combinations for input numbers-at-size
+        d4_array C_xmsy;   //aggregate catch by sex, maturity, shell_condition, year (converted from units to THOUSANDS of crab or MT))
+        d4_array cv_xmsy;  //aggregate catch cv's by sex, maturity, shell_condition, year
+        d4_array sd_xmsy;  //aggregate catch stdv's by sex, maturity, shell_condition, year
+        d4_array nlls_xmsy;//negative log-likelihood components
         
     public:
         AggregateCatchData(){}
         ~AggregateCatchData(){}
         /**
-         * Replace catch data C_xy with new data. 
-         * Also modifies inpC_yc to reflect new data.
+         * Replace catch data C_xmsy with new data. Also modifies inpC_xmsyc to reflect new data.
          * Error-related quantities remain the same.
          * 
-         * @param dmatrix newC_yx (note index order)
+         * @param dmatrix newC_xmsy (note index order)
          */
-        void replaceCatchData(int iSeed,random_number_generator& rng,dmatrix& newC_yx);
-        /**
-         * Save the negative log-likelihoods from a model fit (values only).
-         * 
-         * @param nlls
-         */
-        void saveNLLs(dvar_vector& nlls);
+        void replaceCatchData(int iSeed,random_number_generator& rng,d4_array& newC_xmsy);
         void read(cifstream & is);//read file in ADMB format
         void write(ostream & os); //write object to file in ADMB format
         void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
         friend cifstream& operator >>(cifstream & is, AggregateCatchData & obj){obj.read(is); return is;}
         friend ostream&   operator <<(ostream & os,   AggregateCatchData & obj){obj.write(os); return os;}
-    };
+    
+    protected:
+        /**
+         * Aggregate catch data C_xmsy, cv_xmsy, sd_xmsy over summary indices.
+         */
+        void aggregateData(void);
+
+};
 
 //--------------------------------------------------------------------------------
 //          EffortData
@@ -104,7 +111,6 @@ class IndexRange;
         const static adstring KW_SIZEFREQUENCY_DATA;//keyword indicating size frequency data
     private:
         wts::adstring_matrix factors;//factor combinations for input numbers-at-size
-        dmatrix inpSS_yc;             //input sample size matrix TODO: based on num tows??
         d5_array inpNatZ_xmsyc;       //input numbers-at-size data (sex,maturity state,shell condition,year,year+sample_size+nAtZ)
     public:
         int optFit; //objective function fitting option

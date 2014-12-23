@@ -90,6 +90,19 @@ namespace tcsam {
     dvector extractFromXMSYZ(int x, int m, int s, int y, d5_array& n_xmsyz);
     
     /**
+     * Extract (possibly summary) value from 4d array w/ indices
+     * y,x,m,s.
+     * 
+    * @param y
+    * @param x
+    * @param m
+    * @param s
+    * @param n_yxms
+     * @return extracted value
+     */
+    double extractFromYXMS(int y, int x, int m, int s, d4_array& n_yxms);
+    
+    /**
      * Extract (possibly summary) vector from 5d array w/ indices
      * y,x,m,s,z.
      * 

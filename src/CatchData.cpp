@@ -137,24 +137,31 @@ void CatchData::replaceCatchData(int iSeed,random_number_generator& rng,d5_array
     int mxY = newNatZ_yxmsz.indexmax();
     if (hasN) {
         if (debug) cout<<"replacing abundance data"<<endl;
-        dmatrix newN_yx(mnY,mxY,1,nSXs); newN_yx.initialize();
+        d4_array newN_yxms(mnY,mxY,1,nSXs,1,nMSs,1,nSCs); newN_yxms.initialize();
         for (int y=mnY;y<=mxY;y++){
-            for (int x=1;x<=nSXs;x++) newN_yx(y,x) = sum((newNatZ_yxmsz)(y,x));
+            for (int x=1;x<=nSXs;x++) {
+                for (int m=1;m<=nMSs;m++) {
+                    for (int s=1;s<=nSCs;s++) {
+                        newN_yxms(y,x,m,s) = sum((newNatZ_yxmsz)(y,x,m,s));
+                    }
+                }
+            }                
         }
-        ptrN->replaceCatchData(iSeed,rng,newN_yx);
-        if (debug) cout<<"replaced catch data"<<endl;
+        ptrN->replaceCatchData(iSeed,rng,newN_yxms);
+        if (debug) cout<<"replaced abundance data"<<endl;
     }
     if (hasB){
         if (debug) cout<<"replacing biomass data"<<endl;
-        dmatrix newB_yx(mnY,mxY,1,nSXs); newB_yx.initialize();
+        d4_array newB_yxms(mnY,mxY,1,nSXs,1,nMSs,1,nSCs); newB_yxms.initialize();
         for (int y=mnY;y<=mxY;y++){
             for (int x=1;x<=nSXs;x++){
                 for (int m=1;m<=nMSs;m++){
-                    for (int s=1;s<=nSCs;s++) newB_yx(y,x) += newNatZ_yxmsz(y,x,m,s)*wAtZ_xmz(x,m);
+                    for (int s=1;s<=nSCs;s++) 
+                        newB_yxms(y,x,m,s) += newNatZ_yxmsz(y,x,m,s)*wAtZ_xmz(x,m);
                 }
             }
         }
-        ptrB->replaceCatchData(iSeed,rng,newB_yx);
+        ptrB->replaceCatchData(iSeed,rng,newB_yxms);
         if (debug) cout<<"replaced biomass data"<<endl;
     }
     if (hasZFD){
@@ -204,7 +211,9 @@ void CatchData::read(cifstream & is){
     if (hasN){
         ptrN = new AggregateCatchData();
         rpt::echo<<"#---Reading abundance data"<<endl;
+        AggregateCatchData::debug=1;
         is>>(*ptrN);
+        AggregateCatchData::debug=0;
         rpt::echo<<"#---Read abundance data"<<endl;
     }
     
@@ -212,7 +221,9 @@ void CatchData::read(cifstream & is){
     if (hasB){
         ptrB = new AggregateCatchData();
         rpt::echo<<"#---Reading biomass data"<<endl;
+        AggregateCatchData::debug=1;
         is>>(*ptrB);
+        AggregateCatchData::debug=0;
         rpt::echo<<"#---Read biomass data"<<endl;
     }
     
