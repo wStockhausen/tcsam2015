@@ -192,7 +192,7 @@ void CatchData::read(cifstream & is){
     rpt::echo<<str<<tb<<"#Required keyword"<<endl;
     if (!(str==KW_CATCH_DATA)){
         cout<<"#Error reading catch data from "<<is.get_file_name()<<endl;
-        cout<<"Expected keyowrd '"<<KW_CATCH_DATA<<"' but got '"<<str<<"'"<<endl;
+        cout<<"Expected keyword '"<<KW_CATCH_DATA<<"' but got '"<<str<<"'"<<endl;
         cout<<"Aborting..."<<endl;
         exit(-1);
     }
@@ -211,9 +211,9 @@ void CatchData::read(cifstream & is){
     if (hasN){
         ptrN = new AggregateCatchData();
         rpt::echo<<"#---Reading abundance data"<<endl;
-        AggregateCatchData::debug=1;
+        //AggregateCatchData::debug=1;
         is>>(*ptrN);
-        AggregateCatchData::debug=0;
+        //AggregateCatchData::debug=0;
         rpt::echo<<"#---Read abundance data"<<endl;
     }
     
@@ -221,9 +221,9 @@ void CatchData::read(cifstream & is){
     if (hasB){
         ptrB = new AggregateCatchData();
         rpt::echo<<"#---Reading biomass data"<<endl;
-        AggregateCatchData::debug=1;
+        //AggregateCatchData::debug=1;
         is>>(*ptrB);
-        AggregateCatchData::debug=0;
+        //AggregateCatchData::debug=0;
         rpt::echo<<"#---Read biomass data"<<endl;
     }
     
@@ -300,7 +300,7 @@ void SurveyData::read(cifstream & is){
     rpt::echo<<str<<tb<<"#Required keyword"<<endl;
     if (!(str==KW_SURVEY_DATA)){
         cout<<"#Error reading survey data from "<<is.get_file_name()<<endl;
-        cout<<"Expected keyowrd '"<<KW_SURVEY_DATA<<"' but got '"<<str<<"'"<<endl;
+        cout<<"Expected keyword '"<<KW_SURVEY_DATA<<"' but got '"<<str<<"'"<<endl;
         cout<<"Aborting..."<<endl;
         exit(-1);
     }

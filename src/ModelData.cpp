@@ -23,8 +23,88 @@ int ModelDatasets::debug      = 0;
 const adstring AggregateCatchData::KW_ABUNDANCE_DATA = "AGGREGATE_ABUNDANCE";
 const adstring AggregateCatchData::KW_BIOMASS_DATA   = "AGGREGATE_BIOMASS";
     
+///**
+// * Aggregate catch data C_xmsy, cv_xmsy, sd_xmsy over summary indices.
+// */
+//void AggregateCatchData::aggregateData(void){
+//    if (debug) rpt::echo<<"starting AggregateCatchData::aggregateData()"<<endl;
+//    //get conversion factor to millions (abundance) or thousands mt (biomass)
+//    double convFac = 1.0;
+//    if (type==KW_ABUNDANCE_DATA){
+//        convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_MILLIONS);
+// //        rpt::echo<<"#conversion factor from "<<units<<" to MILLIONS is "<<convFac<<std::endl;
+//    } else {
+//        convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_KMT);
+////        rpt::echo<<"#conversion factor from "<<units<<" to 1000's MT is "<<convFac<<std::endl;
+//    }
+//    
+//    //fill in aggregate values, as necessary
+//    double tC; double vC;
+//    for (int x=1;x<=tcsam::ALL_SXs;x++){
+//        int xmn, xmx;
+//        xmn = xmx = x; if (x==tcsam::ALL_SXs) {xmn = 1; xmx = tcsam::nSXs;}
+//        for (int m=1;m<=tcsam::ALL_MSs;m++){
+//            int mmn, mmx;
+//            mmn = mmx = m; if (m==tcsam::ALL_MSs) {mmn = 1; mmx = tcsam::nMSs;}
+//            for (int s=1;s<=tcsam::ALL_SCs;s++){
+//                int smn, smx;
+//                smn = smx = s; if (s==tcsam::ALL_SCs) {smn = 1; smx = tcsam::nSCs;}
+//                if ((x==tcsam::ALL_SXs)||(m==tcsam::ALL_MSs)||(s==tcsam::ALL_SCs)){
+//                    //check to see if aggregated factor combination has been read in 
+//                    if (debug) rpt::echo<<tcsam::getSexType(x)<<cc<<tcsam::getMaturityType(m)<<cc<<tcsam::getShellType(s)<<endl;
+//                    int fmn = factors.indexmin(); int fmx = factors.indexmax();
+//                    int qf = 0;
+//                    for (int f=fmn;f<=fmx;f++){
+//                        int xf = tcsam::getSexType(factors(f,1));
+//                        int mf = tcsam::getMaturityType(factors(f,2));
+//                        int sf = tcsam::getShellType(factors(f,3));
+//                        if ((x==xf)&&(m==mf)&&(s==sf)) qf++;
+//                    }
+//                    if (qf){
+//                        if (debug) rpt::echo<<"Skipping aggregation calculation"<<endl;
+//                    } else {
+//                        //calculate aggregate quantities
+//                        if (debug) rpt::echo<<"Aggregating data"<<endl;
+//                        for (int y=1;y<=ny;y++){
+//                            if (debug) rpt::echo<<y<<endl;
+//                            tC = 0.0;
+//                            vC = 0.0;
+//                            for (int xp=xmn;xp<=xmx;xp++){
+//                                for (int mp=mmn;mp<=mmx;mp++){
+//                                    for (int sp=smn;sp<=smx;sp++){
+//                                        if (debug) rpt::echo<<xp<<" "<<mp<<" "<<sp<<" "<<convFac*inpC_xmsyc(xp,mp,sp,y,2)<<" "<<inpC_xmsyc(xp,mp,sp,y,3)<<endl;
+//                                        tC += convFac*inpC_xmsyc(xp,mp,sp,y,2);//mean
+//                                        vC += square(convFac*inpC_xmsyc(xp,mp,sp,y,2)*inpC_xmsyc(xp,mp,sp,y,3));//variance = (mean*cv)^2
+//                                    }//sp
+//                                }//mp
+//                            }//xp
+//                            C_xmsy(x,m,s,y) = tC;
+//                            if (tC>0.0) {
+//                                cv_xmsy(x,m,s,y) = sqrt(vC)/tC;
+//                            }
+//                        }//y
+//                        if (llType==tcsam::LL_LOGNORMAL){
+//                            sd_xmsy(x,m,s) = sqrt(log(1.0+elem_prod(cv_xmsy(x,m,s),cv_xmsy(x,m,s))));
+//                        } else {
+//                            sd_xmsy(x,m,s) = elem_prod(cv_xmsy(x,m,s),C_xmsy(x,m,s));
+//                        }
+//                    }//qf==0
+//                    if (debug) {
+//                        rpt::echo<<"C  = "<< C_xmsy(x,m,s)<<endl;
+//                        rpt::echo<<"cv = "<<cv_xmsy(x,m,s)<<endl;
+//                        rpt::echo<<"sd = "<<sd_xmsy(x,m,s)<<endl;
+//                    }
+//                }//aggregate?
+//            }//s
+//        }//m
+//    }//x
+//    if (debug) rpt::echo<<"finished AggregateCatchData::aggregateData()"<<endl;
+//}
+
+    
 /**
- * Aggregate catch data C_xmsy, cv_xmsy, sd_xmsy over summary indices.
+ * Aggregate catch data C_xmsy, cv_xmsy, sd_xmsy over summary indices for 
+ * fitting in the objective function.
  */
 void AggregateCatchData::aggregateData(void){
     if (debug) rpt::echo<<"starting AggregateCatchData::aggregateData()"<<endl;
@@ -38,15 +118,44 @@ void AggregateCatchData::aggregateData(void){
 //        rpt::echo<<"#conversion factor from "<<units<<" to 1000's MT is "<<convFac<<std::endl;
     }
     
+    int xxmn, xxmx; int mmmn, mmmx; int ssmn, ssmx;
+    if (optFit==tcsam::FIT_BY_TOT){
+        //aggregate over all indices
+        xxmn=xxmx=tcsam::ALL_SXs;
+        mmmn=mmmx=tcsam::ALL_MSs;
+        ssmn=ssmx=tcsam::ALL_SCs;
+    } else if ((optFit==tcsam::FIT_BY_X)||(optFit==tcsam::FIT_BY_XE)){
+        //aggregate over maturity, shell condition
+        xxmn=1; xxmx=tcsam::ALL_SXs;
+        mmmn=mmmx=tcsam::ALL_MSs;
+        ssmn=ssmx=tcsam::ALL_SCs;
+    } else if ((optFit==tcsam::FIT_BY_XM)||(optFit==tcsam::FIT_BY_XME)){
+        //aggregate over shell condition
+        xxmn=1; xxmx=tcsam::ALL_SXs;
+        mmmn=1; mmmx=tcsam::ALL_MSs;
+        ssmn=ssmx=tcsam::ALL_SCs;
+    } else if ((optFit==tcsam::FIT_BY_XS)||(optFit==tcsam::FIT_BY_XSE)){
+        //aggregate over maturity
+        xxmn=1; xxmx=tcsam::ALL_SXs;
+        mmmn=mmmx=tcsam::ALL_MSs;
+        ssmn=1; ssmx=tcsam::ALL_SCs;
+    } else if ((optFit==tcsam::FIT_BY_XMS)||(optFit==tcsam::FIT_BY_XMSE)){
+        //don't aggregate
+        return;
+    }
+
+
+
     //fill in aggregate values, as necessary
+    //need to be careful handling values already partially aggregated
     double tC; double vC;
-    for (int x=1;x<=tcsam::ALL_SXs;x++){
+    for (int x=xxmn;x<=xxmx;x++){
         int xmn, xmx;
         xmn = xmx = x; if (x==tcsam::ALL_SXs) {xmn = 1; xmx = tcsam::ALL_SXs;}
-        for (int m=1;m<=tcsam::ALL_MSs;m++){
+        for (int m=mmmn;m<=mmmx;m++){
             int mmn, mmx;
             mmn = mmx = m; if (m==tcsam::ALL_MSs) {mmn = 1; mmx = tcsam::ALL_MSs;}
-            for (int s=1;s<=tcsam::ALL_SCs;s++){
+            for (int s=ssmn;s<=ssmx;s++){
                 int smn, smx;
                 smn = smx = s; if (s==tcsam::ALL_SCs) {smn = 1; smx = tcsam::ALL_SCs;}
                 if ((x==tcsam::ALL_SXs)||(m==tcsam::ALL_MSs)||(s==tcsam::ALL_SCs)){
@@ -72,7 +181,7 @@ void AggregateCatchData::aggregateData(void){
                             for (int xp=xmn;xp<=xmx;xp++){
                                 for (int mp=mmn;mp<=mmx;mp++){
                                     for (int sp=smn;sp<=smx;sp++){
-                                        if (debug) rpt::echo<<xp<<" "<<mp<<" "<<sp<<" "<<inpC_xmsyc(xp,mp,sp,y,2)<<" "<<inpC_xmsyc(xp,mp,sp,y,3)<<endl;
+                                        if (debug) rpt::echo<<xp<<" "<<mp<<" "<<sp<<" "<<convFac*inpC_xmsyc(xp,mp,sp,y,2)<<" "<<inpC_xmsyc(xp,mp,sp,y,3)<<endl;
                                         tC += convFac*inpC_xmsyc(xp,mp,sp,y,2);//mean
                                         vC += square(convFac*inpC_xmsyc(xp,mp,sp,y,2)*inpC_xmsyc(xp,mp,sp,y,3));//variance = (mean*cv)^2
                                     }//sp
@@ -100,6 +209,119 @@ void AggregateCatchData::aggregateData(void){
     }//x
     if (debug) rpt::echo<<"finished AggregateCatchData::aggregateData()"<<endl;
 }
+//
+///****************************************************************
+// * Replace catch data C_xmsy with new data. Units are MILLIONS for 
+// * abundance data and 1000's mt for biomass data.
+// * Also modifies inpC_xmsyc to reflect new data, but keeps original units.
+// * Error-related quantities remain the same.
+// * 
+// * @param dmatrix newC_yxms
+// */
+//void AggregateCatchData::replaceCatchData(int iSeed,random_number_generator& rng,d4_array& newC_yxms){
+//    debug=1;
+//    if (debug) rpt::echo<<"starting AggregateCatchData::replaceCatchData(d4_array& newC_yxms)"<<std::endl;
+//    //get conversion factor to millions (abundance) or thousands mt (biomass)
+//    double convFac = 1.0;
+//    if (type==KW_ABUNDANCE_DATA){
+//        convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_MILLIONS);
+// //        rpt::echo<<"#conversion factor from "<<units<<" to MILLIONS is "<<convFac<<std::endl;
+//    } else {
+//        convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_KMT);
+////        rpt::echo<<"#conversion factor from "<<units<<" to 1000's MT is "<<convFac<<std::endl;
+//    }
+//         
+//    //year limits on new data
+//    int mnY = newC_yxms.indexmin();
+//    int mxY = newC_yxms.indexmax();
+//    
+//    //copy old values in temporary variables
+//    int oldNY = ny;
+//    ivector oldYrs(1,oldNY); oldYrs = yrs;
+//    d4_array oldSD_xmsy(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,oldNY);
+//    d5_array oldInpC_xmsyc(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,oldNY,1,3);
+//    for (int x=1;x<=tcsam::ALL_SXs;x++){
+//        for (int m=1;m<=tcsam::ALL_MSs;m++){
+//            for (int s=1;s<=tcsam::ALL_SCs;s++) {
+//                oldSD_xmsy(x,m,s)    = sd_xmsy(x,m,s);
+//                oldInpC_xmsyc(x,m,s) = inpC_xmsyc(x,m,s);
+//            }
+//        }
+//    }
+//    if (debug) rpt::echo<<"Copied old variables"<<endl;
+//    
+//    ny = 0;//new ny [need to recalculate in case of retrospective runs]
+//    for (int y=1;y<=oldNY;y++){//year index for old data
+//        int yr = oldYrs(y);
+//        if ((mnY<=yr)&&(yr<=mxY)) ny++;
+//    }
+//    if (debug) rpt::echo<<"Calculated new ny"<<endl;
+//    
+//    //reallocate yrs for new number of years
+//    yrs.deallocate(); yrs.allocate(1,ny); yrs.initialize();
+//    //reallocate inpC_xmsyc for new number of years
+//    inpC_xmsyc.deallocate(); 
+//    inpC_xmsyc.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,3);
+//    inpC_xmsyc.initialize();
+//
+//    //copy old data from appropriate years
+//    int yctr = 0;//year index for new data
+//    for (int y=1;y<=oldNY;y++){//year index for old data
+//        int yr = oldYrs(y);
+//        if ((mnY<=yr)&&(yr<=mxY)){
+//            yctr++;
+//            yrs(yctr) = yr;
+//            for (int x=1;x<=tcsam::ALL_SXs;x++){
+//                for (int m=1;m<=tcsam::ALL_MSs;m++){
+//                    for (int s=1;s<=tcsam::ALL_SCs;s++) {
+//                        double v = tcsam::extractFromYXMS(yr,x,m,s,newC_yxms);
+//                        if (iSeed) {
+//                            double sd = oldSD_xmsy(x,m,s,y);
+//                            if (llType==tcsam::LL_LOGNORMAL){
+//                                v *= exp(wts::drawSampleNormal(rng,0.0,sd)-0.5*sd*sd);
+//                            } else {
+//                                v += wts::drawSampleNormal(rng,0.0,sd);
+//                            }
+//                        }
+//                        inpC_xmsyc(x,m,s,yctr,1) = oldInpC_xmsyc(x,m,s,y,1);//old year
+//                        inpC_xmsyc(x,m,s,yctr,3) = oldInpC_xmsyc(x,m,s,y,3);//old cv
+//                        inpC_xmsyc(x,m,s,yctr,2) = v/convFac;//new value
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    if (debug) rpt::echo<<"Created new inpC_xmsyc"<<endl;
+//    
+//    //re-constitute other arrays
+//    C_xmsy.allocate( 1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny);  C_xmsy.initialize();
+//    cv_xmsy.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny); cv_xmsy.initialize();
+//    sd_xmsy.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny); sd_xmsy.initialize();    
+//    int nc = factors.indexmax();
+//    for (int i=1;i<=nc;i++){
+//        int x = tcsam::getSexType(factors(i,1));
+//        int m = tcsam::getMaturityType(factors(i,2));
+//        int s = tcsam::getShellType(factors(i,3));
+//        C_xmsy(x,m,s)  = convFac*column(inpC_xmsyc(x,m,s),2);
+//        cv_xmsy(x,m,s) = column(inpC_xmsyc(x,m,s),3);
+//        if (llType==tcsam::LL_LOGNORMAL){
+//            sd_xmsy(x,m,s) = sqrt(log(1.0+elem_prod(cv_xmsy(x,m,s),cv_xmsy(x,m,s))));
+//        } else {
+//            sd_xmsy(x,m,s) = elem_prod(cv_xmsy(x,m,s),C_xmsy(x,m,s));
+//        }
+//        if (debug) {
+//            rpt::echo<<factors(i,1)<<tb<<factors(i,2)<<tb<<factors(i,3)<<tb<<"#factors"<<std::endl;
+//            rpt::echo<<"C_xmsy  = "<< C_xmsy(x,m,s)<<endl;
+//            rpt::echo<<"cv_xmsy = "<<cv_xmsy(x,m,s)<<endl;
+//            rpt::echo<<"sd_xmsy = "<<sd_xmsy(x,m,s)<<endl;
+//        }
+//    }
+//    
+//    aggregateData();
+//    
+//    if (debug) rpt::echo<<"finished AggregateCatchData::replaceCatchData(d4_array& newC_yxms)"<<std::endl;
+//}
+//
 
 /****************************************************************
  * Replace catch data C_xmsy with new data. Units are MILLIONS for 
@@ -110,7 +332,6 @@ void AggregateCatchData::aggregateData(void){
  * @param dmatrix newC_yxms
  */
 void AggregateCatchData::replaceCatchData(int iSeed,random_number_generator& rng,d4_array& newC_yxms){
-    debug=1;
     if (debug) rpt::echo<<"starting AggregateCatchData::replaceCatchData(d4_array& newC_yxms)"<<std::endl;
     //get conversion factor to millions (abundance) or thousands mt (biomass)
     double convFac = 1.0;
@@ -121,56 +342,7 @@ void AggregateCatchData::replaceCatchData(int iSeed,random_number_generator& rng
         convFac = tcsam::getConversionMultiplier(units,tcsam::UNITS_KMT);
 //        rpt::echo<<"#conversion factor from "<<units<<" to 1000's MT is "<<convFac<<std::endl;
     }
-     
-//    //Note that year indices for newC_yx run from mnYr:mxYr
-//    //but year indices for inpC_yc and C_xy, csv_xy, stdv_xy run 1:ny.
-//    
-//    //year bounds for newC_yx
-//    int mnY = newC_yx.indexmin();
-//    int mxY = newC_yx.indexmax();
-//    
-//    //copy old values
-//    int oldNY = nr;
-//    ivector oldYrs(1,oldNY);  oldYrs = yrs;
-//    dmatrix oldSD_xy(1,tcsam::ALL_SXs,1,oldNY);     oldSD_xy = sd_xmsy;
-//    dmatrix oldInpC_yc(1,oldNY,1,2*tcsam::ALL_SXs+1); oldInpC_yc = inpC_yc;
-//    //determine new bounds
-//    nr=0;
-//    for (int y=1;y<=oldNY;y++){
-//        int yr = oldYrs(y);
-//        if ((mnY<=yr)&&(yr<=mxY)) nr++;
-//    }
-//    
-//    //reallocate quantities
-//    yrs.deallocate();     yrs.allocate(1,nr);                          yrs.initialize();
-//    inpC_yc.deallocate(); inpC_yc.allocate(1,nr,1,2*tcsam::ALL_SXs+1); inpC_yc.initialize();
-//    nr=0;
-//    for (int y=1;y<=oldNY;y++){
-//        int yr = oldYrs(y);
-//        if ((mnY<=yr)&&(yr<=mxY)) {
-//            nr++;
-//            yrs(nr)   = yr;
-//            inpC_yc(nr) = oldInpC_yc(y);//copy 
-//            for (int x=1;x<=tcsam::nSXs;x++) {
-//                double v = newC_yx(yr,x);
-//                if (iSeed) {
-//                    double sd = oldSD_xy(x,y);
-//                    v *= mfexp(wts::drawSampleNormal(rng,0.0,sd)-0.5*sd*sd);
-//                }
-//                inpC_yc(nr,2*x) = v/convFac;
-//            }
-//            inpC_yc(nr,2*tcsam::ALL_SXs) = sum(newC_yx(yr))/convFac;
-////            cout<<ny<<tb<<inpC_yc(ny)<<endl;
-//        }
-//    }
-//    C_xmsy.deallocate();               cv_xmsy.deallocate();               sd_xmsy.deallocate();
-//    C_xmsy.allocate(1,tcsam::ALL_SXs); cv_xmsy.allocate(1,tcsam::ALL_SXs); sd_xmsy.allocate(1,tcsam::ALL_SXs);
-//    for (int x=1;x<=tcsam::ALL_SXs;x++) {
-//        C_xmsy(x)   = convFac*column(inpC_yc,2*x);
-//        cv_xmsy(x)  = column(inpC_yc,2*x+1);
-//        sd_xmsy(x) = sqrt(log(1.0+elem_prod(cv_xmsy(x),cv_xmsy(x))));
-//    }
-    
+         
     //year limits on new data
     int mnY = newC_yxms.indexmin();
     int mxY = newC_yxms.indexmax();
@@ -204,33 +376,32 @@ void AggregateCatchData::replaceCatchData(int iSeed,random_number_generator& rng
     inpC_xmsyc.allocate(1,tcsam::ALL_SXs,1,tcsam::ALL_MSs,1,tcsam::ALL_SCs,1,ny,1,3);
     inpC_xmsyc.initialize();
 
-    //copy old data from appropriate years
+    //copy old data from appropriate years & factor combinations
     int yctr = 0;//year index for new data
     for (int y=1;y<=oldNY;y++){//year index for old data
         int yr = oldYrs(y);
         if ((mnY<=yr)&&(yr<=mxY)){
             yctr++;
             yrs(yctr) = yr;
-            for (int x=1;x<=tcsam::ALL_SXs;x++){
-                for (int m=1;m<=tcsam::ALL_MSs;m++){
-                    for (int s=1;s<=tcsam::ALL_SCs;s++) {
-                        double v = tcsam::extractFromYXMS(yr,x,m,s,newC_yxms);
-                        if (iSeed) {
-                            double sd = oldSD_xmsy(x,m,s,y);
-                            if (llType==tcsam::LL_LOGNORMAL){
-                                v *= exp(wts::drawSampleNormal(rng,0.0,sd)-0.5*sd*sd);
-                            } else {
-                                v += wts::drawSampleNormal(rng,0.0,sd);
-                            }
-                        }
-                        inpC_xmsyc(x,m,s,yctr,1) = oldInpC_xmsyc(x,m,s,y,1);//old year
-                        inpC_xmsyc(x,m,s,yctr,3) = oldInpC_xmsyc(x,m,s,y,3);//old cv
-                        inpC_xmsyc(x,m,s,yctr,2) = v/convFac;//new value
+            for (int i=1;i<=factors.indexmax();i++){
+                int x = tcsam::getSexType(factors(i,1));
+                int m = tcsam::getMaturityType(factors(i,2));
+                int s = tcsam::getShellType(factors(i,3));
+                double v = tcsam::extractFromYXMS(yr,x,m,s,newC_yxms);
+                if (iSeed) {
+                    double sd = oldSD_xmsy(x,m,s,y);
+                    if (llType==tcsam::LL_LOGNORMAL){
+                        v *= exp(wts::drawSampleNormal(rng,0.0,sd)-0.5*sd*sd);
+                    } else {
+                        v += wts::drawSampleNormal(rng,0.0,sd);
                     }
                 }
-            }
-        }
-    }
+                inpC_xmsyc(x,m,s,yctr,1) = oldInpC_xmsyc(x,m,s,y,1);//old year
+                inpC_xmsyc(x,m,s,yctr,3) = oldInpC_xmsyc(x,m,s,y,3);//old cv
+                inpC_xmsyc(x,m,s,yctr,2) = v/convFac;//new value
+            }//i loop
+        }//if ((mnY<=yr)&&(yr<=mxY))
+    }//y loop
     if (debug) rpt::echo<<"Created new inpC_xmsyc"<<endl;
     
     //re-constitute other arrays
@@ -398,22 +569,6 @@ void AggregateCatchData::writeToR(ostream& os, std::string nm, int indent) {
         str = "biomass";
         unitsp = tcsam::UNITS_KMT;
     }
-    
-//    for (int n=0;n<indent;n++) os<<tb;
-//        os<<str<<"=list("<<std::endl;
-//        indent++; 
-//            for (int n=0;n<indent;n++) os<<tb;
-//            os<<"optFit="<<qt<<tcsam::getFitType(optFit)<<qt<<cc<<std::endl;
-//            os<<"llType="<<qt<<tcsam::getLikelihoodType(llType)<<qt<<cc<<std::endl;
-//            os<<"units="<<qt<<unitsp<<qt<<cc<<std::endl;
-//            for (int n=0;n<indent;n++) os<<tb;
-//            os<<"years="; wts::writeToR(os,yrs); os<<cc<<std::endl;
-//            for (int n=0;n<indent;n++) os<<tb;
-//            os<<"data="; wts::writeToR(os,C_xmsy,x,y); os<<cc<<std::endl;
-//            for (int n=0;n<indent;n++) os<<tb;
-//            os<<"cvs="; wts::writeToR(os,cv_xmsy,x,y); os<<std::endl;
-//        indent--;
-//    for (int n=0;n<indent;n++) os<<tb; os<<")";
     
     ivector bnds = wts::getBounds(C_xmsy);
     adstring x = tcsamDims::getSXsForR(bnds(1),bnds(2));
@@ -787,99 +942,99 @@ void BioData::read(cifstream & is){
         }
     }}
     
-    //PROBABILITY OF MATURING AT SIZE
-    {prMature_xz.allocate(1,tcsam::nSXs,1,nZBins);
-    prMature_xz.initialize();
-    int nc;
-    is>>nc; //number of factor combinations to read in data for
-    rpt::echo<<nc<<tb<<"#number of factor combinations"<<std::endl;
-    adstring_array factors(1,1);
-    for (int i=0;i<nc;i++){
-        is>>factors;
-        rpt::echo<<factors(1)<<tb<<"#factors"<<std::endl;
-        int sex   = tcsam::getSexType(factors(1));
-        if (sex){
-            is>>prMature_xz(sex);
-            rpt::echo<<prMature_xz(sex)<<std::endl;
-            if (debug) {
-                std::cout<<"#prMature_xz("<<factors(1)<<")="<<std::endl;
-                std::cout<<"#"<<zBins<<std::endl;
-                std::cout<<prMature_xz(sex)<<std::endl;
-            }
-        } else {
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            std::cout<<"Reading file name "<<is.get_file_name()<<std::endl;
-            std::cout<<"Factors for prMature_xz not recognized!"<<std::endl;
-            std::cout<<"Factors: "<<factors(1)<<std::endl;
-            std::cout<<"Terminating..."<<std::endl;
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            exit(-1);
-        }
-    }}
+//    //PROBABILITY OF MATURING AT SIZE
+//    {prMature_xz.allocate(1,tcsam::nSXs,1,nZBins);
+//    prMature_xz.initialize();
+//    int nc;
+//    is>>nc; //number of factor combinations to read in data for
+//    rpt::echo<<nc<<tb<<"#number of factor combinations"<<std::endl;
+//    adstring_array factors(1,1);
+//    for (int i=0;i<nc;i++){
+//        is>>factors;
+//        rpt::echo<<factors(1)<<tb<<"#factors"<<std::endl;
+//        int sex   = tcsam::getSexType(factors(1));
+//        if (sex){
+//            is>>prMature_xz(sex);
+//            rpt::echo<<prMature_xz(sex)<<std::endl;
+//            if (debug) {
+//                std::cout<<"#prMature_xz("<<factors(1)<<")="<<std::endl;
+//                std::cout<<"#"<<zBins<<std::endl;
+//                std::cout<<prMature_xz(sex)<<std::endl;
+//            }
+//        } else {
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            std::cout<<"Reading file name "<<is.get_file_name()<<std::endl;
+//            std::cout<<"Factors for prMature_xz not recognized!"<<std::endl;
+//            std::cout<<"Factors: "<<factors(1)<<std::endl;
+//            std::cout<<"Terminating..."<<std::endl;
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            exit(-1);
+//        }
+//    }}
+//    
+//    //FRACTION MATURE BY SEX, SHELL CONDITION
+//    {frMature_xsz.allocate(1,tcsam::nSXs,1,tcsam::nMSs,1,nZBins);
+//    frMature_xsz.initialize();
+//    int nc;
+//    is>>nc; //number of factor combinations to read in data for
+//    rpt::echo<<nc<<tb<<"#number of factor combinations"<<std::endl;
+//    adstring_array factors(1,2);
+//    for (int i=0;i<nc;i++){
+//        is>>factors;
+//        rpt::echo<<factors(1)<<tb<<factors(2)<<tb<<"#factors"<<std::endl;
+//        int sex   = tcsam::getSexType(factors(1));
+//        int shl   = tcsam::getShellType(factors(2));
+//        if (sex||shl){
+//            is>>frMature_xsz(sex,shl);
+//            rpt::echo<<frMature_xsz(sex,shl)<<std::endl;
+//            if (debug) {
+//                std::cout<<"#frMature_xsz("<<factors(1)<<cc<<factors(2)<<")="<<std::endl;
+//                std::cout<<"#"<<zBins<<std::endl;
+//                std::cout<<frMature_xsz(sex,shl)<<std::endl;
+//            }
+//        } else {
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            std::cout<<"Reading file name "<<is.get_file_name()<<std::endl;
+//            std::cout<<"Factors for frMature_xsz not recognized!"<<std::endl;
+//            std::cout<<"Factors: "<<factors(1)<<tb<<factors(2)<<std::endl;
+//            std::cout<<"Terminating..."<<std::endl;
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            exit(-1);
+//        }
+//    }}
     
-    //FRACTION MATURE BY SEX, SHELL CONDITION
-    {frMature_xsz.allocate(1,tcsam::nSXs,1,tcsam::nMSs,1,nZBins);
-    frMature_xsz.initialize();
-    int nc;
-    is>>nc; //number of factor combinations to read in data for
-    rpt::echo<<nc<<tb<<"#number of factor combinations"<<std::endl;
-    adstring_array factors(1,2);
-    for (int i=0;i<nc;i++){
-        is>>factors;
-        rpt::echo<<factors(1)<<tb<<factors(2)<<tb<<"#factors"<<std::endl;
-        int sex   = tcsam::getSexType(factors(1));
-        int shl   = tcsam::getShellType(factors(2));
-        if (sex||shl){
-            is>>frMature_xsz(sex,shl);
-            rpt::echo<<frMature_xsz(sex,shl)<<std::endl;
-            if (debug) {
-                std::cout<<"#frMature_xsz("<<factors(1)<<cc<<factors(2)<<")="<<std::endl;
-                std::cout<<"#"<<zBins<<std::endl;
-                std::cout<<frMature_xsz(sex,shl)<<std::endl;
-            }
-        } else {
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            std::cout<<"Reading file name "<<is.get_file_name()<<std::endl;
-            std::cout<<"Factors for frMature_xsz not recognized!"<<std::endl;
-            std::cout<<"Factors: "<<factors(1)<<tb<<factors(2)<<std::endl;
-            std::cout<<"Terminating..."<<std::endl;
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            exit(-1);
-        }
-    }}
-    
-    //CV for mean size at min, max size bins
-    {rpt::echo<<"#CV for min, max sizes"<<std::endl;
-    cvMnMxZ_xc.allocate(1,tcsam::nSXs,1,2);
-    cvMnMxZ_xc.initialize();
-    int nc;
-    is>>nc; //number of factor combinations to read in data for
-    rpt::echo<<nc<<tb<<"#number of factor combinations"<<std::endl;
-    adstring_array factors(1,1);
-    for (int i=0;i<nc;i++){
-        is>>factors;
-        rpt::echo<<factors(1)<<"#factors"<<std::endl;
-        int sex   = tcsam::getSexType(factors(1));
-        if (sex){
-            is>>cvMnMxZ_xc(sex);
-            rpt::echo<<cvMnMxZ_xc(sex)<<std::endl;
-            if (debug) {
-                std::cout<<"#cvMnMxZ_xc("<<factors(1)<<")="<<std::endl;
-                std::cout<<cvMnMxZ_xc(sex)<<std::endl;
-            }
-        } else {
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            std::cout<<"Reading file name "<<is.get_file_name()<<std::endl;
-            std::cout<<"Factors for cvMnMxZ_xc not recognized!"<<std::endl;
-            std::cout<<"Factors: "<<factors(1)<<std::endl;
-            std::cout<<"Terminating..."<<std::endl;
-            std::cout<<"-----------------------------------------------------------"<<std::endl;
-            exit(-1);
-        }
-    }}
+//    //CV for mean size at min, max size bins
+//    {rpt::echo<<"#CV for min, max sizes"<<std::endl;
+//    cvMnMxZ_xc.allocate(1,tcsam::nSXs,1,2);
+//    cvMnMxZ_xc.initialize();
+//    int nc;
+//    is>>nc; //number of factor combinations to read in data for
+//    rpt::echo<<nc<<tb<<"#number of factor combinations"<<std::endl;
+//    adstring_array factors(1,1);
+//    for (int i=0;i<nc;i++){
+//        is>>factors;
+//        rpt::echo<<factors(1)<<"#factors"<<std::endl;
+//        int sex   = tcsam::getSexType(factors(1));
+//        if (sex){
+//            is>>cvMnMxZ_xc(sex);
+//            rpt::echo<<cvMnMxZ_xc(sex)<<std::endl;
+//            if (debug) {
+//                std::cout<<"#cvMnMxZ_xc("<<factors(1)<<")="<<std::endl;
+//                std::cout<<cvMnMxZ_xc(sex)<<std::endl;
+//            }
+//        } else {
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            std::cout<<"Reading file name "<<is.get_file_name()<<std::endl;
+//            std::cout<<"Factors for cvMnMxZ_xc not recognized!"<<std::endl;
+//            std::cout<<"Factors: "<<factors(1)<<std::endl;
+//            std::cout<<"Terminating..."<<std::endl;
+//            std::cout<<"-----------------------------------------------------------"<<std::endl;
+//            exit(-1);
+//        }
+//    }}
     
     //MIDPOINTS OF FISHERY SEASONS BY YEAR
     rpt::echo<<"#Timing of fisheries and mating"<<std::endl;
@@ -936,38 +1091,38 @@ void BioData::write(ostream & os){
         }
     }}
     
-    {os<<"#-----------PROBABILITY OF MATURING-------------------#"<<std::endl;
-    os<<tcsam::nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
-    adstring_array factors(1,1);
-    for (int sex=1;sex<=tcsam::nSXs;sex++){
-        factors(1) = tcsam::getSexType(sex);
-        os<<"#-------"<<factors(1)<<std::endl;
-        os<<factors(1)<<std::endl;
-        os<<prMature_xz(sex)<<std::endl;
-    }}
+//    {os<<"#-----------PROBABILITY OF MATURING-------------------#"<<std::endl;
+//    os<<tcsam::nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
+//    adstring_array factors(1,1);
+//    for (int sex=1;sex<=tcsam::nSXs;sex++){
+//        factors(1) = tcsam::getSexType(sex);
+//        os<<"#-------"<<factors(1)<<std::endl;
+//        os<<factors(1)<<std::endl;
+//        os<<prMature_xz(sex)<<std::endl;
+//    }}
+//    
+//    {os<<"#-----------FRACTION MATURE BY SEX, SHELL CONDITION---#"<<std::endl;
+//    os<<tcsam::nSXs*tcsam::nSCs<<tb<<"#number of factor combinations (sex x shell condition)"<<std::endl;
+//    adstring_array factors(1,2);
+//    for (int sex=1;sex<=tcsam::nSXs;sex++){
+//        factors(1) = tcsam::getSexType(sex);
+//        for (int shl=1;shl<=tcsam::nSCs;shl++){
+//            factors(2) = tcsam::getShellType(shl);
+//            os<<"#-------"<<factors(1)<<cc<<factors(2)<<std::endl;
+//            os<<factors(1)<<tb<<factors(2)<<std::endl;
+//            os<<frMature_xsz(sex,shl)<<std::endl;
+//        }
+//    }}
     
-    {os<<"#-----------FRACTION MATURE BY SEX, SHELL CONDITION---#"<<std::endl;
-    os<<tcsam::nSXs*tcsam::nSCs<<tb<<"#number of factor combinations (sex x shell condition)"<<std::endl;
-    adstring_array factors(1,2);
-    for (int sex=1;sex<=tcsam::nSXs;sex++){
-        factors(1) = tcsam::getSexType(sex);
-        for (int shl=1;shl<=tcsam::nSCs;shl++){
-            factors(2) = tcsam::getShellType(shl);
-            os<<"#-------"<<factors(1)<<cc<<factors(2)<<std::endl;
-            os<<factors(1)<<tb<<factors(2)<<std::endl;
-            os<<frMature_xsz(sex,shl)<<std::endl;
-        }
-    }}
-    
-    {os<<"#-----------CV FOR MIN, MAX SIZES---------------------#"<<std::endl;
-    os<<tcsam::nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
-    adstring_array factors(1,1);
-    for (int sex=1;sex<=tcsam::nSXs;sex++){
-        factors(1) = tcsam::getSexType(sex);
-        os<<"#-------"<<factors(1)<<std::endl;
-        os<<factors(1)<<std::endl;
-        os<<cvMnMxZ_xc(sex)<<std::endl;
-    }}
+//    {os<<"#-----------CV FOR MIN, MAX SIZES---------------------#"<<std::endl;
+//    os<<tcsam::nSXs<<tb<<"#number of factor combinations (sex)"<<std::endl;
+//    adstring_array factors(1,1);
+//    for (int sex=1;sex<=tcsam::nSXs;sex++){
+//        factors(1) = tcsam::getSexType(sex);
+//        os<<"#-------"<<factors(1)<<std::endl;
+//        os<<factors(1)<<std::endl;
+//        os<<cvMnMxZ_xc(sex)<<std::endl;
+//    }}
     
     {os<<"#-----------TIMING------------------------------------#"<<std::endl;
     os<<fshTimingTypical<<tb<<"#timing of midpoint of typical fishing season"<<std::endl;
@@ -1007,39 +1162,39 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         indent--;}
         for (int n=0;n<indent;n++) os<<tb; os<<"),"<<std::endl;
         
-        //probability of maturing-at-size
-        {for (int n=0;n<indent;n++) os<<tb;
-        os<<"prMat="<<std::endl; 
-        indent++;
-            for (int n=0;n<indent;n++) os<<tb;
-            ivector bnds = wts::getBounds(prMature_xz);
-            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
-            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
-            wts::writeToR(os,prMature_xz,x,z); os<<","<<std::endl;
-        indent--;}
-        
-        //fraction mature-at-size
-        {for (int n=0;n<indent;n++) os<<tb;
-        os<<"frMat="<<std::endl; 
-        indent++;
-            for (int n=0;n<indent;n++) os<<tb;
-            ivector bnds = wts::getBounds(frMature_xsz);
-            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
-            adstring s = tcsamDims::getSCsForR(bnds[3],bnds[4]);
-            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
-            wts::writeToR(os,frMature_xsz,x,s,z); os<<","<<std::endl;
-        indent--;}
-        
-        //cv for min, max sizes
-        {for (int n=0;n<indent;n++) os<<tb;
-        os<<"cvZs="<<std::endl; 
-        indent++;
-            for (int n=0;n<indent;n++) os<<tb;
-            ivector bnds = wts::getBounds(cvMnMxZ_xc);
-            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
-            adstring c = "size=c('minZ','maxZ')";
-            wts::writeToR(os,cvMnMxZ_xc,x,c); os<<","<<std::endl;
-        indent--;}
+//        //probability of maturing-at-size
+//        {for (int n=0;n<indent;n++) os<<tb;
+//        os<<"prMat="<<std::endl; 
+//        indent++;
+//            for (int n=0;n<indent;n++) os<<tb;
+//            ivector bnds = wts::getBounds(prMature_xz);
+//            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+//            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
+//            wts::writeToR(os,prMature_xz,x,z); os<<","<<std::endl;
+//        indent--;}
+//        
+//        //fraction mature-at-size
+//        {for (int n=0;n<indent;n++) os<<tb;
+//        os<<"frMat="<<std::endl; 
+//        indent++;
+//            for (int n=0;n<indent;n++) os<<tb;
+//            ivector bnds = wts::getBounds(frMature_xsz);
+//            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+//            adstring s = tcsamDims::getSCsForR(bnds[3],bnds[4]);
+//            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
+//            wts::writeToR(os,frMature_xsz,x,s,z); os<<","<<std::endl;
+//        indent--;}
+//        
+//        //cv for min, max sizes
+//        {for (int n=0;n<indent;n++) os<<tb;
+//        os<<"cvZs="<<std::endl; 
+//        indent++;
+//            for (int n=0;n<indent;n++) os<<tb;
+//            ivector bnds = wts::getBounds(cvMnMxZ_xc);
+//            adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
+//            adstring c = "size=c('minZ','maxZ')";
+//            wts::writeToR(os,cvMnMxZ_xc,x,c); os<<","<<std::endl;
+//        indent--;}
         
         //timing of fishery season midpoints and mating
         {for (int n=0;n<indent;n++) os<<tb;

@@ -123,11 +123,11 @@
     class VectorInfo: public NumberInfo {
         public:
             static int debug;
+            int N;       //size of initVals vector
+            int readVals;//flag to read initial values
         protected:
-            int N;//size of initVals vector
             adstring idxType;//index type (ie., model dimension, e.g., YEAR)
             IndexBlock* ptrIB;//pointer to index block
-            int readVals;    //flag to read initial values
             dvector initVals;//initial values
             dvector finlVals;//final values (for output to R)
         public:
@@ -231,11 +231,11 @@
     class BoundedVectorInfo : public BoundedNumberInfo {
         public:
             static int debug;
-        protected:
             int N;//size of initVals vector
+            int readVals;     //flag to read initial values
+        protected:
             adstring idxType; //index type (ie., model dimension, e.g., YEAR)
             IndexBlock* ptrIB;//pointer to index block
-            int readVals;     //flag to read initial values
             dvector initVals; //initial values
             dvector finlVals; //final values (for output to R)
         public:

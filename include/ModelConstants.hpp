@@ -9,6 +9,7 @@
  * 20140918: renamed string constants of form "name_STR" to follow format "STR_name"
  * 20140930: switched MALE, FEMALE so MALE=1, FEMALE=2
  * 20141030: switched ANY to ALL
+ * 20150113: added FIT_BY_XSE, FIT_BY_XMSE
  */
 
 #pragma once
@@ -81,22 +82,26 @@ namespace tcsam{
 //    const adstring_array STR_SCs(1,nSCs);  //string array
     
     //objective function fitting option types
-    const adstring STR_FIT_NONE   = "NONE";
-    const adstring STR_FIT_BY_TOT = "BY_TOTAL";
-    const adstring STR_FIT_BY_X   = "BY_SEX";
-    const adstring STR_FIT_BY_XE  = "BY_SEX_EXTENDED";
-    const adstring STR_FIT_BY_XM  = "BY_SEX_MATURITY";
-    const adstring STR_FIT_BY_XME = "BY_SEX_MATURITY_EXTENDED";
-    const adstring STR_FIT_BY_XS  = "BY_SEX_SHELL_CONDITON";
-    const adstring STR_FIT_BY_XMS = "BY_SEX_MATURITY_SHELL_CONDITON";
-    const int FIT_NONE   = 0;
-    const int FIT_BY_TOT = 1;
-    const int FIT_BY_X   = 2;
-    const int FIT_BY_XE  = 3;
-    const int FIT_BY_XM  = 4;
-    const int FIT_BY_XME = 5;
-    const int FIT_BY_XS  = 5;
-    const int FIT_BY_XMS = 5;
+    const adstring STR_FIT_NONE    = "NONE";
+    const adstring STR_FIT_BY_TOT  = "BY_TOTAL";
+    const adstring STR_FIT_BY_X    = "BY_SEX";
+    const adstring STR_FIT_BY_XE   = "BY_SEX_EXTENDED";
+    const adstring STR_FIT_BY_XM   = "BY_SEX_MATURITY";
+    const adstring STR_FIT_BY_XME  = "BY_SEX_MATURITY_EXTENDED";
+    const adstring STR_FIT_BY_XS   = "BY_SEX_SHELL_CONDITON";
+    const adstring STR_FIT_BY_XSE  = "BY_SEX_SHELL_CONDITON_EXTENDED";
+    const adstring STR_FIT_BY_XMS  = "BY_SEX_MATURITY_SHELL_CONDITON";
+    const adstring STR_FIT_BY_XMSE = "BY_SEX_MATURITY_SHELL_CONDITON_EXTENDED";
+    const int FIT_NONE    = 0;
+    const int FIT_BY_TOT  = 1;
+    const int FIT_BY_X    = 2;
+    const int FIT_BY_XE   = 3;
+    const int FIT_BY_XM   = 4;
+    const int FIT_BY_XME  = 5;
+    const int FIT_BY_XS   = 6;
+    const int FIT_BY_XSE  = 7;
+    const int FIT_BY_XMS  = 8;
+    const int FIT_BY_XMSE = 9;
     
     //likelihood types
     const adstring STR_LL_NONE        = "NONE";

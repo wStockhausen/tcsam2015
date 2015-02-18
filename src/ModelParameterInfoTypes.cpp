@@ -36,14 +36,14 @@ int DevsVectorVectorInfo::debug    = 0;
 *   If phase<0, return initVal rather than resampling.         *
 ***************************************************************/
 double NumberInfo::drawInitVal(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting NumberInfo::drawSample(random_number_generator& rng, vif)"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberInfo::drawSample(random_number_generator& rng, vif)"<<this<<endl;
     double smpl  = initVal;
     if (resample&&(phase>0)&&(pMPI->canSample())) {
         smpl = pMPI->drawSample(rng,priorParams,priorConsts);
     }
     if (debug) {
-        cout<<phase<<tb<<pMPI->canSample()<<tb<<initVal<<tb<<smpl<<endl;
-        cout<<"finished NumberInfo::drawSample(random_number_generator& rng,vif)"<<this<<endl;
+        rpt::echo<<phase<<tb<<pMPI->canSample()<<tb<<initVal<<tb<<smpl<<endl;
+        rpt::echo<<"finished NumberInfo::drawSample(random_number_generator& rng,vif)"<<this<<endl;
     }
     return smpl;
 }
@@ -53,17 +53,14 @@ double NumberInfo::drawInitVal(random_number_generator& rng, double vif){
 ******************************************************************/
 dvariable NumberInfo::calcLogPrior(prevariable& x){
     RETURN_ARRAYS_INCREMENT();
-    if (debug) cout<<"starting NumberInfo::calcLogPrior(prevariable& x)"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberInfo::calcLogPrior(prevariable& x)"<<this<<endl;
     dvariable val = pMPI->calcLogPDF(x,priorParams,priorConsts);
     if (debug) {
-        if (pMPI->getNumParams()) cout<<"priorParams = "<<priorParams<<tb;
-        if (pMPI->getNumConsts()) cout<<"priorConsts = "<<priorConsts<<tb;
-        cout<<endl;
-        cout<<"x = "<<x<<"; ln(pdf(x)) = "<<val<<endl;
-        cout<<"finished NumberInfo::calcLogPrior(prevariable& x)"<<this<<endl;
-        cout<<"Enter 1 to continue: ";
-        cin>>debug;
-        if (debug<0) exit(1);
+        if (pMPI->getNumParams()) rpt::echo<<"priorParams = "<<priorParams<<tb;
+        if (pMPI->getNumConsts()) rpt::echo<<"priorConsts = "<<priorConsts<<tb;
+        rpt::echo<<endl;
+        rpt::echo<<"x = "<<x<<"; ln(pdf(x)) = "<<val<<endl;
+        rpt::echo<<"finished NumberInfo::calcLogPrior(prevariable& x)"<<this<<endl;
     }
     RETURN_ARRAYS_DECREMENT();
     return val;
@@ -73,14 +70,14 @@ dvariable NumberInfo::calcLogPrior(prevariable& x){
 *   Set prior type.                                            *
 ***************************************************************/
 void NumberInfo::setPriorType(adstring & prior){
-    if (debug) cout<<"starting NumberInfo::setPriorType(adstring prior)"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberInfo::setPriorType(adstring prior)"<<this<<endl;
     if (pMPI) delete pMPI;
     pMPI = ModelPDFInfo::getInfo(prior);
     if (pMPI) {
         if (pMPI->getNumParams()>0) priorParams.allocate(1,pMPI->getNumParams());
         if (pMPI->getNumConsts()>0) priorConsts.allocate(1,pMPI->getNumConsts());
     }
-    if (debug) cout<<"finished NumberInfo::setPriorType(adstring prior)"<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberInfo::setPriorType(adstring prior)"<<this<<endl;
 }
 
 /*********************************************\n
@@ -90,7 +87,7 @@ void NumberInfo::setPriorType(adstring & prior){
  *  priorType, priorParams, priorConsts
 **********************************************/
 void NumberInfo::read(cifstream & is){
-    if (debug) cout<<"Starting NumberInfo::read(cifstream & is) "<<this<<endl;
+    if (debug) rpt::echo<<"Starting NumberInfo::read(cifstream & is) "<<this<<endl;
     adstring str;
     is>>initVal;
     is>>phase;
@@ -98,22 +95,22 @@ void NumberInfo::read(cifstream & is){
     is>>priorWgt;
     is>>priorType;//prior type
     if (debug){
-        cout<<initVal<<tb<<"#initVal"<<endl;
-        cout<<phase  <<tb<<"#phase"<<endl;
-        cout<<wts::getOnOffType(resample)<<tb<<"#resample"<<endl;
-        cout<<priorWgt<<tb<<"#priorWgt"<<endl;
-        cout<<priorType<<tb<<"#prior type"<<endl;
+        rpt::echo<<initVal<<tb<<"#initVal"<<endl;
+        rpt::echo<<phase  <<tb<<"#phase"<<endl;
+        rpt::echo<<wts::getOnOffType(resample)<<tb<<"#resample"<<endl;
+        rpt::echo<<priorWgt<<tb<<"#priorWgt"<<endl;
+        rpt::echo<<priorType<<tb<<"#prior type"<<endl;
     }
     setPriorType(priorType);
     if (pMPI->getNumParams()) {
         is>>priorParams;
-        if (debug) cout<<priorParams<<tb<<"#prior params"<<endl;
+        if (debug) rpt::echo<<priorParams<<tb<<"#prior params"<<endl;
     }
     if (pMPI->getNumConsts()) {
         is>>priorConsts;
-        if (debug) cout<<priorConsts<<tb<<"#prior consts"<<endl;
+        if (debug) rpt::echo<<priorConsts<<tb<<"#prior consts"<<endl;
     }
-    if (debug) cout<<"Done NumberInfo::read(cifstream & is) "<<this<<endl;
+    if (debug) rpt::echo<<"Done NumberInfo::read(cifstream & is) "<<this<<endl;
 }
 
 /***************************************************************
@@ -177,11 +174,11 @@ void NumberInfo::writeToR1(ostream& os){
 *   If phase<0, return initVal rather than resampling.         *
 ***************************************************************/
 void BoundedNumberInfo::setInitVal(double x){
-    if (debug) cout<<"starting BoundedNumberInfo::setInitVal(double x)"<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberInfo::setInitVal(double x)"<<this<<endl;
     if (x<lower) {initVal = lower+(upper-lower)/1000000.0;} else
     if (x>upper) {initVal = upper-(upper-lower)/1000000.0;} else
     {initVal=x;}
-    if (debug) cout<<"finished BoundedNumberInfo::setInitVal(double x)"<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberInfo::setInitVal(double x)"<<this<<endl;
 }
 
 /***************************************************************
@@ -189,14 +186,14 @@ void BoundedNumberInfo::setInitVal(double x){
 *   If phase<0, return initVal rather than resampling.         *
 ***************************************************************/
 double BoundedNumberInfo::drawInitVal(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting BoundedNumberInfo::drawSample(random_number_generator& rng)"<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberInfo::drawSample(random_number_generator& rng)"<<this<<endl;
     double smpl  = initVal;
     if (resample&&(phase>0)&&(pMPI->canSample())) {
         smpl = pMPI->drawSample(rng,priorParams,priorConsts);
     }
     if (debug) {
-        cout<<phase<<tb<<pMPI->canSample()<<tb<<initVal<<tb<<smpl<<endl;
-        cout<<"finished BoundedNumberInfo::drawSample(random_number_generator& rng)"<<this<<endl;
+        rpt::echo<<phase<<tb<<pMPI->canSample()<<tb<<initVal<<tb<<smpl<<endl;
+        rpt::echo<<"finished BoundedNumberInfo::drawSample(random_number_generator& rng)"<<this<<endl;
     }
     return smpl;
 }
@@ -207,18 +204,18 @@ double BoundedNumberInfo::drawInitVal(random_number_generator& rng, double vif){
  *  lower, upper, jitter + NumberInfo::read(is)
 ***************************************************************/
 void BoundedNumberInfo::read(cifstream & is){
-    if (debug) cout<<"Starting BoundedNumberInfo::read(cifstream & is) "<<this<<endl;
+    if (debug) rpt::echo<<"Starting BoundedNumberInfo::read(cifstream & is) "<<this<<endl;
     adstring str;
     is>>lower;
     is>>upper;
     is>>str; jitter=wts::getOnOffType(str);
     if (debug){
-        cout<<lower<<tb<<"#lower"<<endl;
-        cout<<upper<<tb<<"#upper"<<endl;
-        cout<<wts::getOnOffType(jitter)<<tb<<"#jitter"<<endl;
+        rpt::echo<<lower<<tb<<"#lower"<<endl;
+        rpt::echo<<upper<<tb<<"#upper"<<endl;
+        rpt::echo<<wts::getOnOffType(jitter)<<tb<<"#jitter"<<endl;
     }
     NumberInfo::read(is);//finish reading
-    if (debug) cout<<"Done BoundedNumberInfo::read(cifstream & is) "<<this<<endl;
+    if (debug) rpt::echo<<"Done BoundedNumberInfo::read(cifstream & is) "<<this<<endl;
 }
 
 /***************************************************************
@@ -261,15 +258,15 @@ void BoundedNumberInfo::writeToR1(ostream& os){
 *   If phase<0, return initVals rather than resampling. \n
 ***************************************************************/
 dvector VectorInfo::drawInitVals(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting VectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
     dvector smpl  = initVals;
     if (resample&&(phase>0)&&(pMPI->canSample())) {
         for (int i=1;i<=N;i++) smpl(i) = pMPI->drawSample(rng,priorParams,priorConsts);
     }
     if (debug) {
-        cout<<phase<<tb<<pMPI->canSample()<<endl;
-        cout<<"initVals: "<<initVals<<endl<<"samples: "<<smpl<<endl;
-        cout<<"finished VectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
+        rpt::echo<<phase<<tb<<pMPI->canSample()<<endl;
+        rpt::echo<<"initVals: "<<initVals<<endl<<"samples: "<<smpl<<endl;
+        rpt::echo<<"finished VectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
     }
     return smpl;
 }
@@ -280,7 +277,7 @@ dvector VectorInfo::drawInitVals(random_number_generator& rng, double vif){
 ***************************************************************/
 dvar_vector VectorInfo::calcLogPrior(dvar_vector & pv){
     RETURN_ARRAYS_INCREMENT();
-    if (debug) cout<<"starting VectorInfo::calcLogPrior(pv) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorInfo::calcLogPrior(pv) for "<<name<<endl;
     dvar_vector lps;
     if (pMPI->canCalcLogPDF(pv)) {
         lps = pMPI->calcLogPDF(pv,priorParams,priorConsts);
@@ -294,11 +291,8 @@ dvar_vector VectorInfo::calcLogPrior(dvar_vector & pv){
         }
     }
     if (debug) {
-        cout<<"logPrior: "<<lps<<endl;
-        cout<<"finished VectorInfo::calcLogPriors(pv) for "<<name<<endl;
-        cout<<"Enter 1 to continue: ";
-        cin>>debug;
-        if (debug<0) exit(-1);
+        rpt::echo<<"logPrior: "<<lps<<endl;
+        rpt::echo<<"finished VectorInfo::calcLogPriors(pv) for "<<name<<endl;
     }
     RETURN_ARRAYS_DECREMENT();
     return lps;
@@ -310,7 +304,7 @@ dvar_vector VectorInfo::calcLogPrior(dvar_vector & pv){
  * mni, mxi, readVals + NumberInfo::read(is)
 ***************************************************************/
 void VectorInfo::read(cifstream & is){
-    if (debug) cout<<"Starting VectorInfo::read(cifstream & is) for "<<name<<endl;
+    if (debug) rpt::echo<<"Starting VectorInfo::read(cifstream & is) for "<<name<<endl;
     adstring str;
     is>>idxType;
     int imn; int imx; 
@@ -323,14 +317,11 @@ void VectorInfo::read(cifstream & is){
     NumberInfo::read(is);
     initVals = initVal;
     if (debug) {
-        cout<<"idxType = "<<idxType<<endl;
-        cout<<"IndexBlock = "<<(*ptrIB)<<endl;
-        cout<<"N     = "<<N<<endl;
-        cout<<"init values = "<<initVals<<endl;
-        cout<<"Finished VectorInfo::read(cifstream & is) for "<<name<<endl;
-        cout<<"Enter 1 to continue>> ";
-        cin>>debug;
-        if (debug<0) exit(-1);
+        rpt::echo<<"idxType = "<<idxType<<endl;
+        rpt::echo<<"IndexBlock = "<<(*ptrIB)<<endl;
+        rpt::echo<<"N     = "<<N<<endl;
+        rpt::echo<<"init values = "<<initVals<<endl;
+        rpt::echo<<"Finished VectorInfo::read(cifstream & is) for "<<name<<endl;
     }
 }
 
@@ -348,7 +339,7 @@ void VectorInfo::write(ostream & os){
 *   writeToR                                                    *
 ***************************************************************/
 void VectorInfo::writeToR(ostream& os){
-    if (debug) cout<<"VectorInfo::writeToR for "<<this->name<<endl;
+    if (debug) rpt::echo<<"VectorInfo::writeToR for "<<this->name<<endl;
     if (!finlVals.allocated()) {
         finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
         finlVals = initVals;
@@ -365,7 +356,7 @@ void VectorInfo::writeToR(ostream& os){
  * @param os - the output stream.
  */
 void VectorInfo::writeFinalValsToR(ostream& os){
-    if (debug) cout<<"VectorInfo::writeFinalValsToR for "<<this->name<<endl;
+    if (debug) rpt::echo<<"VectorInfo::writeFinalValsToR for "<<this->name<<endl;
     if (!finlVals.allocated()) {
         finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
         finlVals = initVals;
@@ -382,9 +373,9 @@ void VectorInfo::writeFinalValsToR(ostream& os){
 ***************************************************************/
 void BoundedVectorInfo::setInitVals(dvector& x){
     if (debug) {
-        cout<<"starting BoundedVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
-        cout<<"input  x index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
-        cout<<"initVals index limits: "<<initVals.indexmin()<<cc<<initVals.indexmax()<<endl;
+        rpt::echo<<"starting BoundedVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
+        rpt::echo<<"input  x index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
+        rpt::echo<<"initVals index limits: "<<initVals.indexmin()<<cc<<initVals.indexmax()<<endl;
     }
     initVals = x;
     for (int i=1;i<=N;i++) {
@@ -392,8 +383,8 @@ void BoundedVectorInfo::setInitVals(dvector& x){
         if (initVals(i)>=upper) initVals(i) = upper-(upper-lower)/1000000.0; 
     }
     if (debug) {
-        cout<<"initVals: "<<initVals<<endl<<"vector x: "<<x<<endl;
-        cout<<"finished BoundedVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
+        rpt::echo<<"initVals: "<<initVals<<endl<<"vector x: "<<x<<endl;
+        rpt::echo<<"finished BoundedVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
     }
 }
 
@@ -413,15 +404,15 @@ void BoundedVectorInfo::readInitVals(cifstream & is){
 *   If phase<0, return initVals rather than resampling. \n
 ***************************************************************/
 dvector BoundedVectorInfo::drawInitVals(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting BoundedVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
     dvector smpl  = initVals;
     if (resample&&(phase>0)&&(pMPI->canSample())) {
         for (int i=1;i<=N;i++) smpl(i) = pMPI->drawSample(rng,priorParams,priorConsts);
     }
     if (debug) {
-        cout<<phase<<tb<<pMPI->canSample()<<endl;
-        cout<<"initVals: "<<initVals<<endl<<"samples: "<<smpl<<endl;
-        cout<<"finished BoundedVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
+        rpt::echo<<phase<<tb<<pMPI->canSample()<<endl;
+        rpt::echo<<"initVals: "<<initVals<<endl<<"samples: "<<smpl<<endl;
+        rpt::echo<<"finished BoundedVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
     }
     return smpl;
 }
@@ -432,7 +423,7 @@ dvector BoundedVectorInfo::drawInitVals(random_number_generator& rng, double vif
 ***************************************************************/
 dvar_vector BoundedVectorInfo::calcLogPrior(dvar_vector & pv){
     RETURN_ARRAYS_INCREMENT();
-    if (debug) cout<<"starting BoundedVectorInfo::calcLogPrior(pv) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorInfo::calcLogPrior(pv) for "<<name<<endl;
     dvar_vector lps;
     if (pMPI->canCalcLogPDF(pv)) {
         lps = pMPI->calcLogPDF(pv,priorParams,priorConsts);
@@ -446,11 +437,8 @@ dvar_vector BoundedVectorInfo::calcLogPrior(dvar_vector & pv){
         }
     }
     if (debug) {
-        cout<<"logPrior: "<<lps<<endl;
-        cout<<"finished BoundedVectorInfo::calcLogPriors(pv) for "<<name<<endl;
-        cout<<"Enter 1 to continue: ";
-        cin>>debug;
-        if (debug<0) exit(-1);
+        rpt::echo<<"logPrior: "<<lps<<endl;
+        rpt::echo<<"finished BoundedVectorInfo::calcLogPriors(pv) for "<<name<<endl;
     }
     RETURN_ARRAYS_DECREMENT();
     return lps;
@@ -462,7 +450,7 @@ dvar_vector BoundedVectorInfo::calcLogPrior(dvar_vector & pv){
  * mni, mxi, readVals + BoundedNumberInfo::read(is)
 ***************************************************************/
 void BoundedVectorInfo::read(cifstream & is){
-    if (debug) cout<<"Starting BoundedVectorInfo::read(cifstream & is) for "<<name<<endl;
+    if (debug) rpt::echo<<"Starting BoundedVectorInfo::read(cifstream & is) for "<<name<<endl;
     adstring str;
     is>>idxType;
     int imn; int imx; 
@@ -476,13 +464,10 @@ void BoundedVectorInfo::read(cifstream & is){
     BoundedNumberInfo::read(is);
     initVals = initVal;
     if (debug) {
-        cout<<"idxType    = "<<idxType<<endl;
-        cout<<"IndexBlock = "<<(*ptrIB)<<endl;
-        cout<<"N          = "<<N<<endl;
-        cout<<"Done BoundedVectorInfo::read(cifstream & is) for "<<name<<endl;
-        cout<<"Enter 1 to continue>> ";
-        cin>>debug;
-        if (debug<0) exit(-1);
+        rpt::echo<<"idxType    = "<<idxType<<endl;
+        rpt::echo<<"IndexBlock = "<<(*ptrIB)<<endl;
+        rpt::echo<<"N          = "<<N<<endl;
+        rpt::echo<<"Done BoundedVectorInfo::read(cifstream & is) for "<<name<<endl;
     }
 }
 
@@ -500,7 +485,7 @@ void BoundedVectorInfo::write(ostream & os){
 *   writeToR                                                    *
 ***************************************************************/
 void BoundedVectorInfo::writeToR(ostream& os){
-    if (debug) cout<<"BoundedVectorInfo::writeToR for "<<this->name<<endl;
+    if (debug) rpt::echo<<"BoundedVectorInfo::writeToR for "<<this->name<<endl;
     if (!finlVals.allocated()) {
         finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
         finlVals = initVals;
@@ -517,7 +502,7 @@ void BoundedVectorInfo::writeToR(ostream& os){
  * @param os - the output stream.
  */
 void BoundedVectorInfo::writeFinalValsToR(ostream& os){
-    if (debug) cout<<"BoundedVectorInfo::writeFinalValsToR for "<<this->name<<endl;
+    if (debug) rpt::echo<<"BoundedVectorInfo::writeFinalValsToR for "<<this->name<<endl;
     if (!finlVals.allocated()) {
         finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
         finlVals = initVals;
@@ -540,12 +525,12 @@ void DevsVectorInfo::calcDevs(void){
 *   Sets initial values.       \n
 ***************************************************************/
 void DevsVectorInfo::setInitVals(dvector& x){
-    if (debug) cout<<"starting DevsVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
     BoundedVectorInfo::setInitVals(x);//use parent class
     calcDevs();//ensure devs
     if (debug) {
-        cout<<"initVals: "<<initVals<<endl<<"vector x: "<<x<<endl;
-        cout<<"finished DevsVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
+        rpt::echo<<"initVals: "<<initVals<<endl<<"vector x: "<<x<<endl;
+        rpt::echo<<"finished DevsVectorInfo::setInitVals(dvector& x) for "<<name<<endl;
     }
 }
 /**
@@ -557,13 +542,13 @@ void DevsVectorInfo::setInitVals(dvector& x){
  */
 void DevsVectorInfo::setInitVals(param_init_bounded_vector & x){
     if (debug) {
-        cout<<"starting DevsVectorInfo::setInitVals(param_init_bounded_vector & x) for "<<name<<endl;
-        cout<<"input x  index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
-        cout<<"initVals index limits: "<<1<<cc<<N<<endl;
+        rpt::echo<<"starting DevsVectorInfo::setInitVals(param_init_bounded_vector & x) for "<<name<<endl;
+        rpt::echo<<"input x  index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
+        rpt::echo<<"initVals index limits: "<<1<<cc<<N<<endl;
     }
     initVals(1,N-1) = value(x);
     calcDevs();
-    if (debug) cout<<"finished DevsVectorInfo::setInitVals(param_init_bounded_vector & x) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorInfo::setInitVals(param_init_bounded_vector & x) for "<<name<<endl;
 }     
 
 /**
@@ -575,14 +560,14 @@ void DevsVectorInfo::setInitVals(param_init_bounded_vector & x){
  */
 void DevsVectorInfo::setFinalVals(param_init_bounded_vector & x){
     if (debug) {
-        cout<<"starting DevsVectorInfo::setFinalVals(param_init_bounded_vector & x) for "<<name<<endl;
-        cout<<"input x  index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
-        cout<<"initVals index limits: "<<1<<cc<<N<<endl;
+        rpt::echo<<"starting DevsVectorInfo::setFinalVals(param_init_bounded_vector & x) for "<<name<<endl;
+        rpt::echo<<"input x  index limits: "<<x.indexmin()<<cc<<x.indexmax()<<endl;
+        rpt::echo<<"initVals index limits: "<<1<<cc<<N<<endl;
     }
     if (!finlVals.allocated()) finlVals.allocate(initVals.indexmin(),initVals.indexmax());
     finlVals(1,N-1) = value(x);
     finlVals(N) = -sum(finlVals(1,N-1));
-    if (debug) cout<<"finished DevsVectorInfo::setFinalVals(param_init_bounded_vector & x) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorInfo::setFinalVals(param_init_bounded_vector & x) for "<<name<<endl;
 }     
 
 /***************************************************************
@@ -598,13 +583,13 @@ void DevsVectorInfo::readInitVals(cifstream & is){
 *   If phase<0, return initVals rather than resampling. \n
 ***************************************************************/
 dvector DevsVectorInfo::drawInitVals(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting DevsVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
     dvector smpl = BoundedVectorInfo::drawInitVals(rng,vif);
     smpl(N) = -sum(smpl(1,(N-1)));
     if (debug) {
-        cout<<phase<<tb<<pMPI->canSample()<<endl;
-        cout<<"initVals: "<<initVals<<endl<<"samples: "<<smpl<<endl;
-        cout<<"finished DevsVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
+        rpt::echo<<phase<<tb<<pMPI->canSample()<<endl;
+        rpt::echo<<"initVals: "<<initVals<<endl<<"samples: "<<smpl<<endl;
+        rpt::echo<<"finished DevsVectorInfo::drawInitVals(random_number_generator& rng) for "<<name<<endl;
     }
     return smpl;
 }
@@ -615,17 +600,14 @@ dvector DevsVectorInfo::drawInitVals(random_number_generator& rng, double vif){
  * mni, mxi, readVals + BoundedNumberInfo::read(is)
 ***************************************************************/
 void DevsVectorInfo::read(cifstream & is){
-    if (debug) cout<<"Starting DevsVectorInfo::read(cifstream & is) for "<<name<<endl;
+    if (debug) rpt::echo<<"Starting DevsVectorInfo::read(cifstream & is) for "<<name<<endl;
     BoundedVectorInfo::read(is);
     initVals = 0.0;
     if (debug) {
-        cout<<"idxType    = "<<idxType<<endl;
-        cout<<"IndexBlock = "<<(*ptrIB)<<endl;
-        cout<<"N          = "<<N<<endl;
-        cout<<"Done DevsVectorInfo::read(cifstream & is) for "<<name<<endl;
-        cout<<"Enter 1 to continue>> ";
-        cin>>debug;
-        if (debug<0) exit(-1);
+        rpt::echo<<"idxType    = "<<idxType<<endl;
+        rpt::echo<<"IndexBlock = "<<(*ptrIB)<<endl;
+        rpt::echo<<"N          = "<<N<<endl;
+        rpt::echo<<"Done DevsVectorInfo::read(cifstream & is) for "<<name<<endl;
     }
 }
 
@@ -633,7 +615,7 @@ void DevsVectorInfo::read(cifstream & is){
 *   writeToR                                                    *
 ***************************************************************/
 void DevsVectorInfo::writeToR(ostream& os){
-    if (debug) cout<<"DevsVectorInfo::writeToR for "<<this->name<<endl;
+    if (debug) rpt::echo<<"DevsVectorInfo::writeToR for "<<this->name<<endl;
     if (!finlVals.allocated()) {
         finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
         finlVals = initVals;
@@ -650,7 +632,7 @@ void DevsVectorInfo::writeToR(ostream& os){
  * @param os - the output stream.
  */
 void DevsVectorInfo::writeFinalValsToR(ostream& os){
-    if (debug) cout<<"DevsVectorInfo::writeFinalValsToR for "<<this->name<<endl;
+    if (debug) rpt::echo<<"DevsVectorInfo::writeFinalValsToR for "<<this->name<<endl;
     if (!finlVals.allocated()) {
         finlVals.allocate(initVals.indexmin(),initVals.indexmax()); 
         finlVals = initVals;
@@ -665,24 +647,24 @@ void DevsVectorInfo::writeFinalValsToR(ostream& os){
 *   deallocation                                               *
 ***************************************************************/
 void NumberVectorInfo::deallocate(void){
-    if (debug) cout<<"starting NumberVectorInfo::deallocate(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::deallocate(void) "<<this<<endl;
     if (ppNIs) {
         for (int p=0;p<nNIs;p++) if (ppNIs[p]!=0) delete ppNIs[p];
         delete[] ppNIs;
         ppNIs = 0;
     }
-    if (debug) cout<<"finished NumberVectorInfo::deallocate(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::deallocate(void) "<<this<<endl;
 }
 
 /***************************************************************
 *   get phase info                                             *
 ***************************************************************/
 ivector NumberVectorInfo::getPhases(void){
-    if (debug) cout<<"starting NumberVectorInfo::getPhases(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::getPhases(void) "<<this<<endl;
     ivector phases(1,nNIs);
     phases.initialize();
     if (ppNIs) for (int i=1;i<=nNIs;i++) phases(i) = ppNIs[i-1]->getPhase();
-    if (debug) cout<<"finished NumberVectorInfo::getPhases(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::getPhases(void) "<<this<<endl;
     return phases;
 }
 
@@ -690,10 +672,10 @@ ivector NumberVectorInfo::getPhases(void){
 *   get likelihood weights for log prior probabilities         *
 ***************************************************************/
 dvector NumberVectorInfo::getPriorWgts(){
-    if (debug) cout<<"starting NumberVectorInfo::getPriorWgts()"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::getPriorWgts()"<<this<<endl;
     dvector wts(1,nNIs);
     for (int i=1;i<=nNIs;i++) wts(i) = ppNIs[i-1]->getPriorWgt();
-    if (debug) cout<<"finished NumberVectorInfo::getPriorWgts()"<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::getPriorWgts()"<<this<<endl;
     return wts;
 }
 
@@ -701,10 +683,10 @@ dvector NumberVectorInfo::getPriorWgts(){
 *   Get initial parameter values.                              *
 ***************************************************************/
 dvector NumberVectorInfo::getInitVals(){
-    if (debug) cout<<"starting NumberVectorInfo::getInitVals()"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::getInitVals()"<<this<<endl;
     dvector initVals(1,nNIs);
     for (int i=1;i<=nNIs;i++) initVals(i) = ppNIs[i-1]->getInitVal();
-    if (debug) cout<<"finished NumberVectorInfo::getInitVals()"<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::getInitVals()"<<this<<endl;
     return initVals;
 }
 
@@ -712,28 +694,28 @@ dvector NumberVectorInfo::getInitVals(){
 *   Set initial parameter values.                              *
 ***************************************************************/
 void NumberVectorInfo::setInitVals(param_init_number_vector& x){
-    if (debug) cout<<"starting NumberVectorInfo::setInitVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::setInitVals(x)"<<this<<endl;
     for (int i=1;i<=nNIs;i++) ppNIs[i-1]->setInitVal(x(i));
-    if (debug) cout<<"finished NumberVectorInfo::setInitVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::setInitVals(x)"<<this<<endl;
 }
 
 /***************************************************************
 *   Set final parameter values.                              *
 ***************************************************************/
 void NumberVectorInfo::setFinalVals(param_init_number_vector& x){
-    if (debug) cout<<"starting NumberVectorInfo::setFinalVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::setFinalVals(x)"<<this<<endl;
     for (int i=1;i<=nNIs;i++) ppNIs[i-1]->setFinalVal(x(i));
-    if (debug) cout<<"finished NumberVectorInfo::setFinalVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::setFinalVals(x)"<<this<<endl;
 }
 
 /***************************************************************
 *   Draw initial parameter values.                             *
 ***************************************************************/
 dvector NumberVectorInfo::drawInitVals(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting NumberVectorInfo::drawInitVals(random_number_generator& rng)"<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::drawInitVals(random_number_generator& rng)"<<this<<endl;
     dvector initVals(1,nNIs);
     for (int i=1;i<=nNIs;i++) initVals(i) = ppNIs[i-1]->drawInitVal(rng,vif);
-    if (debug) cout<<"finished NumberVectorInfo::drawInitVals(random_number_generator& rng)"<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::drawInitVals(random_number_generator& rng)"<<this<<endl;
     return initVals;
 }
 
@@ -742,7 +724,7 @@ dvector NumberVectorInfo::drawInitVals(random_number_generator& rng, double vif)
 ***************************************************************/
 dvar_vector NumberVectorInfo::calcLogPriors(dvar_vector & pv){
     RETURN_ARRAYS_INCREMENT();
-    if (debug) cout<<"starting NumberVectorInfo::calcLogPriors(pv)"<<this<<tb<<name<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::calcLogPriors(pv)"<<this<<tb<<name<<endl;
     dvar_vector lps(pv.indexmin(),pv.indexmax());
     lps.initialize();
     if (ppNIs) {
@@ -753,11 +735,8 @@ dvar_vector NumberVectorInfo::calcLogPriors(dvar_vector & pv){
         }
     }
     if (debug) {
-        cout<<"logPriors: "<<lps<<endl;
-        cout<<"finished NumberVectorInfo::calcLogPriors(pv)"<<this<<tb<<name<<endl;
-        cout<<"Enter 1 to continue: ";
-        cin>>debug;
-        if (debug<0) exit(-1);
+        rpt::echo<<"logPriors: "<<lps<<endl;
+        rpt::echo<<"finished NumberVectorInfo::calcLogPriors(pv)"<<this<<tb<<name<<endl;
     }
     RETURN_ARRAYS_DECREMENT();
     return lps;
@@ -767,9 +746,9 @@ dvar_vector NumberVectorInfo::calcLogPriors(dvar_vector & pv){
 *   Read from stream.                                          *
 ***************************************************************/
 void NumberVectorInfo::read(cifstream & is){
-    if (debug) cout<<"starting NumberVectorInfo::read(cifstream & is) "<<this<<endl;
+    if (debug) rpt::echo<<"starting NumberVectorInfo::read(cifstream & is) "<<this<<endl;
     is>>nNIs;
-    if (debug) cout<<"reading info for parameter vector"<<tb<<name<<tb<<nNIs<<endl;
+    if (debug) rpt::echo<<"reading info for parameter vector"<<tb<<name<<tb<<nNIs<<endl;
     if (ppNIs) deallocate();
     if (nNIs>0) {
         ppNIs = new NumberInfo*[nNIs];
@@ -780,10 +759,10 @@ void NumberVectorInfo::read(cifstream & is){
             is>>(*ppNIs[idx]);
         }
         if (debug) {
-            for (int p=0;p<nNIs;p++) cout<<(*ppNIs[p])<<endl;
+            for (int p=0;p<nNIs;p++) rpt::echo<<(*ppNIs[p])<<endl;
         }
     }
-    if (debug) cout<<"finished NumberVectorInfo::read(cifstream & is) "<<this<<endl;
+    if (debug) rpt::echo<<"finished NumberVectorInfo::read(cifstream & is) "<<this<<endl;
 }
 
 /***************************************************************
@@ -843,11 +822,11 @@ BoundedNumberInfo* BoundedNumberVectorInfo::operator[](int i){
 *   get lower bounds for parameters as vector                  *
 ***************************************************************/
 dvector BoundedNumberVectorInfo::getLowerBounds(void){
-    if (debug) cout<<"starting BoundedNumberVectorInfo::getLowerBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberVectorInfo::getLowerBounds(void) "<<this<<endl;
     dvector lbs(1,nNIs);
     lbs.initialize();
     if (ppNIs) for (int i=1;i<=nNIs;i++) lbs(i) = (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->getLowerBound();
-    if (debug) cout<<"finished BoundedNumberVectorInfo::getLowerBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberVectorInfo::getLowerBounds(void) "<<this<<endl;
     return lbs;
 }
 
@@ -855,11 +834,11 @@ dvector BoundedNumberVectorInfo::getLowerBounds(void){
 *   get upper bounds for parameters as vector                  *
 ***************************************************************/
 dvector BoundedNumberVectorInfo::getUpperBounds(void){
-    if (debug) cout<<"starting BoundedNumberVectorInfo::getUpperBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberVectorInfo::getUpperBounds(void) "<<this<<endl;
     dvector ubs(1,nNIs);
     ubs.initialize();
     if (ppNIs) for (int i=1;i<=nNIs;i++) ubs(i) = (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->getUpperBound();
-    if (debug) cout<<"finished BoundedNumberVectorInfo::getUpperBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberVectorInfo::getUpperBounds(void) "<<this<<endl;
     return ubs;
 }
 
@@ -867,28 +846,28 @@ dvector BoundedNumberVectorInfo::getUpperBounds(void){
 *   Set initial parameter values.                              *
 ***************************************************************/
 void BoundedNumberVectorInfo::setInitVals(param_init_bounded_number_vector& x){
-    if (debug) cout<<"starting BoundedNumberVectorInfo::setInitVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberVectorInfo::setInitVals(x)"<<this<<endl;
     for (int i=1;i<=nNIs;i++) (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->setInitVal(x(i));
-    if (debug) cout<<"finished BoundedNumberVectorInfo::setInitVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberVectorInfo::setInitVals(x)"<<this<<endl;
 }
 
 /***************************************************************
 *   Set final parameter values.                              *
 ***************************************************************/
 void BoundedNumberVectorInfo::setFinalVals(param_init_bounded_number_vector& x){
-    if (debug) cout<<"starting BoundedNumberVectorInfo::setFinalVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberVectorInfo::setFinalVals(x)"<<this<<endl;
     for (int i=1;i<=nNIs;i++) (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->setFinalVal(x(i));
-    if (debug) cout<<"finished BoundedNumberVectorInfo::setFinalVals(x)"<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberVectorInfo::setFinalVals(x)"<<this<<endl;
 }
 
 /***************************************************************
 *   Draw initial parameter values.                             *
 ***************************************************************/
 dvector BoundedNumberVectorInfo::drawInitVals(random_number_generator& rng, double vif){
-    if (debug) cout<<"starting BoundedNumberVectorInfo::drawInitVals(random_number_generator& rng,vif)"<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberVectorInfo::drawInitVals(random_number_generator& rng,vif)"<<this<<endl;
     dvector initVals(1,nNIs);
     for (int i=1;i<=nNIs;i++) initVals(i) = (static_cast<BoundedNumberInfo*>(ppNIs[i-1]))->drawInitVal(rng,vif);
-    if (debug) cout<<"finished BoundedNumberVectorInfo::drawInitVals(random_number_generator& rng,vif)"<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberVectorInfo::drawInitVals(random_number_generator& rng,vif)"<<this<<endl;
     return initVals;
 }
 
@@ -896,9 +875,9 @@ dvector BoundedNumberVectorInfo::drawInitVals(random_number_generator& rng, doub
 *   Read from stream.                                          *
 ***************************************************************/
 void BoundedNumberVectorInfo::read(cifstream & is){
-    if (debug) cout<<"starting BoundedNumberVectorInfo::read(cifstream & is) "<<name<<endl;
+    if (debug) rpt::echo<<"starting BoundedNumberVectorInfo::read(cifstream & is) "<<name<<endl;
     is>>nNIs;
-    if (debug) cout<<"nNIs ="<<tb<<nNIs<<endl;
+    if (debug) rpt::echo<<"nNIs ="<<tb<<nNIs<<endl;
     if (ppNIs) deallocate();
     if (nNIs>0) {
         int idx;
@@ -910,30 +889,32 @@ void BoundedNumberVectorInfo::read(cifstream & is){
                 is>>(*pBNI);
                 ppNIs[idx-1] = pBNI;
             } else {
-                cout<<"Error reading file "<<is.get_file_name()<<endl;
-                cout<<"for bounded parameter '"<<name<<"' defined for "<<nNIs<<" values."<<endl;
-                cout<<"Tried to read "<<idx<<"th bounded number";
+                rpt::echo<<"Error reading file "<<is.get_file_name()<<endl;
+                rpt::echo<<"for bounded parameter '"<<name<<"' defined for "<<nNIs<<" values."<<endl;
+                rpt::echo<<"Tried to read "<<idx<<"th bounded number";
+                cout<<"Aborting. See EchoOut.dat for details."<<endl;
+                exit(-1.0);
             }
         }
         if (debug) {
-            for (int p=0;p<nNIs;p++) cout<<p+1<<tb<<(*ppNIs[p])<<endl;
+            for (int p=0;p<nNIs;p++) rpt::echo<<p+1<<tb<<(*ppNIs[p])<<endl;
         }
     }
-    if (debug) cout<<"finished BoundedNumberVectorInfo::read(cifstream & is) "<<name<<endl;
+    if (debug) rpt::echo<<"finished BoundedNumberVectorInfo::read(cifstream & is) "<<name<<endl;
 }
 
 /***************************************************************
 *   Write to stream.                                           *
 ***************************************************************/
 void BoundedNumberVectorInfo::write(ostream & os){
-    if (debug) cout<<"Starting BoundedNumberVectorInfo::write(ostream & os) for "<<name<<endl;
+    if (debug) rpt::echo<<"Starting BoundedNumberVectorInfo::write(ostream & os) for "<<name<<endl;
     os<<tb<<nNIs<<"  #number of bounded parameters"<<endl;
     os<<"#id lb ub jitter? init_val phase resample? prior_wgt prior_type prior_params prior_consts"<<endl;
     if (nNIs){
         for (int p=0;p<(nNIs-1);p++) os<<(p+1)<<tb<<(*ppNIs[p])<<endl;
         os<<nNIs<<tb<<(*ppNIs[nNIs-1]);
     }
-    if (debug) cout<<endl<<"Finished BoundedNumberVectorInfo::write(ostream & os)"<<endl;
+    if (debug) rpt::echo<<endl<<"Finished BoundedNumberVectorInfo::write(ostream & os)"<<endl;
 }
 
 /***************************************************************
@@ -957,24 +938,24 @@ void BoundedNumberVectorInfo::writeToR(ostream& os, adstring nm, int indent){
 *   deallocation                                               *
 ***************************************************************/
 void VectorVectorInfo::deallocate(void){
-    if (debug) cout<<"starting VectorVectorInfo::deallocate(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorVectorInfo::deallocate(void) for "<<name<<endl;
     if (ppVIs) {
         for (int p=0;p<nVIs;p++) if (ppVIs[p]!=0) delete ppVIs[p];
         delete[] ppVIs;
         ppVIs = 0;
     }
-    if (debug) cout<<"finished VectorVectorInfo::deallocate(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished VectorVectorInfo::deallocate(void) for "<<name<<endl;
 }
 
 /***************************************************************
 *   get min indices                                            *
 ***************************************************************/
 ivector VectorVectorInfo::getMinIndices(void){
-    if (debug) cout<<"starting VectorVectorInfo::getMinIndices(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorVectorInfo::getMinIndices(void) for "<<name<<endl;
     ivector idxs(1,nVIs);
     idxs.initialize();
     if (ppVIs) idxs=1;
-    if (debug) cout<<"finished VectorVectorInfo::getMinIndices(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished VectorVectorInfo::getMinIndices(void) for "<<name<<endl;
     return idxs;
 }
 
@@ -982,11 +963,11 @@ ivector VectorVectorInfo::getMinIndices(void){
 *   get max indices                                            *
 ***************************************************************/
 ivector VectorVectorInfo::getMaxIndices(void){
-    if (debug) cout<<"starting VectorVectorInfo::getMaxIndices(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorVectorInfo::getMaxIndices(void) for "<<name<<endl;
     ivector idxs(1,nVIs);
     idxs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) idxs(i) = ppVIs[i-1]->getSize();
-    if (debug) cout<<"finished VectorVectorInfo::getMaxIndices(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished VectorVectorInfo::getMaxIndices(void) for "<<name<<endl;
     return idxs;
 }
 
@@ -994,11 +975,11 @@ ivector VectorVectorInfo::getMaxIndices(void){
 *   get phase info                                             *
 ***************************************************************/
 ivector VectorVectorInfo::getPhases(void){
-    if (debug) cout<<"starting VectorVectorInfo::getPhases(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorVectorInfo::getPhases(void) for "<<name<<endl;
     ivector phases(1,nVIs);
     phases.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) phases(i) = ppVIs[i-1]->getPhase();
-    if (debug) cout<<"finished VectorVectorInfo::getPhases(void) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished VectorVectorInfo::getPhases(void) for "<<name<<endl;
     return phases;
 }
 
@@ -1006,10 +987,10 @@ ivector VectorVectorInfo::getPhases(void){
 *   get likelihood weights for log prior probabilities         *
 ***************************************************************/
 dvector VectorVectorInfo::getPriorWgts(){
-    if (debug) cout<<"starting VectorVectorInfo::getPriorWgts() for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorVectorInfo::getPriorWgts() for "<<name<<endl;
     dvector wts(1,nVIs);
     for (int i=1;i<=nVIs;i++) wts(i) = ppVIs[i-1]->getPriorWgt();
-    if (debug) cout<<"finished VectorVectorInfo::getPriorWgts() for "<<name<<endl;
+    if (debug) rpt::echo<<"finished VectorVectorInfo::getPriorWgts() for "<<name<<endl;
     return wts;
 }
 
@@ -1017,9 +998,9 @@ dvector VectorVectorInfo::getPriorWgts(){
 *   Read from stream.                                          *
 ***************************************************************/
 void VectorVectorInfo::read(cifstream & is){
-    if (debug) cout<<"starting VectorVectorInfo::read(cifstream & is) for "<<name<<endl;
+    if (debug) rpt::echo<<"starting VectorVectorInfo::read(cifstream & is) for "<<name<<endl;
     is>>nVIs;
-    if (debug) cout<<"reading info for parameter vector"<<tb<<name<<tb<<nVIs<<endl;
+    if (debug) rpt::echo<<"reading info for parameter vector"<<tb<<name<<tb<<nVIs<<endl;
     if (ppVIs) deallocate();
     if (nVIs>0) {
         ppVIs = new VectorInfo*[nVIs];
@@ -1030,18 +1011,28 @@ void VectorVectorInfo::read(cifstream & is){
                 ppVIs[idx-1] = new VectorInfo();
                 is>>(*ppVIs[idx-1]);
             } else {
-                cout<<"Error in VectorVectorInfo::read(cifstream & is) for "<<name<<endl;
-                cout<<"Error reading '"<<name<<"' from "<<is.get_file_name()<<endl;
-                cout<<"Invalid index "<<idx<<". Must be >0 and <="<<nVIs<<endl;
-                cout<<"Aborting..."<<endl;
+                rpt::echo<<"Error in VectorVectorInfo::read(cifstream & is) for "<<name<<endl;
+                rpt::echo<<"Error reading '"<<name<<"' from "<<is.get_file_name()<<endl;
+                rpt::echo<<"Invalid index "<<idx<<". Must be >0 and <="<<nVIs<<endl;
+                rpt::echo<<"Aborting..."<<endl;
+                cout<<"Aborting. See EchoOut.dat for details."<<endl;
                 exit(-1);
             }
         }
+        //read vector values, if flagged
+        for (int p=0;p<nVIs;p++) {
+            VectorInfo* pVI = ppVIs[p];
+            if (pVI->readVals) {
+                if (debug) rpt::echo<<"Reading vector values for "<<p+1<<"th vector"<<endl;
+                pVI->readInitVals(is);
+                if (debug) rpt::echo<<pVI->getInitVals()<<endl;
+            }
+        }
         if (debug) {
-            for (int p=0;p<nVIs;p++) cout<<(*ppVIs[p])<<endl;
+            for (int p=0;p<nVIs;p++) rpt::echo<<(*ppVIs[p])<<endl;
         }
     }
-    if (debug) cout<<"finished VectorVectorInfo::read(cifstream & is) for "<<name<<endl;
+    if (debug) rpt::echo<<"finished VectorVectorInfo::read(cifstream & is) for "<<name<<endl;
 }
 
 /***************************************************************
@@ -1051,8 +1042,11 @@ void VectorVectorInfo::write(ostream & os){
     os<<tb<<nVIs<<"  #number of parameters"<<endl;
     os<<"#id idx.type  idx.block  read? init_val phase resample? prior_wgt prior_type prior_params prior_consts"<<endl;
     if (nVIs){
-        for (int p=0;p<(nVIs-1);p++) os<<(p+1)<<tb<<(*ppVIs[p])<<endl;
-        os<<nVIs<<tb<<(*ppVIs[nVIs-1]);
+        for (int p=0;p<=(nVIs-1);p++) os<<(p+1)<<tb<<(*ppVIs[p])<<endl;
+        os<<"#--initial values read in (index  values):";
+        for (int p=0;p<=(nVIs-1);p++) {
+            os<<endl<<(p+1)<<tb<<(*ppVIs[p]);
+        }
     }
 }
 
@@ -1092,11 +1086,11 @@ void VectorVectorInfo::writeFinalValsToR(ostream& os){
 *   get lower bounds for parameters as vector                  *
 ***************************************************************/
 dvector BoundedVectorVectorInfo::getLowerBounds(void){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
     dvector lbs(1,nVIs);
     lbs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) lbs(i) = (ppVIs[i-1])->getLowerBound();
-    if (debug) cout<<"finished BoundedVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
     return lbs;
 }
 
@@ -1104,11 +1098,11 @@ dvector BoundedVectorVectorInfo::getLowerBounds(void){
 *   get upper bounds for parameters as vector                  *
 ***************************************************************/
 dvector BoundedVectorVectorInfo::getUpperBounds(void){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
     dvector ubs(1,nVIs);
     ubs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) ubs(i) = (ppVIs[i-1])->getUpperBound();
-    if (debug) cout<<"finished BoundedVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
     return ubs;
 }
 
@@ -1116,9 +1110,9 @@ dvector BoundedVectorVectorInfo::getUpperBounds(void){
 *   Read from stream.                                          *
 ***************************************************************/
 void BoundedVectorVectorInfo::read(cifstream & is){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::read(cifstream & is) "<<name<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::read(cifstream & is) "<<name<<endl;
     is>>nVIs;
-    if (debug) cout<<"reading info for parameter vector"<<tb<<name<<tb<<nVIs<<endl;
+    if (debug) rpt::echo<<"reading info for parameter vector"<<tb<<name<<tb<<nVIs<<endl;
     if (ppVIs) deallocate();
     if (nVIs>0) {
         int idx;
@@ -1126,22 +1120,32 @@ void BoundedVectorVectorInfo::read(cifstream & is){
         for (int p=0;p<nVIs;p++) {
             is>>idx;
             if ((idx>0)&&(idx<=nVIs)){
-                BoundedVectorInfo* pBNI = new BoundedVectorInfo();
-                is>>(*pBNI);
-            ppVIs[idx-1] = pBNI;
+                BoundedVectorInfo* pBVI = new BoundedVectorInfo();
+                is>>(*pBVI);
+            ppVIs[idx-1] = pBVI;
             } else {
-                cout<<"Error in BoundedVectorVectorInfo::read(cifstream & is)"<<endl;
-                cout<<"Error reading '"<<name<<"' from "<<is.get_file_name()<<endl;
-                cout<<"Invalid index "<<idx<<". Must be >0 and <="<<nVIs<<endl;
-                cout<<"Aborting..."<<endl;
+                rpt::echo<<"Error in BoundedVectorVectorInfo::read(cifstream & is)"<<endl;
+                rpt::echo<<"Error reading '"<<name<<"' from "<<is.get_file_name()<<endl;
+                rpt::echo<<"Invalid index "<<idx<<". Must be >0 and <="<<nVIs<<endl;
+                rpt::echo<<"Aborting..."<<endl;
+                cout<<"Aborting. See EchoOut.dat for details"<<endl;
                 exit(-1);
             }
         }
+        //read vector values, if flagged
+        for (int p=0;p<nVIs;p++) {
+            BoundedVectorInfo* pVI = ppVIs[p];
+            if (pVI->readVals) {
+                if (debug) rpt::echo<<"Reading vector values for "<<p+1<<"th bounded vector"<<endl;
+                pVI->readInitVals(is);
+                if (debug) rpt::echo<<pVI->getInitVals()<<endl;
+            }
+        }
         if (debug) {
-            for (int p=0;p<nVIs;p++) cout<<p+1<<tb<<(*ppVIs[p])<<endl;
+            for (int p=0;p<nVIs;p++) rpt::echo<<p+1<<tb<<(*ppVIs[p])<<endl;
         }
     }
-    if (debug) cout<<"finished BoundedVectorVectorInfo::read(cifstream & is) "<<name<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::read(cifstream & is) "<<name<<endl;
 }
 
 /***************************************************************
@@ -1151,8 +1155,11 @@ void BoundedVectorVectorInfo::write(ostream & os){
     os<<tb<<nVIs<<"  #number of bounded parameters"<<endl;
     os<<"#id   idx.block   read? lb ub jitter? init_val phase resample? prior_wgt prior_type prior_params prior_consts"<<endl;
     if (nVIs){
-        for (int p=0;p<(nVIs-1);p++) os<<(p+1)<<tb<<(*ppVIs[p])<<endl;
-        os<<nVIs<<tb<<(*ppVIs[nVIs-1]);
+        for (int p=0;p<=(nVIs-1);p++) os<<(p+1)<<tb<<(*ppVIs[p])<<endl;
+        os<<"#--initial values read in (index  values):";
+        for (int p=0;p<=(nVIs-1);p++) {
+            os<<endl<<(p+1)<<tb<<(*ppVIs[p]);
+        }
     }
 }
 
@@ -1187,24 +1194,24 @@ void BoundedVectorVectorInfo::writeFinalValsToR(ostream& os){
 *   deallocation                                               *
 ***************************************************************/
 void BoundedVectorVectorInfo::deallocate(void){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::deallocate(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::deallocate(void) "<<this<<endl;
     if (ppVIs) {
         for (int p=0;p<nVIs;p++) if (ppVIs[p]!=0) delete ppVIs[p];
         delete[] ppVIs;
         ppVIs = 0;
     }
-    if (debug) cout<<"finished BoundedVectorVectorInfo::deallocate(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::deallocate(void) "<<this<<endl;
 }
 
 /***************************************************************
 *   get min indices                                            *
 ***************************************************************/
 ivector BoundedVectorVectorInfo::getMinIndices(void){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::getMinIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::getMinIndices(void) "<<this<<endl;
     ivector idxs(1,nVIs);
     idxs.initialize();
     if (ppVIs) idxs=1;
-    if (debug) cout<<"finished BoundedVectorVectorInfo::getMinIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::getMinIndices(void) "<<this<<endl;
     return idxs;
 }
 
@@ -1212,11 +1219,11 @@ ivector BoundedVectorVectorInfo::getMinIndices(void){
 *   get max indices                                            *
 ***************************************************************/
 ivector BoundedVectorVectorInfo::getMaxIndices(void){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
     ivector idxs(1,nVIs);
     idxs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) idxs(i) = ppVIs[i-1]->getSize();
-    if (debug) cout<<"finished BoundedVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
     return idxs;
 }
 
@@ -1224,11 +1231,11 @@ ivector BoundedVectorVectorInfo::getMaxIndices(void){
 *   get phase info                                             *
 ***************************************************************/
 ivector BoundedVectorVectorInfo::getPhases(void){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::getPhases(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::getPhases(void) "<<this<<endl;
     ivector phases(1,nVIs);
     phases.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) phases(i) = ppVIs[i-1]->getPhase();
-    if (debug) cout<<"finished BoundedVectorVectorInfo::getPhases(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::getPhases(void) "<<this<<endl;
     return phases;
 }
 
@@ -1236,10 +1243,10 @@ ivector BoundedVectorVectorInfo::getPhases(void){
 *   get likelihood weights for log prior probabilities         *
 ***************************************************************/
 dvector BoundedVectorVectorInfo::getPriorWgts(){
-    if (debug) cout<<"starting BoundedVectorVectorInfo::getPriorWgts()"<<this<<endl;
+    if (debug) rpt::echo<<"starting BoundedVectorVectorInfo::getPriorWgts()"<<this<<endl;
     dvector wts(1,nVIs);
     for (int i=1;i<=nVIs;i++) wts(i) = ppVIs[i-1]->getPriorWgt();
-    if (debug) cout<<"finished BoundedVectorVectorInfo::getPriorWgts()"<<this<<endl;
+    if (debug) rpt::echo<<"finished BoundedVectorVectorInfo::getPriorWgts()"<<this<<endl;
     return wts;
 }
 ////////////////////////////BoundedVectorVectorInfo/////////////////////////////////
@@ -1251,11 +1258,11 @@ dvector BoundedVectorVectorInfo::getPriorWgts(){
 *   get lower bounds for parameters as vector                  *
 ***************************************************************/
 dvector DevsVectorVectorInfo::getLowerBounds(void){
-    if (debug) cout<<"starting DevsVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
     dvector lbs(1,nVIs);
     lbs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) lbs(i) = (ppVIs[i-1])->getLowerBound();
-    if (debug) cout<<"finished DevsVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::getLowerBounds(void) "<<this<<endl;
     return lbs;
 }
 
@@ -1263,11 +1270,11 @@ dvector DevsVectorVectorInfo::getLowerBounds(void){
 *   get upper bounds for parameters as vector                  *
 ***************************************************************/
 dvector DevsVectorVectorInfo::getUpperBounds(void){
-    if (debug) cout<<"starting DevsVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
     dvector ubs(1,nVIs);
     ubs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) ubs(i) = (ppVIs[i-1])->getUpperBound();
-    if (debug) cout<<"finished DevsVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::getUpperBounds(void) "<<this<<endl;
     return ubs;
 }
 
@@ -1275,9 +1282,9 @@ dvector DevsVectorVectorInfo::getUpperBounds(void){
 *   Read from stream.                                          *
 ***************************************************************/
 void DevsVectorVectorInfo::read(cifstream & is){
-    if (debug) cout<<"starting DevsVectorVectorInfo::read(cifstream & is) "<<name<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::read(cifstream & is) "<<name<<endl;
     is>>nVIs;
-    if (debug) cout<<"reading info for devs vector"<<tb<<name<<tb<<nVIs<<endl;
+    if (debug) rpt::echo<<"reading info for devs vector"<<tb<<name<<tb<<nVIs<<endl;
     if (ppVIs) deallocate();
     if (nVIs>0) {
         int idx;
@@ -1287,20 +1294,30 @@ void DevsVectorVectorInfo::read(cifstream & is){
             if ((idx>0)&&(idx<=nVIs)){
                 DevsVectorInfo* pDVI = new DevsVectorInfo();
                 is>>(*pDVI);
-            ppVIs[idx-1] = pDVI;
+                ppVIs[idx-1] = pDVI;
             } else {
-                cout<<"Error in DevsVectorVectorInfo::read(cifstream & is)"<<endl;
-                cout<<"Error reading '"<<name<<"' from "<<is.get_file_name()<<endl;
-                cout<<"Invalid index "<<idx<<". Must be >0 and <="<<nVIs<<endl;
-                cout<<"Aborting..."<<endl;
+                rpt::echo<<"Error in DevsVectorVectorInfo::read(cifstream & is)"<<endl;
+                rpt::echo<<"Error reading '"<<name<<"' from "<<is.get_file_name()<<endl;
+                rpt::echo<<"Invalid index "<<idx<<". Must be >0 and <="<<nVIs<<endl;
+                rpt::echo<<"Aborting..."<<endl;
+                cout<<"Aborting. See EchoOut.dat for details"<<endl;
                 exit(-1);
             }
         }
+        //read vector values, if flagged
+        for (int p=0;p<nVIs;p++) {
+            DevsVectorInfo* pVI = ppVIs[p];
+            if (pVI->readVals) {
+                if (debug) rpt::echo<<"Reading vector values for "<<p+1<<"th devs vector"<<endl;
+                pVI->readInitVals(is);
+                if (debug) rpt::echo<<pVI->getInitVals()<<endl;
+            }
+        }
         if (debug) {
-            for (int p=0;p<nVIs;p++) cout<<p+1<<tb<<(*ppVIs[p])<<endl;
+            for (int p=0;p<nVIs;p++) rpt::echo<<p+1<<tb<<(*ppVIs[p])<<endl;
         }
     }
-    if (debug) cout<<"finished DevsVectorVectorInfo::read(cifstream & is) "<<name<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::read(cifstream & is) "<<name<<endl;
 }
 
 /***************************************************************
@@ -1310,8 +1327,11 @@ void DevsVectorVectorInfo::write(ostream & os){
     os<<tb<<nVIs<<"  #number of devs vectors"<<endl;
     os<<"#id   idx.block   read? lb ub jitter? init_val phase resample? prior_wgt prior_type prior_params prior_consts"<<endl;
     if (nVIs){
-        for (int p=0;p<(nVIs-1);p++) os<<(p+1)<<tb<<(*ppVIs[p])<<endl;
-        os<<nVIs<<tb<<(*ppVIs[nVIs-1]);
+        for (int p=0;p<=(nVIs-1);p++) os<<(p+1)<<tb<<(*ppVIs[p])<<endl;
+        os<<"#--initial values read in (index  values):";
+        for (int p=0;p<=(nVIs-1);p++) {
+            os<<endl<<(p+1)<<tb<<(*ppVIs[p]);
+        }
     }
 }
 
@@ -1346,24 +1366,24 @@ void DevsVectorVectorInfo::writeFinalValsToR(ostream& os){
 *   deallocation                                               *
 ***************************************************************/
 void DevsVectorVectorInfo::deallocate(void){
-    if (debug) cout<<"starting DevsVectorVectorInfo::deallocate(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::deallocate(void) "<<this<<endl;
     if (ppVIs) {
         for (int p=0;p<nVIs;p++) if (ppVIs[p]!=0) delete ppVIs[p];
         delete[] ppVIs;
         ppVIs = 0;
     }
-    if (debug) cout<<"finished DevsVectorVectorInfo::deallocate(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::deallocate(void) "<<this<<endl;
 }
 
 /***************************************************************
 *   get min indices                                            *
 ***************************************************************/
 ivector DevsVectorVectorInfo::getMinIndices(void){
-    if (debug) cout<<"starting DevsVectorVectorInfo::getMinIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::getMinIndices(void) "<<this<<endl;
     ivector idxs(1,nVIs);
     idxs.initialize();
     if (ppVIs) idxs=1;
-    if (debug) cout<<"finished DevsVectorVectorInfo::getMinIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::getMinIndices(void) "<<this<<endl;
     return idxs;
 }
 
@@ -1371,11 +1391,11 @@ ivector DevsVectorVectorInfo::getMinIndices(void){
 *   get max indices                                            *
 ***************************************************************/
 ivector DevsVectorVectorInfo::getMaxIndices(void){
-    if (debug) cout<<"starting DevsVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
     ivector idxs(1,nVIs);
     idxs.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) idxs(i) = ppVIs[i-1]->getSize();
-    if (debug) cout<<"finished DevsVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::getMaxIndices(void) "<<this<<endl;
     return idxs;
 }
 
@@ -1383,11 +1403,11 @@ ivector DevsVectorVectorInfo::getMaxIndices(void){
 *   get phase info                                             *
 ***************************************************************/
 ivector DevsVectorVectorInfo::getPhases(void){
-    if (debug) cout<<"starting DevsVectorVectorInfo::getPhases(void) "<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::getPhases(void) "<<this<<endl;
     ivector phases(1,nVIs);
     phases.initialize();
     if (ppVIs) for (int i=1;i<=nVIs;i++) phases(i) = ppVIs[i-1]->getPhase();
-    if (debug) cout<<"finished DevsVectorVectorInfo::getPhases(void) "<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::getPhases(void) "<<this<<endl;
     return phases;
 }
 
@@ -1395,10 +1415,10 @@ ivector DevsVectorVectorInfo::getPhases(void){
 *   get likelihood weights for log prior probabilities         *
 ***************************************************************/
 dvector DevsVectorVectorInfo::getPriorWgts(){
-    if (debug) cout<<"starting DevsVectorVectorInfo::getPriorWgts()"<<this<<endl;
+    if (debug) rpt::echo<<"starting DevsVectorVectorInfo::getPriorWgts()"<<this<<endl;
     dvector wts(1,nVIs);
     for (int i=1;i<=nVIs;i++) wts(i) = ppVIs[i-1]->getPriorWgt();
-    if (debug) cout<<"finished DevsVectorVectorInfo::getPriorWgts()"<<this<<endl;
+    if (debug) rpt::echo<<"finished DevsVectorVectorInfo::getPriorWgts()"<<this<<endl;
     return wts;
 }
 ////////////////////////////DevsVectorVectorInfo/////////////////////////////////

@@ -3,7 +3,9 @@
 #include "ModelConstants.hpp"
 /**
  * Changes:
- * 2014-12-03: 1. Changed std::exit(-1) to exit(-1) for MinGW compatibility.
+ * 20141203: 1. Changed std::exit(-1) to exit(-1) for MinGW compatibility.
+ * 20150113: 1. Added FIT_BY_XSE, FIT_BY_XMSE
+ * 20150210: 1. Added conversion from UNITS_KMT to other units
 */
 
 using namespace tcsam;
@@ -148,14 +150,16 @@ adstring tcsam::getScaleType(int i){
  * @return 
  */
 int tcsam::getFitType(adstring s){
-    if (s==STR_FIT_NONE)   return FIT_NONE;
-    if (s==STR_FIT_BY_TOT) return FIT_BY_TOT;
-    if (s==STR_FIT_BY_X)   return FIT_BY_X;
-    if (s==STR_FIT_BY_XE)  return FIT_BY_XE;
-    if (s==STR_FIT_BY_XM)  return FIT_BY_XM;
-    if (s==STR_FIT_BY_XME) return FIT_BY_XME;
-    if (s==STR_FIT_BY_XS)  return FIT_BY_XS;
-    if (s==STR_FIT_BY_XMS) return FIT_BY_XMS;
+    if (s==STR_FIT_NONE)    return FIT_NONE;
+    if (s==STR_FIT_BY_TOT)  return FIT_BY_TOT;
+    if (s==STR_FIT_BY_X)    return FIT_BY_X;
+    if (s==STR_FIT_BY_XE)   return FIT_BY_XE;
+    if (s==STR_FIT_BY_XM)   return FIT_BY_XM;
+    if (s==STR_FIT_BY_XME)  return FIT_BY_XME;
+    if (s==STR_FIT_BY_XS)   return FIT_BY_XS;
+    if (s==STR_FIT_BY_XSE)  return FIT_BY_XSE;
+    if (s==STR_FIT_BY_XMS)  return FIT_BY_XMS;
+    if (s==STR_FIT_BY_XMSE) return FIT_BY_XMSE;
     std::cout<<"Unrecognized fit type '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -175,7 +179,9 @@ adstring tcsam::getFitType(int i){
     if (i==FIT_BY_XM)   return STR_FIT_BY_XM;
     if (i==FIT_BY_XME)  return STR_FIT_BY_XME;
     if (i==FIT_BY_XS)   return STR_FIT_BY_XS;
+    if (i==FIT_BY_XSE)  return STR_FIT_BY_XSE;
     if (i==FIT_BY_XMS)  return STR_FIT_BY_XMS;
+    if (i==FIT_BY_XMSE) return STR_FIT_BY_XMSE;
     std::cout<<"Unrecognized fit type '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -269,6 +275,14 @@ double tcsam::getConversionMultiplier(adstring from,adstring to){
         if (to==UNITS_KMT)  return 1.0E-3;
         if (to==UNITS_LBS)  return 1.0E+3 * CONV_KGtoLBS;
         if (to==UNITS_MLBS) return 1.0E-3 * CONV_KGtoLBS;
+    }
+    if (from==UNITS_KMT){
+        if (to==UNITS_GM)   return 1.0E+9;
+        if (to==UNITS_KG)   return 1.0E+6;
+        if (to==UNITS_MT)   return 1.0E+3;
+        if (to==UNITS_KMT)  return 1.0E+0;
+        if (to==UNITS_LBS)  return 1.0E+6 * CONV_KGtoLBS;
+        if (to==UNITS_MLBS) return 1.0E+0 * CONV_KGtoLBS;
     }
     if (from==UNITS_LBS){
         if (to==UNITS_GM)   return 1.0E+3/CONV_KGtoLBS;

@@ -209,6 +209,7 @@ class model_data : public ad_comm{
   int npcSel;
   int npcFsh;
   int npcSrv;
+  imatrix idxDevsLnC_fy;
   ~model_data();
   model_data(int argc,char * argv[]);
   friend class model_parameters;
@@ -319,6 +320,7 @@ private:
   param_5array prGr_yxmzz;
   param_matrix sel_cz;
   param_3array sel_iyz;
+  param_matrix dvsLnC_fy;
   param_4array avgFc;
   param_4array avgRatioFc2Eff;
   param_matrix Fhm_fy;
@@ -350,7 +352,7 @@ private:
   param_stddev_matrix sdrSpB_xy;
 public:
   virtual void userfunction(void);
-  virtual void report(void);
+  virtual void report(const dvector& gradients);
   virtual void final_calcs(void);
   model_parameters(int sz,int argc, char * argv[]);
   virtual void initializationfunction(void);
@@ -394,8 +396,7 @@ public:
  void calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout);
  void calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout);
  void calcNLL(int llType, dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout);
- void calcNLLs_CatchAbundance(AggregateCatchData* ptrA, dvar5_array& mA_yxmsz, int debug, ostream& cout);
- void calcNLLs_CatchBiomass(AggregateCatchData* ptrB, dvar5_array& mA_yxmsz, int debug, ostream& cout);
+ void calcNLLs_AggregateCatch(AggregateCatchData* ptrAB, dvar5_array& mA_yxmsz, int debug, ostream& cout);
  void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout);
  void calcNLLs_Fisheries(int debug, ostream& cout);
  void calcNLLs_Surveys(int debug, ostream& cout);

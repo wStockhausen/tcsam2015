@@ -10,3 +10,5 @@ Makefile
 /test/run.RetrospectiveTest/
 /test/run.Tanner2013/
 /test/run.fitSimDataTest/
+/test/run.Tanner2014a/
+/test/run.fit.rsimTCSAM/

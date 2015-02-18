@@ -42,11 +42,12 @@
         public:
             const static int ID_ASCLOGISTIC        =1; const static adstring STR_ASCLOGISTIC; 
             const static int ID_ASCLOGISTIC5095    =2; const static adstring STR_ASCLOGISTIC5095; 
-            const static int ID_ASCLOGISTICLN50LN95=3; const static adstring STR_ASCLOGISTICLN50LN95; 
-            const static int ID_DBLLOGISTIC        =4; const static adstring STR_DBLLOGISTIC; 
-            const static int ID_DBLLOGISTIC5095    =5; const static adstring STR_DBLLOGISTIC5095; 
-            const static int ID_DBLLOGISTICLN50LN95=6; const static adstring STR_DBLLOGISTICLN50LN95; 
-            const static int ID_DBLNORMAL          =7; const static adstring STR_DBLNORMAL; 
+            const static int ID_ASCLOGISTIC50LN95  =3; const static adstring STR_ASCLOGISTIC50LN95; 
+            const static int ID_ASCLOGISTICLN50LN95=4; const static adstring STR_ASCLOGISTICLN50LN95; 
+            const static int ID_DBLLOGISTIC        =5; const static adstring STR_DBLLOGISTIC; 
+            const static int ID_DBLLOGISTIC5095    =6; const static adstring STR_DBLLOGISTIC5095; 
+            const static int ID_DBLLOGISTICLN50LN95=7; const static adstring STR_DBLLOGISTICLN50LN95; 
+            const static int ID_DBLNORMAL          =8; const static adstring STR_DBLNORMAL; 
 
             /**
              * Calculates ascending logistic function parameterized by 
@@ -73,6 +74,19 @@
              * @return - selectivity function values as dvar_vector
              */
             dvar_vector static asclogistic5095(dvector& z, dvar_vector& params, double fsZ);
+            
+            /**
+             * Calculates ascending logistic function parameterized by 
+             *      params[1]: size at 50% selected (z50)
+             *      params[2]: ln-scale increment from z50 to z95
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static asclogistic50Ln95(dvector& z, dvar_vector& params, double fsZ);
 
             /**
              * Calculates ascending logistic function parameterized by 

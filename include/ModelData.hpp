@@ -5,6 +5,7 @@
  * Created on 2014-02-11.
  * 
  * 20140930: 1. Added recLag to BioData.
+ * 20150209: 1. Removed prMature_xz, frMature_xsz, cvMnMxZ_xc from BioData.
  */
 
 #ifndef MODELDATA_HPP
@@ -164,9 +165,9 @@ class IndexRange;
         dvector zBins;        //size bins
         adstring unitsWatZ;   //units for weight-at-size
         d3_array wAtZ_xmz;    //weight at size (in kg)
-        dmatrix prMature_xz;  //probability of maturity at size by sex
-        d3_array frMature_xsz;//fraction mature at size by sex, shell condition
-        dmatrix cvMnMxZ_xc;   //cv of min size, max size by sex
+//        dmatrix prMature_xz;  //probability of maturity at size by sex
+//        d3_array frMature_xsz;//fraction mature at size by sex, shell condition
+//        dmatrix cvMnMxZ_xc;   //cv of min size, max size by sex
         
         int recLag;         //recruitment lag (in years)
         double fshTimingTypical;//typical midpoint of fishery seasons

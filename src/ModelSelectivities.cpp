@@ -45,6 +45,7 @@ int SelFcns::getSelFcnID(adstring str){
     str.to_lower();
     if (str==STR_ASCLOGISTIC)         return ID_ASCLOGISTIC;
     if (str==STR_ASCLOGISTIC5095)     return ID_ASCLOGISTIC5095;
+    if (str==STR_ASCLOGISTIC50LN95)   return ID_ASCLOGISTIC50LN95;
     if (str==STR_ASCLOGISTICLN50LN95) return ID_ASCLOGISTICLN50LN95;
     if (str==STR_DBLLOGISTIC)         return ID_DBLLOGISTIC;
     if (str==STR_DBLLOGISTIC5095)     return ID_DBLLOGISTIC5095;
@@ -73,6 +74,9 @@ adstring SelFcns::getSelFcnID(int id){
         case ID_ASCLOGISTIC5095: 
             if (debug) cout<<"SelFcn = "<<STR_ASCLOGISTIC5095<<endl;
             return STR_ASCLOGISTIC5095;
+        case ID_ASCLOGISTIC50LN95: 
+            if (debug) cout<<"SelFcn = "<<STR_ASCLOGISTIC50LN95<<endl;
+            return STR_ASCLOGISTIC50LN95;
         case ID_ASCLOGISTICLN50LN95: 
             if (debug) cout<<"SelFcn = "<<STR_ASCLOGISTICLN50LN95<<endl;
             return STR_ASCLOGISTICLN50LN95;
@@ -119,6 +123,7 @@ dvar_vector SelFcns::calcSelFcn(int id,dvector& z, dvar_vector& params, double f
     switch (id){
         case ID_ASCLOGISTIC:         {s=asclogistic(z,params,fsZ);         break;}
         case ID_ASCLOGISTIC5095:     {s=asclogistic5095(z,params,fsZ);     break;}
+        case ID_ASCLOGISTIC50LN95:   {s=asclogistic50Ln95(z,params,fsZ);   break;}
         case ID_ASCLOGISTICLN50LN95: {s=asclogisticLn50Ln95(z,params,fsZ); break;}
         case ID_DBLLOGISTIC:         {s=dbllogistic(z,params,fsZ);         break;}
         case ID_DBLLOGISTIC5095:     {s=dbllogistic5095(z,params,fsZ);     break;}
@@ -140,6 +145,7 @@ dvar_vector SelFcns::calcSelFcn(int id,dvector& z, dvar_vector& params, double f
 //all need to be lower case
 const adstring SelFcns::STR_ASCLOGISTIC        ="asclogistic";
 const adstring SelFcns::STR_ASCLOGISTIC5095    ="asclogistic5095";
+const adstring SelFcns::STR_ASCLOGISTIC50LN95  ="asclogistic50ln95";
 const adstring SelFcns::STR_ASCLOGISTICLN50LN95="asclogisticln50ln95";
 const adstring SelFcns::STR_DBLLOGISTIC        ="dbllogistic";
 const adstring SelFcns::STR_DBLLOGISTIC5095    ="dbllogistic5095";
@@ -218,6 +224,43 @@ dvar_vector SelFcns::asclogistic5095(dvector& z, dvar_vector& params, double fsZ
 
 /**
  * Calculates ascending logistic function parameterized by 
+ *      params[1]: size at 50% selected (z50)
+ *      params[2]: ln-scale increment from z50 to size at 95% selected
+ * Inputs:
+ * @param z      - dvector of sizes at which to compute function values
+ * @param params - dvar_vector of function parameters
+ * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+ * 
+ * @return -
+ */
+dvar_vector SelFcns::asclogistic50Ln95(dvector& z, dvar_vector& params, double fsZ){
+    RETURN_ARRAYS_INCREMENT();
+    if (debug) cout<<"Starting SelFcns::asclogistic50Ln95(...)"<<endl;
+    dvariable n; n.initialize();
+    dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
+    dvariable z50    = params(1);
+    dvariable dz5095 = exp(params(2));
+    s = 1.0/(1.0+exp(-log(19.0)*(z-z50)/dz5095));
+    if (fsZ>1){
+        n = 1.0+exp(-log(19.0)*(fsZ-z50)/dz5095);//normalization constant
+        s *= n;
+    } else if (fsZ<-1) {
+        n = 1.0/max(s);
+        s *= n; //normalize by max
+    } //otherwise don't normalize it
+    if (debug) {
+        rpt::echo<<"params, fsZ = "<<params(1)<<tb<<params(2)<<tb<<fsZ<<endl;
+        rpt::echo<<"n = "<<n<<endl;
+        rpt::echo<<"z = "<<z<<endl;
+        rpt::echo<<"s = "<<s<<endl;
+        cout<<"Finished SelFcns::asclogistic50Ln95(...)"<<endl;
+    }
+    RETURN_ARRAYS_DECREMENT();
+    return s;
+}
+
+/**
+ * Calculates ascending logistic function parameterized by 
  *      params[1]: ln-scale size at 50% selected (ln(z50))
  *      params[2]: ln-scale increment to size at 95% selected
  * Inputs:
@@ -247,7 +290,7 @@ dvar_vector SelFcns::asclogisticLn50Ln95(dvector& z, dvar_vector& params, double
         rpt::echo<<"n = "<<n<<endl;
         rpt::echo<<"z = "<<z<<endl;
         rpt::echo<<"s = "<<s<<endl;
-        cout<<"Finished SelFcns::asclogisticLn50(...)"<<endl;
+        cout<<"Finished SelFcns::asclogisticLn50Ln95(...)"<<endl;
     }
     RETURN_ARRAYS_DECREMENT();
     return s;
