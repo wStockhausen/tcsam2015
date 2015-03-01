@@ -2,6 +2,237 @@
 #include "wtsADMB.hpp"
 #include "ModelConstants.hpp"
 #include "SummaryFunctions.hpp"
+    
+/**
+ * Compute marginal weighted sums over last dimension.
+ * 
+ * @param  n_ij - dmatrix
+ * @param  w    - weighting vector
+ * @return n_i  - dvector
+ */
+dvector tcsam::sumOverLastDim(const dmatrix& n_ij, dvector& w){
+    ivector bnds = wts::getBounds(n_ij);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    dvector n(mni,mxi);
+    for (int i=mni;i<=mxi;i++){
+        n(i) = n_ij(i)*w;//dot product sum over j index
+    }
+    return n;
+}
+
+/**
+ * Compute marginal weighted sums over last dimension.
+ * 
+ * @param  n_ijk - d3_array
+ * @param  w     - weighting vector
+ * @return n_ij  - dmatrix
+ */
+dmatrix tcsam::sumOverLastDim(const d3_array& n_ijk, dvector& w){
+    ivector bnds = wts::getBounds(n_ijk);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    int mnj = bnds(d++); int mxj = bnds(d++);
+    dmatrix n(mni,mxi,mnj,mxj);
+    for (int i=mni;i<=mxi;i++){
+        n(i) = sumOverLastDim(n_ijk(i),w);
+    }
+    return n;
+}
+
+/**
+ * Compute marginal weighted sums over last dimension.
+ * 
+ * @param  n_ijkl - d4_array
+ * @param  w      - weighting vector
+ * @return n_ijk  - d3_array
+ */
+d3_array tcsam::sumOverLastDim(const d4_array& n_ijkl, dvector& w){
+    ivector bnds = wts::getBounds(n_ijkl);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    int mnj = bnds(d++); int mxj = bnds(d++);
+    int mnk = bnds(d++); int mxk = bnds(d++);
+    d3_array n(mni,mxi,mnj,mxj,mnk,mxk);
+    for (int i=mni;i<=mxi;i++){
+        n(i) = sumOverLastDim(n_ijkl(i),w);
+    }
+    return n;
+}
+
+/**
+ * Compute marginal weighted sums over last dimension.
+ * 
+ * @param  n_ijklm - d5_array
+ * @param  w    - weighting vector
+ * @return n_ijkl  - d4_array
+ */
+d4_array tcsam::sumOverLastDim(const d5_array& n_ijklm, dvector& w){
+    ivector bnds = wts::getBounds(n_ijklm);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    int mnj = bnds(d++); int mxj = bnds(d++);
+    int mnk = bnds(d++); int mxk = bnds(d++);
+    int mnl = bnds(d++); int mxl = bnds(d++);
+    d4_array n(mni,mxi,mnj,mxj,mnk,mxk,mnl,mxl);
+    for (int i=mni;i<=mxi;i++){
+        n(i) = sumOverLastDim(n_ijklm(i),w);
+    }
+    return n;
+}
+
+/**
+ * Compute marginal weighted sums over last dimension.
+ * 
+ * @param  n_ijklmn - d6_array
+ * @param  w    - weighting vector
+ * @return n_ijklm  - d4_array
+ */
+d5_array tcsam::sumOverLastDim(const d6_array& n_ijklmn, dvector& w){
+    ivector bnds = wts::getBounds(n_ijklmn);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    int mnj = bnds(d++); int mxj = bnds(d++);
+    int mnk = bnds(d++); int mxk = bnds(d++);
+    int mnl = bnds(d++); int mxl = bnds(d++);
+    int mnm = bnds(d++); int mxm = bnds(d++);
+    d5_array n(mni,mxi,mnj,mxj,mnk,mxk,mnl,mxl,mnm,mxm);
+    for (int i=mni;i<=mxi;i++){
+        n(i) = sumOverLastDim(n_ijklmn(i),w);
+    }
+    return n;
+}
+
+/**
+ * Compute marginal weighted sums over last dimension.
+ * 
+ * @param  n_ijklmno - d7_array
+ * @param  w         - weighting vector
+ * @return n_ijklmn  - d6_array
+ */
+d6_array tcsam::sumOverLastDim(const d7_array& n_ijklmno, dvector& w){
+    ivector bnds = wts::getBounds(n_ijklmno);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    int mnj = bnds(d++); int mxj = bnds(d++);
+    int mnk = bnds(d++); int mxk = bnds(d++);
+    int mnl = bnds(d++); int mxl = bnds(d++);
+    int mnm = bnds(d++); int mxm = bnds(d++);
+    int mno = bnds(d++); int mxo = bnds(d++);
+    d6_array n(mni,mxi,mnj,mxj,mnk,mxk,mnl,mxl,mnm,mxm,mno,mxo);
+    for (int i=mni;i<=mxi;i++){
+        n(i) = sumOverLastDim(n_ijklmno(i),w);
+    }
+    return n;
+}
+    
+/**
+ * Calculate marginal sums over msz by iyx.
+ * @param n_iyxmsz - array to calculate sums on
+ * @return d3_array with dims iyx.
+ */
+d3_array tcsam::calcIYXfromIYXMSZ(d6_array& n_iyxmsz){
+    ivector bnds = wts::getBounds(n_iyxmsz);
+    int mni = bnds( 1); int mxi = bnds( 2);
+    int mny = bnds( 3); int mxy = bnds( 4);
+    int mnx = bnds( 5); int mxx = bnds( 6);
+    int mnm = bnds( 7); int mxm = bnds( 8);
+    int mns = bnds( 9); int mxs = bnds(10);
+    int mnz = bnds(11); int mxz = bnds(12);
+    d3_array n_iyx(mni,mxi,mny,mxy,mnx,mxx);
+    n_iyx.initialize();
+    for (int i=mni;i<=mxi;i++){
+        for (int x=mnx;x<=mxx;x++){
+            for (int y=mny;y<=mxy;y++){
+                n_iyx(i,y,x) = sum(n_iyxmsz(i,y,x));
+            }
+        }
+    }
+    return n_iyx;
+}
+
+/**
+ * Calculate marginal sums over msz by iyx, weighted by w_xmz.
+ * @param n_iyxmsz - array to calculate sums on
+ * @param w_xmz - weight-at-xmz array
+ * @return d3_array with dims iyx.
+ */
+d3_array tcsam::calcIYXfromIYXMSZ(d6_array& n_iyxmsz, d3_array w_xmz){
+    ivector bnds = wts::getBounds(n_iyxmsz);
+    int mni = bnds( 1); int mxi = bnds( 2);
+    int mny = bnds( 3); int mxy = bnds( 4);
+    int mnx = bnds( 5); int mxx = bnds( 6);
+    int mnm = bnds( 7); int mxm = bnds( 8);
+    int mns = bnds( 9); int mxs = bnds(10);
+    int mnz = bnds(11); int mxz = bnds(12);
+    d3_array b_iyx(mni,mxi,mny,mxy,mnx,mxx);
+    b_iyx.initialize();
+    for (int i=mni;i<=mxi;i++){
+        for (int x=mnx;x<=mxx;x++){
+            for (int y=mny;y<=mxy;y++){
+                for (int m=mnm;m<=mxm;m++){
+                    for (int s=mns;s<=mxs;s++) b_iyx(i,y,x) += n_iyxmsz(i,y,x,m,s)*w_xmz(x,m);//dot product here
+                }
+            }
+        }
+    }
+    return b_iyx;
+}
+
+/**
+ * Calculate marginal sums over z by iyxms, weighted by w_xmz.
+ * @param n_iyxmsz - array to calculate sums on
+ * @param w_xmz - weight-at-xmz array
+ * @return d5_array with dims iyxms.
+ */
+d5_array tcsam::calcIYXMSfromIYXMSZ(d6_array& n_iyxmsz, d3_array w_xmz){
+    ivector bnds = wts::getBounds(n_iyxmsz);
+    int d = 1;
+    int mni = bnds(d++); int mxi = bnds(d++);
+    int mny = bnds(d++); int mxy = bnds(d++);
+    int mnx = bnds(d++); int mxx = bnds(d++);
+    int mnm = bnds(d++); int mxm = bnds(d++);
+    int mns = bnds(d++); int mxs = bnds(d++);
+    int mnz = bnds(d++); int mxz = bnds(d++);
+    d5_array b_iyxms(mni,mxi,mny,mxy,mnx,mxx,mnm,mxm,mns,mxs);
+    b_iyxms.initialize();
+    for (int i=mni;i<=mxi;i++){
+        for (int x=mnx;x<=mxx;x++){
+            for (int y=mny;y<=mxy;y++){
+                for (int m=mnm;m<=mxm;m++){
+                    for (int s=mns;s<=mxs;s++) b_iyxms(i,y,x,m,s) = n_iyxmsz(i,y,x,m,s)*w_xmz(x,m);//dot product here
+                }
+            }
+        }
+    }
+    return b_iyxms;
+}
+
+/**
+ * Calculate marginal sums over z by yxms, weighted by w_xmz.
+ * @param n_yxmsz - array to calculate sums on
+ * @param w_xmz - weight-at-xmz array
+ * @return d4_array with dims yxms.
+ */
+d4_array tcsam::calcYXMSfromYXMSZ(d5_array& n_yxmsz, d3_array w_xmz){
+    ivector bnds = wts::getBounds(n_yxmsz);
+    int d = 1;
+    int mny = bnds(d++); int mxy = bnds(d++);
+    int mnx = bnds(d++); int mxx = bnds(d++);
+    int mnm = bnds(d++); int mxm = bnds(d++);
+    int mns = bnds(d++); int mxs = bnds(d++);
+    int mnz = bnds(d++); int mxz = bnds(d++);
+    d4_array b_yxms(mny,mxy,mnx,mxx,mnm,mxm,mns,mxs);
+    b_yxms.initialize();
+    for (int x=mnx;x<=mxx;x++){
+        for (int y=mny;y<=mxy;y++){
+            for (int m=mnm;m<=mxm;m++){
+                for (int s=mns;s<=mxs;s++) b_yxms(y,x,m,s) = n_yxmsz(y,x,m,s)*w_xmz(x,m);//dot product here
+            }
+        }
+    }
+    return b_yxms;
+}
 
 /**
  * Calculate marginal sums over msz by ixy.

@@ -28,15 +28,16 @@ class ParameterGroupInfo{
         int nPVs;             //number of parameter variables
         adstring_array lblPVs;//names for parameter variables
         adstring_array dscPVs;//descriptions for parameter variables
-        int nXIs;             //number of extra indices
-        adstring_array lblXIs;//names for extra indices
+        int nXIs;             //number of extra indices/values
+        adstring_array lblXIs;//names for extra indices/values
         
         int nIBSs;              //number of index variables (IVs) that are blocks
         ivector ibsIdxs;        //indices corresponding to index variables (IVs) that are blocks
         IndexBlockSet** ppIBSs;//pointer to a vector of pointers to IndexBlockSet objects
         
         int nPCs;  //number of rows in parameter combinations matrix
-        imatrix in;//input parameter combinations matrix    
+        imatrix in;//input parameter combinations matrix (all integers)
+        dmatrix xd;//extra values by parameter combination as doubles
         imatrix** ppIdxs; //pointer to array of pointers to indices matrices for use via getModelIndices(pc)     
     public:
         ParameterGroupInfo();
@@ -236,6 +237,14 @@ class SelectivityInfo : public ParameterGroupInfo {
         
         SelectivityInfo();
         ~SelectivityInfo();
+        
+        /**
+         * Returns the values of the "extra variables" as doubles for
+         * the pc-th parameter combination 
+         * @param pc
+         * @return 
+         */
+        dvector getPCXDs(int pc){return xd(pc);}
         
         void read(cifstream & is);
         void write(std::ostream & os);

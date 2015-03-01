@@ -319,6 +319,7 @@ void ParameterGroupInfo::read(cifstream& is){
         //read parameters combinations definition matrix
         int ibsIdx=1;
         in.allocate(1,nPCs,1,nIVs+nPVs+nXIs);
+        if (nXIs) xd.allocate(1,nPCs,1,nXIs);
         for (int r=1;r<=nPCs;r++){//loop over rows
             is>>str; //read id
             rpt::echo<<str<<tb;
@@ -335,19 +336,21 @@ void ParameterGroupInfo::read(cifstream& is){
                 } else {in(r,i)=::atoi(str);}
             }
             for (int p=1;p<=nPVs;p++) {is>>in(r,nIVs+p); rpt::echo<<in(r,nIVs+p)<<tb;}  
-            if (debug) {cout<<"looping over extra variables"<<endl;}
+            rpt::echo<<"looping over extra variables"<<endl;
             for (int x=1;x<=nXIs;x++) {//loop over "extra" variables
                 is>>str;
                 rpt::echo<<str<<tb;
                 if (lblXIs(x)==tcsam::STR_SELFCN){
                     //identify selectivity function and return function index
                     in(r,nIVs+nPVs+x) = SelFcns::getSelFcnID(str);
-                } else    
-                {in(r,nIVs+nPVs+x)=atoi(str);}
-                if (debug) cout<<"x = "<<x<<tb<<"str = "<<str<<tb<<"in() = "<<in(r,nIVs+nPVs+x)<<endl;
+                } else {
+                    in(r,nIVs+nPVs+x)=::atoi(str);
+                    xd(r,x)=::atof(str);
+                }
+                rpt::echo<<"x = "<<x<<tb<<"str = "<<str<<tb<<"in() = "<<in(r,nIVs+nPVs+x)<<tb<<"xd() = "<<xd(r,x)<<endl;
             }
             rpt::echo<<endl;
-            if (debug) cout<<"pc row "<<r<<": "<<in(r)<<endl;
+            if (debug) cout<<"pc row "<<r<<": "<<in(r)<<tb<<"xd: "<<xd(r)<<endl;
         }
         //revert reading back to sub-class to read values for parameters
     } else {
@@ -388,7 +391,9 @@ void ParameterGroupInfo::write(std::ostream& os){
         for (int p=1;p<=nPVs;p++) os<<in(r,nIVs+p)<<tb;      //loop over parameter variables
         for (int x=1;x<=nXIs;x++) { //loop over extra indices
             if (lblXIs(x)==tcsam::STR_SELFCN) os<<SelFcns::getSelFcnID(in(r,nIVs+nPVs+x))<<tb; else
-            os<<in(r,nIVs+nPVs+x)<<tb;
+            os<<xd(r,x)<<tb;
+    //        os<<in(r,nIVs+nPVs+x)<<tb;
+            
         }
         os<<endl;
     }

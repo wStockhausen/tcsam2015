@@ -70,6 +70,7 @@
         adstring dimSCsToR;//R dim string of shell conditions
         adstring dimZCsToR;//R dim string of size bin cutpoints
         adstring dimZBsToR;//R dim string of size bin midpoints
+        adstring dimZPsToR;//R dim string of size bin midpoints (alternative)
         adstring dimFshToR;//R dim string of fishery labels
         adstring dimSrvToR;//R dim string of survey labels
 
@@ -107,9 +108,13 @@
     public:
         static int debug;  //flag to print debug info        
     public:
-        ModelConfiguration* ptrMC;    //pointer to model configuration object
-        adstring_array lblsFcAvgOpts; //labels for capture rate averaing options
-        ivector optsFcAvg;            //selected options for averaging capture rate
+        ModelConfiguration* ptrMC;      //pointer to model configuration object
+        adstring_array lblsFcAvgOpts;   //labels for capture rate averaging options
+        ivector optsFcAvg;              //selected options for averaging capture rate
+        adstring_array lblsGrowthOpts;  //labels for growth options
+        int optsGrowth;                 //selected option for growth calculations
+        adstring_array lblsInitNatZOpts;//labels for initial n-at-z options
+        int optsInitNatZ;               //selected option for initial n-at-z calculations
 
     public:
         ModelOptions(ModelConfiguration& mc);

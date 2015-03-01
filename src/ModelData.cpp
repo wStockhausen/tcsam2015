@@ -574,7 +574,7 @@ void AggregateCatchData::writeToR(ostream& os, std::string nm, int indent) {
     adstring x = tcsamDims::getSXsForR(bnds(1),bnds(2));
     adstring m = tcsamDims::getMSsForR(bnds(3),bnds(4));
     adstring s = tcsamDims::getSCsForR(bnds(5),bnds(6));
-    adstring y = "year=c("+wts::to_qcsv(yrs)+")";
+    adstring y = "y=c("+wts::to_qcsv(yrs)+")";
     
     for (int n=0;n<indent;n++) os<<tb;
         os<<str<<"=list(units="<<qt<<units<<qt<<cc<<std::endl;
@@ -841,8 +841,8 @@ void SizeFrequencyData::writeToR(ostream& os, std::string nm, int indent) {
     adstring x = tcsamDims::getSXsForR(bnds(1),bnds(2));
     adstring m = tcsamDims::getMSsForR(bnds(3),bnds(4));
     adstring s = tcsamDims::getSCsForR(bnds(5),bnds(6));
-    adstring y = "year=c("+wts::to_qcsv(yrs)+")";
-    adstring z = "size=c("+wts::to_qcsv(zBs)+")";        
+    adstring y = "y=c("+wts::to_qcsv(yrs)+")";
+    adstring z = "z=c("+wts::to_qcsv(zBs)+")";        
     for (int n=0;n<indent;n++) os<<tb;
         os<<"nAtZ=list(units="<<qt<<units<<qt<<cc<<std::endl;
     for (int n=0;n<indent;n++) os<<tb;
@@ -850,9 +850,9 @@ void SizeFrequencyData::writeToR(ostream& os, std::string nm, int indent) {
     for (int n=0;n<indent;n++) os<<tb;
         os<<"llType="<<qt<<tcsam::getLikelihoodType(llType)<<qt<<cc<<std::endl; 
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"years="; wts::writeToR(os,yrs); os<<cc<<std::endl;
+        os<<"y="; wts::writeToR(os,yrs); os<<cc<<std::endl;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"cutpts="; wts::writeToR(os,zCs); os<<cc<<std::endl;
+        os<<"zc="; wts::writeToR(os,zCs); os<<cc<<std::endl;
     for (int n=0;n<indent;n++) os<<tb;
         os<<"sample.sizes="; wts::writeToR(os,ss_xmsy,x,m,s,y); os<<cc<<std::endl;
     for (int n=0;n<indent;n++) os<<tb;
@@ -1146,7 +1146,7 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
         
         //size bins
         for (int n=0;n<indent;n++) os<<tb;
-        os<<"zBins=";wts::writeToR(os,zBins); os<<","<<std::endl;
+        os<<"z=";wts::writeToR(os,zBins); os<<","<<std::endl;
         
         //weight-at-size
         {for (int n=0;n<indent;n++) os<<tb;
@@ -1157,7 +1157,7 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
             ivector bnds = wts::getBounds(wAtZ_xmz);
             adstring x = tcsamDims::getSXsForR(bnds[1],bnds[2]);
             adstring m = tcsamDims::getMSsForR(bnds[3],bnds[4]);
-            adstring z = "size=c("+wts::to_qcsv(zBins)+")";
+            adstring z = "z=c("+wts::to_qcsv(zBins)+")";
             wts::writeToR(os,wAtZ_xmz,x,m,z); os<<std::endl;
         indent--;}
         for (int n=0;n<indent;n++) os<<tb; os<<"),"<<std::endl;
@@ -1205,7 +1205,7 @@ void BioData::writeToR(ostream& os, string nm, int indent) {
             tmp(1) = fshTiming_y;
             tmp(2) = matTiming_y;
             adstring cols = "type=c('midptFisheries','matingTime')";
-            adstring yrs = "year="+str(ModelConfiguration::mnYr)+":"+str(ModelConfiguration::mxYr);
+            adstring yrs = "y="+str(ModelConfiguration::mnYr)+":"+str(ModelConfiguration::mxYr);
             wts::writeToR(os,trans(tmp),yrs,cols); os<<std::endl;
         indent--;}
     indent--;

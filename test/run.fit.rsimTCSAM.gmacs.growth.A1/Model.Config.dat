@@ -1,0 +1,23 @@
+#####################################################################
+#TCSAM2015 Model Configuration File                                 #
+#####################################################################
+rsimTest   # model scenario 
+1950   # model start year (pop. model start year) 
+2014   # assessment year (final pop model numbers at size are given for July 1, assessment year) 
+32   # Number of size bins in the model 
+#size bin cut pts
+25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 185 
+1   #number of fisheries
+TCF  #fishery 1: TCF
+1   #number of surveys
+NMFS_trawl_survey  #survey 1: NMFS trawl survey
+#--THE FOLLOWING ARE DEFAULT INPUTS: PLEASE CHANGE AS NECESSARY!
+FALSE     #run operating model only
+TRUE                    #fit to priors
+./Model.ParametersInfo.dat 			#model parameters info file
+./Model.Datasets.dat 			#model datasets file
+./Model.Options.dat 			#model options file
+ON                      #jitter resampling option
+0.2                     #jitter range
+OFF                     #prior resampling option
+1                       #prior variance inflation factor

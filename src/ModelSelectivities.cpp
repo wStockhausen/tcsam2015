@@ -169,10 +169,10 @@ dvar_vector SelFcns::asclogistic(dvector& z, dvar_vector& params, double fsZ){
     dvariable n; n.initialize();
     dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
     s = 1.0/(1.0+exp(-params(2)*(z-params(1))));
-    if (fsZ>1){
+    if (fsZ>0){
         n = 1.0+exp(-params(2)*(fsZ-params(1)));//normalize so (s(fsZ) = 1
         s *= n;
-    } else if (fsZ<-1) {
+    } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it
@@ -204,10 +204,10 @@ dvar_vector SelFcns::asclogistic5095(dvector& z, dvar_vector& params, double fsZ
     dvariable n; n.initialize();
     dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
     s = 1.0/(1.0+exp(-log(19.0)*(z-params(1))/params(2)));
-    if (fsZ>1){
+    if (fsZ>0){
         n = 1.0+exp(-log(19.0)*(fsZ-params(1))/params(2));//normalization constant
         s *= n;
-     } else if (fsZ<-1) {
+     } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it
@@ -241,10 +241,10 @@ dvar_vector SelFcns::asclogistic50Ln95(dvector& z, dvar_vector& params, double f
     dvariable z50    = params(1);
     dvariable dz5095 = exp(params(2));
     s = 1.0/(1.0+exp(-log(19.0)*(z-z50)/dz5095));
-    if (fsZ>1){
+    if (fsZ>0){
         n = 1.0+exp(-log(19.0)*(fsZ-z50)/dz5095);//normalization constant
         s *= n;
-    } else if (fsZ<-1) {
+    } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it
@@ -278,10 +278,10 @@ dvar_vector SelFcns::asclogisticLn50Ln95(dvector& z, dvar_vector& params, double
     dvariable z50    = exp(params(1));
     dvariable dz5095 = exp(params(2));
     s = 1.0/(1.0+exp(-log(19.0)*(z-z50)/dz5095));
-    if (fsZ>1){
+    if (fsZ>0){
         n = 1.0+exp(-log(19.0)*(fsZ-z50)/dz5095);//normalization constant
         s *= n;
-    } else if (fsZ<-1) {
+    } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it
@@ -315,10 +315,10 @@ dvar_vector SelFcns::dbllogistic(dvector& z, dvar_vector& params, double fsZ){
     dvariable n; n.initialize();
     dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
     s = elem_prod(1.0/(1.0+exp(-params(2)*(z-params(1)))),1.0/(1.0+exp(-params(4)*(params(3)-z))));
-    if (fsZ>1){
+    if (fsZ>0){
         n = (1.0+exp(-params(2)*(fsZ-params(1))))*(1.0+exp(-params(4)*(params(3)-fsZ)));//normalization constant
         s *= n;
-    } else if (fsZ<-1) {
+    } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it
@@ -352,10 +352,10 @@ dvar_vector SelFcns::dbllogistic5095(dvector& z, dvar_vector& params, double fsZ
     dvariable n; n.initialize();
     dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
     s = elem_prod(1.0/(1.0+exp(-log(19.0)*(z-params(1))/params(2))),1.0/(1.0+exp(-log(19.0)*(params(3)-z)/params(4))));
-    if (fsZ>1){
+    if (fsZ>0){
         n = (1.0+exp(-log(19.0)*(fsZ-params(1))/params(2)))*(1.0+exp(-log(19.0)*(params(3)-fsZ)/params(4)));//normalization constant
         s *= n;
-    } else if (fsZ<-1) {
+    } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it
@@ -394,10 +394,10 @@ dvar_vector SelFcns::dbllogisticLn50Ln95(dvector& z, dvar_vector& params, double
     dvariable dzd  = exp(params(4));//increment from z95d to z50d
     dvariable z50d = z50a+dza+dzz+dzd; 
     s = elem_prod(1.0/(1.0+exp(-log(19.0)*(z-z50a)/dza)),1.0/(1.0+exp(-log(19.0)*(z50d-z)/dzd)));
-    if (fsZ>1){
+    if (fsZ>0){
         n = (1.0+exp(-log(19.0)*(fsZ-z50a)/dza))*(1.0+exp(-log(19.0)*(z50d-fsZ)/dzd));//normalization constant
         s *= n;
-    } else if (fsZ<-1) {
+    } else if (fsZ<0) {
         n = 1.0/max(s);
         s *= n; //normalize by max
     } //otherwise don't normalize it

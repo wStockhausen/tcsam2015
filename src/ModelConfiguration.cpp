@@ -133,15 +133,16 @@ void ModelConfiguration::read(cifstream & is) {
     csvFsh=wts::to_qcsv(lblsFsh);
     csvSrv=wts::to_qcsv(lblsSrv);
     
-    dimYrsToR   = "year=c("+csvYrs+")";
-    dimYrsP1ToR = "year=c("+csvYrsP1+")";
-    dimSXsToR   = "sex=c("+csvSXs+")";
-    dimMSsToR   = "maturity=c("+csvMSs+")";
-    dimSCsToR   = "shell_condition=c("+csvSCs+")";
-    dimZCsToR   = "size=c("+wts::to_qcsv(zCutPts)+")";
-    dimZBsToR   = "size=c("+wts::to_qcsv(zMidPts)+")";
-    dimFshToR   = "fishery=c("+wts::to_qcsv(lblsFsh)+")";
-    dimSrvToR   = "survey=c("+wts::to_qcsv(lblsSrv)+")";
+    dimYrsToR   = "y=c("+csvYrs+")";
+    dimYrsP1ToR = "y=c("+csvYrsP1+")";
+    dimSXsToR   = "x=c("+csvSXs+")";
+    dimMSsToR   = "m=c("+csvMSs+")";
+    dimSCsToR   = "s=c("+csvSCs+")";
+    dimZCsToR   = "zc=c("+wts::to_qcsv(zCutPts)+")";
+    dimZBsToR   = "z=c("+wts::to_qcsv(zMidPts)+")";
+    dimZPsToR   = "zp=c("+wts::to_qcsv(zMidPts)+")";
+    dimFshToR   = "f=c("+wts::to_qcsv(lblsFsh)+")";
+    dimSrvToR   = "v=c("+wts::to_qcsv(lblsSrv)+")";
     
     if (debug){
         cout<<wts::getBooleanType(runOpMod)   <<"   #run operating model?"<<endl;
@@ -170,8 +171,8 @@ void ModelConfiguration::setMaxModelYear(int yr){
     mxYr = yr;
     csvYrs  =qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=mxYr;    y++) csvYrs  += cc+qt+str(y)+qt;
     csvYrsP1=qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=(mxYr+1);y++) csvYrsP1 += cc+qt+str(y)+qt;
-    dimYrsToR   = "year=c("+csvYrs+")";
-    dimYrsP1ToR = "year=c("+csvYrsP1+")";
+    dimYrsToR   = "y=c("+csvYrs+")";
+    dimYrsP1ToR = "y=c("+csvYrsP1+")";
 }
 /***************************************************************
 *   function to write to file in ADMB format                   *
@@ -218,22 +219,30 @@ void ModelConfiguration::writeToR(ostream& os, std::string nm, int indent) {
         os<<nm<<"=list("<<endl;
     indent++;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"configName='"<<cfgName<<"'"<<cc;
-        os<<"mnYr="<<mnYr<<cc<<"asYr="<<asYr<<cc<<"mxYr="<<mxYr<<cc;
-        os<<"SXs=c("<<csvSXs<<")"<<cc;
-        os<<"MSs=c("<<csvMSs<<")"<<cc;
-        os<<"SCs=c("<<csvSCs<<")"<<cc;
-        os<<"nZBs="<<nZBs<<cc<<endl;
+        os<<"configName='"<<cfgName<<"'"<<cc<<endl;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"zBs="; wts::writeToR(os,zMidPts);os<<cc<<endl;
+        os<<"dims=list("<<endl;
+        indent++;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"y=list(n="<<mxYr-mnYr<<cc<<"mny="<<mnYr<<cc<<"asy="<<asYr<<cc<<"mxy="<<mxYr<<cc<<
+                           "nms=c("<<csvYrsP1<<"),vls="<<mnYr<<":"<<asYr<<"),"<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"x=list(n="<<tcsam::nSXs<<",nms=c("<<csvSXs<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"m=list(n="<<tcsam::nMSs<<",nms=c("<<csvMSs<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"s=list(n="<<tcsam::nSCs<<",nms=c("<<csvSCs<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"z=list(n="<<nZBs<<",nms=c("<<csvZBs<<"),vls=c("<<wts::to_csv(zMidPts)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"zc=list(n="<<nZBs+1<<",nms=c("<<csvZCs<<"),vls=c("<<wts::to_csv(zCutPts)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"f=list(n="<<nFsh<<cc<<"nms=c("<<csvFsh<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"v=list(n="<<nSrv<<cc<<"nms=c("<<csvSrv<<"))"<<endl;
+        indent--;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"zCs="; wts::writeToR(os,zCutPts);os<<cc<<endl;
-    for (int n=0;n<indent;n++) os<<tb;
-        os<<"nFsh="<<nFsh<<cc;
-        os<<"lbls.fsh="; wts::writeToR(os,lblsFsh); os<<cc<<endl;
-    for (int n=0;n<indent;n++) os<<tb;
-        os<<"nSrv="<<nSrv<<cc;
-        os<<"lbls.srv="; wts::writeToR(os,lblsSrv); os<<cc<<endl;
+        os<<")"<<cc;
     for (int n=0;n<indent;n++) os<<tb;
         os<<"flags=list(";
         os<<"runOpMod="<<runOpMod<<cc;
@@ -253,12 +262,20 @@ void ModelConfiguration::writeToR(ostream& os, std::string nm, int indent) {
 //--------------------------------------------------------------------------------
 ModelOptions::ModelOptions(ModelConfiguration& mc){
     ptrMC=&mc;
-    
-    lblsFcAvgOpts.allocate(0,2);
+    //capture rate averaging options
+    lblsFcAvgOpts.allocate(0,3);
     lblsFcAvgOpts(0) = "no averaging"; 
     lblsFcAvgOpts(1) = "average capture rate";
     lblsFcAvgOpts(2) = "average exploitation rate";
-    
+    lblsFcAvgOpts(3) = "average mean size-specific capture rate";
+   //growth function options
+    lblsGrowthOpts.allocate(0,1);
+    lblsGrowthOpts(0) = "use gamma probability distribution (like TCSAM2013)"; 
+    lblsGrowthOpts(1) = "use cumulative gamma distribution (like Gmacs)";
+   //initial n-at-z options
+    lblsInitNatZOpts.allocate(0,1);
+    lblsInitNatZOpts(0) = "build up n-at-z from recruitments (like TCSAM2013)"; 
+    lblsInitNatZOpts(1) = "calculate initial n-at-z using equilibrium calculations (like Gmacs)";
 }
 /***************************************************************
 *   function to read from file in ADMB format                  *
@@ -275,8 +292,14 @@ void ModelOptions::read(cifstream & is) {
         is>>optsFcAvg(idx);
         cout<<"= "<<optsFcAvg(idx)<<endl;
     }
-    if (debug) cout<<"optsFcAvg = "<<optsFcAvg<<endl;
+    is>>optsGrowth;
+    cout<<optsGrowth<<tb<<"#"<<lblsGrowthOpts(optsGrowth)<<endl;
+    is>>optsInitNatZ;
+    cout<<optsInitNatZ<<tb<<"#"<<lblsInitNatZOpts(optsInitNatZ)<<endl;
     if (debug){
+        cout<<"optsFcAvg    = "<<optsFcAvg<<endl;
+        cout<<"optsGrowth   = "<<optsGrowth<<endl;
+        cout<<"optsInitNatZ = "<<optsInitNatZ<<endl;
         cout<<"enter 1 to continue : ";
         cin>>debug;
         if (debug<0) exit(1);
@@ -295,7 +318,7 @@ void ModelOptions::write(ostream & os) {
     os<<"#######################################"<<endl;
 
     //averaging options for fishery capture rates
-    os<<"#Fishery Capture Rate Averaging Options"<<endl;
+    os<<"#----Fishery Capture Rate Averaging Options"<<endl;
     for (int o=lblsFcAvgOpts.indexmin();o<=lblsFcAvgOpts.indexmax();o++) {
         os<<"#"<<o<<" - "<<lblsFcAvgOpts(o)<<endl;
     }
@@ -303,6 +326,20 @@ void ModelOptions::write(ostream & os) {
     for (int f=1;f<=ptrMC->nFsh;f++){
         os<<ptrMC->lblsFsh(f)<<tb<<tb<<optsFcAvg(f)<<endl;
     }
+
+    //growth options
+    os<<"#----Growth Function Options"<<endl;
+    for (int o=lblsGrowthOpts.indexmin();o<=lblsGrowthOpts.indexmax();o++) {
+        os<<"#"<<o<<" - "<<lblsGrowthOpts(o)<<endl;
+    }
+    os<<optsGrowth<<endl;
+
+    //initial n-at-z options
+    os<<"#----Initial Numbers-At-Size Options"<<endl;
+    for (int o=lblsInitNatZOpts.indexmin();o<=lblsInitNatZOpts.indexmax();o++) {
+        os<<"#"<<o<<" - "<<lblsInitNatZOpts(o)<<endl;
+    }
+    os<<optsInitNatZ<<endl;
     
     if (debug) cout<<"#end ModelOptions::write(ostream)"<<endl;
 }
@@ -314,6 +351,8 @@ void ModelOptions::writeToR(ostream& os, std::string nm, int indent) {
     for (int n=0;n<indent;n++) os<<tb;
         os<<nm<<"=list("<<endl;
     indent++;
+        for (int n=0;n<indent;n++) os<<tb;
+        os<<"growth="<<optsGrowth<<cc<<"initNatZ="<<optsInitNatZ<<endl;
     indent--;
     for (int n=0;n<indent;n++) os<<tb;
         os<<")";
