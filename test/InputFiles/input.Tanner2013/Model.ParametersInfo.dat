@@ -1,0 +1,399 @@
+########################################
+#parameters info file for TCSAM2014    #
+#2013 run                              #
+########################################
+#-------------------------------
+# Recruitment parameters
+#-------------------------------
+recruitment #parameter group name
+PARAMETER_COMBINATIONS
+2  #number of rows defining parameter combinations
+#id  YEAR_BLOCK    pLnR    pLnRCV  pLgtRF   pLnRa   pLnRb    pDevsLnR
+  1    [-1:1974]     1        1        1       1       1        1      #model spin-up period
+  2    [1975:2012]   2        1        1       1       1        2      #data-informed model period  
+PARAMETERS
+pLnR #ln-scale mean recruitment parameter (2013 ok)
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1      0      10     ON      4.31        1       OFF           1        normal      6 3   #spin-up period  (0608)
+2      0      10     ON      4.31        1       OFF           1        normal      6 3   #model period    (0608)
+pLnRCV #ln-scale parameter for cv of recruitment
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -2.0   2.0    OFF   -0.43275213    -1       OFF           1      none                      #data-informed model period (init val equiv. to var=0.5)
+2     -2.0   5.0    OFF    2.0           -1       OFF           1      none                      #model spin-up period
+pLgtRX #logit-scale parameter for male sex ratio
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1     OFF       0        -1       OFF           1         normal      0  0.2       #full model period (ok 2013; init val equiv. to 1:1 sex ratio at rec.)
+pLnRa #ln-scale gamma distribution location paramter for pr(size-at-recruitment)
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     1       4      ON   2.442347      -1      OFF            1        normal    2.5 1  #init val -> ln(11.50) from "alpha1_rec" in TCSAM2013 (ok 2013)
+pLnRb #ln-scale gamma distribution scale paramter for pr(size-at-recruitment)
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     0       4    ON   1.386294       -1       OFF           1         normal   1.5  1  #init_val-> ln(4.00) from "beta_rec" in TCSAM2013 (ok 2013)
+pDevsLnR #annual ln-scale recruitment deviations
+2    #number of parameter vectors
+#id  idx.type  block      read?   lower   upper  jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     YEAR   [-1:1974]    FALSE   -10      10     ON      0         1         OFF           1        1stdiff_normal 0 1   #spin-up period (ok 2013)
+2     YEAR   [1975:2012]  FALSE   -10      10     ON      0         1         OFF           1        none   #model period   (ok 2013)
+#initial values vectors go here
+#-------------------------------
+# Natural mortality parameters
+#-------------------------------
+natural_mortality #process name
+100 #reference size for scaling
+PARAMETER_COMBINATIONS
+2  #number of rows defining combinations
+#id     YEAR_BLOCK       pLnM    pLnDMT  pLnDMX  pLnDMM  pLnDMXM   zScale?   
+  1  [-1:1979;1985:-1]     1       0        1        1       1         0    #default natural mortality
+  2     [1980:1984]        1       1        2        2       2         0    #enhanced mortality period
+PARAMETERS
+pLnM #base (ln-scale) natural mortality rates (mature males)
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+1     -3      2      OFF   -1.46968     -1         OFF        1         normal     -1.46968  2    #init: 0.23/yr (same as TCSAM2013) ok 2013
+pLnDMT #main temporal ln-scale natural mortality offset
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts                                  ok 2013
+1     -2      2      ON       0.0        -7         OFF        1         normal   0.0  1           #base offset during enhanced mortality period  ok 2013
+pLnDMX #ln-scale natural mortality offset for female crabs
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1      ON       0.0        -7         OFF        1         normal   0.0  1            #ok 2013
+2     -1      1      OFF      0.0        -7         OFF        1         normal   0.0  1            #ok 2013
+pLnDMM #ln-scale natural mortality offset for immature crabs
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1      ON       0.0        -7       OFF           1        normal   0.0  1            #ok 2013
+2     -1      1      OFF      0.0        -7       OFF           1        normal   0.0  1            #ok 2013
+pLnDMXM #ln-scale natural mortality offset for immature female crabs
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1      ON       0.0        -7       OFF           1        normal   0.0  1            #ok 2013
+2     -1      1      ON       0.0        -7       OFF           1        normal   0.0  1            #ok 2013
+#-------------------------------
+# Growth parameters
+#-------------------------------
+growth #process name
+PARAMETER_COMBINATIONS
+2  #number of rows defining combinations
+#id  YEAR_BLOCK     SEX    pLnGrA pLnGrB  pLnGrBeta  
+  1    [-1:-1]     MALE       1       1        1     #male growth   (entire model period)
+  2    [-1:-1]     FEMALE     2       2        1     #female growth (entire model period)
+PARAMETERS
+pLnGrA #ln-scale "a" growth coefficient
+2  #number of parameters
+#id      lower          upper      jitter?    init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1    -1.203972804  -0.510825624      ON    -0.798507696     -8       OFF           1        normal   -0.825671081  0.057038891  #males:   derived from 2013 am1
+2    -0.916290732  -0.356674944      ON    -0.597837001     -8       OFF           1        normal   -0.569863903  0.175443879  #females: derived from 2013 af1
+pLnGrB #ln-scale "b" growth coefficient
+2  #number of parameters
+#id      lower          upper      jitter?    init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1    -0.356674944   0.182321557      ON    -0.051293294     -8       OFF           1        normal   -0.052662653  0.105116361  #males:   derived from 2013 am1
+2    -0.510825624   0.182321557      ON    -0.105360516     -8       OFF           1        normal   -0.090727984  0.027369152  #females: derived from 2013 af1
+pLnGrBeta #growth transition matrix shape factor
+1  #number of parameters
+#id      lower   upper  jitter?    init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1         -1       1      ON    -0.287682072     -1       OFF           1        none       #both sexes: from 2013 growth_beta
+#-------------------------------
+# Maturity parameters
+#-------------------------------
+maturity #process name
+PARAMETER_COMBINATIONS
+2  #number of rows defining combinations
+#id YEAR_BLOCK   SEX    pLgtMat  
+  1  [-1:-1]    MALE       1     #male maturity   (entire model period)
+  2  [-1:-1]    FEMALE     2     #female maturity (entire model period)
+PARAMETERS
+pvLgtPrMat #logit-scale parameter vectors for Pr(maturity-at-size)
+2    #number of parameter vectors
+#id  idx.type  idx.block   read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1      SIZE     [1:-1]     FALSE     -10      10     OFF      0         2       OFF           1        normal      0 3   #males     ok 2013
+2      SIZE     [1:16]     FALSE     -10      10     OFF      0         2       OFF           1        normal      0 3   #females   ok 2013
+#-------------------------------
+# Selectivity parameters
+#-------------------------------
+selectivities #process name
+PARAMETER_COMBINATIONS
+28  #number of rows defining combinations
+ #id   YEAR_BLOCK   pS1  pS2  pS3  pS4  pS5  pS6 pDevsS1 pDevsS2 pDevsS3 pDevsS4 pDevsS5 pDevsS6  fsZ    SelType
+#survey 
+  1    [1975:1981]   1    1    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1975-1981 males
+  2    [1975:1981]   2    2    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1975-1981 females
+  3    [1982:-2]   3    3    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1982+ males
+  4    [1982:-2]   4    4    0    0    0    0     0      0        0      0        0       0     0  asclogistic5095   #z50, dz95 for AFSC.1982+ females
+#TCF  
+  5    [-1:-1]       5    5    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for TCF females (entire model period)
+  6    [-1:1990]     6    6    0    0    0    0     0      0        0      0        0       0    -1  asclogisticLn50   #ln(z50), slope for TCF males pre-1991
+  7    [1991:1996]   6    6    0    0    0    0     1      0        0      0        0       0    -1  asclogisticLn50   #ln(z50), slope for TCF males 1991-1996 (slope same as pre-1991)
+  8    [2005:2009]   6    7    0    0    0    0     1      0        0      0        0       0    -1  asclogisticLn50   #ln(z50), slope for TCF males 2005-2009
+#SCF  
+  9    [-1:1996]     7    8    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for SCF females (pre-1997)
+ 10    [1997:2004]   8    9    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for SCF females (1997-2004)
+ 11    [2005:-1]     9   10    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for SCF females (2005+)
+ 12    [-1:1996]    10   11    1    1    0    0     0      0        0      0        0       0     0  dbllogistic       #asc(z50, slope), dsc(z50, slope) for SCF males (pre-1997)
+ 13    [1997:2004]  11   12    2    2    0    0     0      0        0      0        0       0     0  dbllogistic       #asc(z50, slope), dsc(z50, slope) for SCF males (1997-2004)
+ 14    [2005:-1]    12   13    3    3    0    0     0      0        0      0        0       0     0  dbllogistic       #asc(z50, slope), dsc(z50, slope) for SCF males (2005+)
+#RKF 
+ 15    [-1:1996]    13   14    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for RKF females (pre-1997)
+ 16    [1997:2004]  14   15    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for RKF females (1997-2004)
+ 17    [2005:-1]    15   16    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for RKF females (2005+)
+ 18    [-1:1996]    16   17    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for RKF males (pre-1997)
+ 19    [1997:2004]  17   18    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for RKF males (1997-2004)
+ 20    [2005:-1]    18   19    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for RKF males (2005+)
+#GTF 
+ 21    [-1:1986]    19   20    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for GTF females (pre-1997)
+ 22    [1987:1996]  20   21    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for GTF females (1997-2004)
+ 23    [1997:-1]    21   22    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for GTF females (2005+)
+ 24    [-1:1986]    22   23    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for GTF males (pre-1997)
+ 25    [1987:1996]  23   24    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for GTF males (1997-2004)
+ 26    [1997:-1]    24   25    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for GTF males (2005+)
+#TCF retained 
+ 27    [-1:1990]    25   26    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for TCF retained males  (pre-1991)
+ 28    [1991:-1]    26   27    0    0    0    0     0      0        0      0        0       0     0  asclogistic       #z50, slope for TCF retained males  (1991+)
+PARAMETERS
+pS1 #1st input to selectivity function
+26  #number of parameters
+ #id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+#survey
+  1    0      200   OFF       50.0        2        OFF        1         normal      75   100      #z50 for sel(1): AFSC.1975-1981 males
+  2    0      200   OFF       50.0        2        OFF        1         normal      75   100      #z50 for sel(2): AFSC.1975-1981 females
+  3    0      200   OFF       50.0        2        OFF        1         normal      75   100      #z50 for sel(3): AFSC.1982+ males
+  4    0      200   OFF       50.0        2        OFF        1         normal      75   100      #z50 for sel(4): AFSC.1982+ females
+#TCF  
+  5   80      150   OFF      115.0        3        OFF        1         normal     100   100      #z50 for sel(5): TCF female selectivity (all years)
+  6    4        5   OFF        4.5        3        OFF        1         normal       4.5   2      #mean ln(z50) for sel(6,7,8): TCF males (all years)
+#SCF
+  7   50      150   OFF      100.0        -4        OFF        1         normal     100   100      #z50 for sel( 9): SCF females pre-1997
+  8   50      120   OFF       85.0        -4        OFF        1         normal     100   100      #z50 for sel(10): SCF females 1997-2004 
+  9   50      120   OFF       85.0        -4        OFF        1         normal     100   100      #z50 for sel(11): SCF females 2005+
+ 10   60      150   OFF      100.0        -4        OFF        1         normal     100   100      #asc z50 for sel(12): SCF males pre-1997
+ 11   60      150   OFF      100.0        -4        OFF        1         normal     100   100      #asc z50 for sel(13): SCF males 1997-2004 
+ 12   60      150   OFF      100.0        -4        OFF        1         normal     100   100      #asc z50 for sel(14): SCF males 2005+
+#RKF 
+ 13   50      150   OFF      100.0        -3        OFF        1         normal     100   100      #z50 for sel(15): RKF females pre-1997 
+ 14   50      150   OFF      100.0        -3        OFF        1         normal     100   100      #z50 for sel(16): RKF females 1997-2004 
+ 15   50      170   OFF      110.0        -3        OFF        1         normal     100   100      #z50 for sel(17): RKF females 2005+
+ 16   95      150   OFF      122.5        -3        OFF        1         normal     100   100      #z50 for sel(18): RKF males pre-1997 
+ 17   95      150   OFF      122.5        -3        OFF        1         normal     100   100      #z50 for sel(19): RKF males 1997-2004 
+ 18   95      150   OFF      122.5        -3        OFF        1         normal     100   100      #z50 for sel(20): RKF males 2005+
+#GTF 
+ 19   40      125.01   OFF    82.505      3        OFF        1         normal     100   100      #z50 for sel(21): GTF females pre-1987 
+ 20   40      250.01   OFF   145.005      3        OFF        1         normal     100   100      #z50 for sel(22): GTF females 1987-1996 
+ 21   40      150.01   OFF    95.0        3        OFF        1         normal     100   100      #z50 for sel(23): GTF females 1997+
+ 22   40      120.01   OFF    80.005      3        OFF        1         normal     100   100      #z50 for sel(24): GTF males pre-1987 
+ 23   40      120.01   OFF    80.005      3        OFF        1         normal     100   100      #z50 for sel(25): GTF males 1987-1996 
+ 24   40      120.01   OFF    80.005      3        OFF        1         normal     100   100      #z50 for sel(26): GTF males 1997+
+#TCF retention 
+ 25   85      160      OFF   122.5        3        OFF        1         normal     100   100      #z50 for sel(27): retained TCF males pre-1991
+ 26   85      160      OFF   122.5        3        OFF        1         normal     100   100      #z50 for sel(28): retained TCF males 1991+
+pS2 #2nd input to selectivity function
+27  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+#survey dz95's
+  1     0      100   OFF       50          2        OFF        1         normal      50   100     #dz95 for sel(1) AFSC.1975-1981 males
+  2     0      100   OFF       50          2        OFF        1         normal      50   100     #dz95 for sel(2) AFSC.1975-1981 females
+  3     0      100   OFF       50          2        OFF        1         normal      50   100     #dz95 for sel(3) AFSC.1982+ males
+  4     0      100   OFF       50          2        OFF        1         normal      50   100     #dz95 for sel(4) AFSC.1982+ females
+#TCF slopes 
+  5     0.1    0.4   OFF       0.25        3        OFF        1         normal      0.25   2     #slope for sel(5)    TCF female selectivity
+  6     0.05   0.75  OFF       0.40        3        OFF        1         normal      0.25   2     #slope for sels(6,7) TCF male selectivity pre-1997
+  7     0.1    0.4   OFF       0.25        3        OFF        1         normal      0.25   2     #slope for sel( 8)   TCF male selectivity 2005-2009
+#SCF  asc slopes
+  8     0.05   0.5   OFF       0.275       -4        OFF        1         normal      0.25   2     #slope for sel( 9)   SCF females pre-1997
+  9     0.05   0.5   OFF       0.275       -4        OFF        1         normal      0.25   2     #slope for sel(10)   SCF females 1997-2004
+ 10     0.05   0.5   OFF       0.275       -4        OFF        1         normal      0.25   2     #slope for sel(11)   SCF females 2004+
+ 11     0.01   0.5   OFF       0.255       -4        OFF        1         normal      0.25   2     #asc slope for sel(12)   SCF males pre-1997
+ 12     0.01   0.5   OFF       0.255       -4        OFF        1         normal      0.25   2     #asc slope for sel(13)   SCF males 1997-2004
+ 13     0.01   0.5   OFF       0.255       -4        OFF        1         normal      0.25   2     #asc slope for sel(14)   SCF males 2004+
+#RKF slopes
+ 14     0.005  0.5   OFF       0.2525      -3        OFF        1         normal      0.25   2     #slope for sel(15)   RKF females pre-1997
+ 15     0.005  0.5   OFF       0.255       -3        OFF        1         normal      0.25   2     #slope for sel(16)   RKF females 1997-2004
+ 16     0.01   0.5   OFF       0.255       -3        OFF        1         normal      0.25   2     #slope for sel(17)   RKF females 2004+
+ 17     0.01   0.5   OFF       0.255       -3        OFF        1         normal      0.25   2     #slope for sel(18)   RKF males pre-1997
+ 18     0.01   0.5   OFF       0.255       -3        OFF        1         normal      0.25   2     #slope for sel(19)   RKF males 1997-2004
+ 19     0.01   0.5   OFF       0.255       -3        OFF        1         normal      0.25   2     #slope for sel(20)   RKF males 2004+
+#GTF slopes
+ 20     0.01   0.5   OFF       0.255       3        OFF        1         normal      0.25   2     #slope for sel(21)   GTF females pre-1987
+ 21     0.005  0.5   OFF       0.2525      3        OFF        1         normal      0.25   2     #slope for sel(22)   GTF females 1987-1996
+ 22     0.01   0.5   OFF       0.255       3        OFF        1         normal      0.25   2     #slope for sel(23)   GTF females 1997+
+ 23     0.01   0.5   OFF       0.255       3        OFF        1         normal      0.25   2     #slope for sel(24)   GTF males pre-1987
+ 24     0.01   0.5   OFF       0.255       3        OFF        1         normal      0.25   2     #slope for sel(25)   GTF males 1987-1996
+ 25     0.01   0.5   OFF       0.255       3        OFF        1         normal      0.25   2     #slope for sel(26)   GTF males 1997+
+#TCF retention 
+ 26     0.25   1.01  OFF       0.63        3        OFF        1         normal      0.75   2     #slope for sel(27)   retained TCF males pre-1991
+ 27     0.25   2.01  OFF       1.13        3        OFF        1         normal      1.1    2     #slope for sel(28)   retained TCF males 1991+
+pS3 #2nd input to selectivity function
+3  #number of parameters
+ #id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+#SCF males descending limb z50s
+ 1   40      200   OFF      120.0        -4        OFF        1         normal     120   100      #dsc z50 for sel(12): SCF males pre-1997  sel(9)
+ 2   40      200   OFF      120.0        -4        OFF        1         normal     120   100      #dsc z50 for sel(13): SCF males 1997-2004 
+ 3   40      200   OFF      120.0        -4        OFF        1         normal     120   100      #dsc z50 for sel(14): SCF males 2005+
+pS4 #2nd input to selectivity function
+3  #number of parameters
+ #id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+#SCF males descending limb slopes 
+ 1     0.01   0.5   OFF       0.255       -4        OFF        1         normal      0.25   2     #dsc slope for sel(12)   SCF males pre-1997
+ 2     0.01   0.5   OFF       0.255       -4        OFF        1         normal      0.25   2     #dsc slope for sel(13)   SCF males 1997-2004
+ 3     0.01   0.5   OFF       0.255       -4        OFF        1         normal      0.25   2     #dsc slope for sel(14)   SCF males 2004+
+pS5 #2nd input to selectivity function
+0  #number of parameters
+pS6 #2nd input to selectivity function
+0  #number of parameters
+pDevsS1 #annual deviations associated with pS1
+1    #number of parameter vectors
+ #id  idx.type  block                  read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+ 1    YEAR  [1991:1996;2005:2009]    FALSE   -0.5    0.5    OFF       0           3       OFF           1        normal     0 2  #ln(z50) devs for TCF male selectivity post-1991  
+pDevsS2 #annual deviations associated with pS2
+0    #number of parameter vectors
+#id  idx.type  min.idx   max.idx   read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pDevsS3 #annual deviations associated with pS3
+0    #number of parameter vectors
+#id  idx.type  min.idx   max.idx   read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pDevsS4 #annual deviations associated with pS4
+0    #number of parameter vectors
+#id  idx.type  min.idx   max.idx   read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pDevsS5 #annual deviations associated with pS5
+0    #number of parameter vectors
+#id  idx.type  min.idx   max.idx   read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pDevsS6 #annual deviations associated with pS6
+0    #number of parameter vectors
+#id  idx.type  min.idx   max.idx   read?   lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+#-------------------------------
+# Fishery parameters
+#-------------------------------
+fisheries #process name
+PARAMETER_COMBINATIONS
+36  #number of rows defining combinations
+#TCF
+#id FISHERY  YEAR_BLOCK                        SEX    pHM     pLnC    pLnDCT  pLnDCX  pLnDCM  pLnDCXM   pDevsLnC   idx.SelFcn idx.RetFcn  useER  
+ 1    1       [-1:1964]                       FEMALE   1       1        0      0        0       0          0            5         0        0    #TCF females historical period
+ 2    1       [1965:1984;1987:1996;2005:2009] FEMALE   1       2        0      0        0       0          1            5         0        0    #TCF females data period
+ 3    1       [-1:1964]                       MALE     1       1        0      0        0       0          0            6        27        0    #TCF males historical period
+ 4    1       [1965:1984;1987:1990]           MALE     1       1        0      0        0       0          1            6        27        0    #TCF males pre-observer data period
+ 5    1       [1991:1996]                     MALE     1       2        0      0        0       0          1            7        28        0    #TCF males observer data period
+ 6    1       [2005:2009]                     MALE     1       2        0      0        0       0          1            8        28        0    #TCF males observer data period
+#SCF
+#id FISHERY  YEAR_BLOCK                        SEX    pHM     pLnC    pLnDCT  pLnDCX  pLnDCM  pLnDCXM   pDevsLnC   idx.SelFcn idx.RetFcn  useER  
+ 7    2       [-1:1977]                       FEMALE   1       3        0      0        0       0          0            9         0        0    #SCF females historical period
+ 8    2       [1978:1991]                     FEMALE   1       0        0      0        0       0          0            9         0        1    #SCF females effort data period
+ 9    2       [1992:1996]                     FEMALE   1       4        0      0        0       0          2            9         0        0    #SCF females observer data period
+10    2       [1997:2004]                     FEMALE   1       4        0      0        0       0          2           10         0        0    #SCF females observer data period
+11    2       [2005:-1]                       FEMALE   1       4        0      0        0       0          2           11         0        0    #SCF females observer data period
+12    2       [-1:1977]                       MALE     1       3        0      0        0       0          0           12         0        0    #SCF males historical period
+13    2       [1978:1991]                     MALE     1       0        0      0        0       0          0           12         0        1    #SCF males effort data period
+14    2       [1992:1996]                     MALE     1       4        0      0        0       0          2           12         0        0    #SCF males observer data period
+15    2       [1997:2004]                     MALE     1       4        0      0        0       0          2           13         0        0    #SCF males observer data period
+16    2       [2005:-1]                       MALE     1       4        0      0        0       0          2           14         0        0    #SCF males observer data period
+#RKF
+#id FISHERY  YEAR_BLOCK                        SEX    pHM     pLnC    pLnDCT  pLnDCX  pLnDCM  pLnDCXM   pDevsLnC   idx.SelFcn idx.RetFcn  useER  
+17    3       [-1:1952]                       FEMALE   1       5        0      0        0       0          0           15         0        0    #RKF females historical period
+18    3       [1953:1991]                     FEMALE   1       0        0      0        0       0          0           15         0        1    #RKF females effort data period
+19    3       [1992:1993]                     FEMALE   1       6        0      0        0       0          3           15         0        0    #RKF females observer data period
+20    3       [1996]                          FEMALE   1       6        0      0        0       0          3           15         0        0    #RKF females observer data period
+21    3       [1997:2004]                     FEMALE   1       6        0      0        0       0          3           16         0        0    #RKF females observer data period
+22    3       [2005:-1]                       FEMALE   1       6        0      0        0       0          3           17         0        0    #RKF females observer data period
+23    3       [-1:1952]                       MALE     1       5        0      0        0       0          0           18         0        0    #RKF males historical period
+24    3       [1953:1991]                     MALE     1       0        0      0        0       0          0           18         0        1    #RKF males effort data period
+25    3       [1992:1993]                     MALE     1       6        0      0        0       0          3           18         0        0    #RKF males observer data period
+26    3       [1996]                          MALE     1       6        0      0        0       0          3           18         0        0    #RKF males observer data period
+27    3       [1997:2004]                     MALE     1       6        0      0        0       0          3           19         0        0    #RKF males observer data period
+28    3       [2005:-1]                       MALE     1       6        0      0        0       0          3           20         0        0    #RKF males observer data period
+#GTF
+29    4       [-1:1972]                       FEMALE   2       7        0      0        0       0          0           21         0        0    #GTF females historical period
+30    4       [1973:1986]                     FEMALE   2       8        0      0        0       0          4           21         0        0    #GTF females observer data period
+31    4       [1987:1996]                     FEMALE   2       8        0      0        0       0          4           22         0        0    #GTF females observer data period
+32    4       [1997:-1]                       FEMALE   2       8        0      0        0       0          4           23         0        0    #GTF females observer data period
+33    4       [-1:1972]                       MALE     2       7        0      0        0       0          0           24         0        0    #GTF males historical period
+34    4       [1973:1986]                     MALE     2       8        0      0        0       0          4           24         0        0    #GTF males observer data period
+35    4       [1987:1996]                     MALE     2       8        0      0        0       0          4           25         0        0    #GTF males observer data period
+36    4       [1997:-1]                       MALE     2       8        0      0        0       0          4           26         0        0    #GTF males observer data period
+PARAMETERS
+pHM #handling mortality (0-1)
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+1      0       1    OFF      0.5         -1        OFF        1         none    #default handling mortality for pot fisheries (not estimated)
+2      0       1    OFF      0.8         -1        OFF        1         none    #default handling mortality for trawl fisheries (not estimated)
+pLnC #base (ln-scale) capture rate (mature males)
+8  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+#TCF
+1     -5      2     OFF     -3.0        -1        OFF        1         none                #base capture rate (c=0.05), TCF historical period (pre-1965)
+2     -5      5     OFF     -0.7         1        OFF        1         none                #base capture rate, TCF data period (1965+)
+#SCF
+3     -5      2     OFF     -4.605      -1        OFF        1         none                #base capture rate (c=0.01), SCF historical period (pre-1978)
+4     -5      5     OFF     -3.0        -4        OFF        1         none                #base capture rate, SCF data period (1992+)
+#RKF
+5     -5      2     OFF     -3.912      -1        OFF        1         none                #base capture rate (c=0.02), RKF historical period (pre-1953)
+6    -10     10     OFF     -5.25       -4        OFF        1         none                #base capture rate, RKF data period (1992+)
+#GTF
+7     -5      2     OFF     -3.912      -1        OFF        1         none                #base capture rate (c=0.02), GTF historical period (pre-1973)
+8     -5      5     OFF     -4.0         2        OFF        1         none                #base capture rate, GTF data period (1973+)
+pLnDCT #main temporal ln-scale capture rate offset
+0  #number of parameters
+#id  lower   upper jitter?   init_val       phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pLnDCX #ln-scale capture rate offset for female crabs
+0  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pLnDCM #ln-scale capture rate offset for immature crabs
+0  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pLnDCXM #ln-scale capture rate offset for immature female crabs
+0  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+pDevsLnC #annual ln-scale capture rate deviations
+4    #number of parameter vectors
+ #id  idx.type            idx.block              read?   lower   upper jitter? init_val  phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+ 1     YEAR   [1965:1984;1987:1996;2005:2009]    FALSE     -15    15     OFF      0        2       OFF           1        normal      0 4   #TCF
+ 2     YEAR   [1992:-1]                          FALSE     -15    15     OFF      0       -4       OFF           1        normal      0 4   #SCF
+ 3     YEAR   [1992:1993;1996:-1]                FALSE     -15    15     OFF      0       -5       OFF           1        normal      0 4   #RKF
+ 4     YEAR   [1973:-1]                          FALSE     -15    15     OFF      0        3       OFF           1        normal      0 4   #GTF
+#initial values vectors go here
+#-------------------------------
+# Survey parameters
+#-------------------------------
+surveys #process name
+PARAMETER_COMBINATIONS
+6  #number of rows defining combinations
+#id SURVEY   YEAR_BLOCK   SEX     pLnQ    pLnDQT  pLnDQX  pLnDQM  pLnDQXM   idx.SelFcn   
+ 1    1     [1975:1981]  MALE      1        1      1        0       0          1        #AFSC bottom trawl survey pre-1982  (pre gear standardization)
+ 2    1     [1975:1981]  FEMALE    1        1      1        0       0          2        #AFSC bottom trawl survey pre-1982
+ 3    1     [1982:1987]  MALE      1        0      2        0       0          3        #AFSC bottom trawl survey 1982-1987 (pre northwest extension) 
+ 4    1     [1982:1987]  FEMALE    1        0      2        0       0          4        #AFSC bottom trawl survey 1982-1987
+ 5    1     [1988:-2]  MALE      1        0      2        0       0          3        #AFSC bottom trawl survey 1988+     (post northwest extension) 
+ 6    1     [1988:-2]  FEMALE    1        0      2        0       0          4        #AFSC bottom trawl survey 1988+
+PARAMETERS
+pLnQ #base (ln-scale) survey catchability (mature males)
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?  prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1     OFF      0.0        -1         OFF        1         normal     0  2    #init: Q = 1 (same as TCSAM2013)                   ok 2013
+pLnDQT #main temporal ln-scale catchability offset
+1  #number of parameters
+#id  lower   upper jitter?   init_val       phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      0     OFF   -0.287682072       -4         OFF        1         normal   0.0  1  #init: exp(lnQ+lnDQT)=0.75 (same as TCSAM2013)   ok 2013
+pLnDQX #ln-scale catchability offset for female crabs
+2  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1     OFF      0.0        -4        OFF        1         normal   0.0  1      #adjust to TCSAM2013 1975-1981
+2     -1      1     OFF      0.0        -4        OFF        1         normal   0.0  1      #adjust to TCSAM2013 1982+
+pLnDQM #ln-scale catchability offset for immature crabs
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1     OFF      0.0       -6      OFF           1        normal   0.0  1
+pLnDQXM #ln-scale catchability offset for immature female crabs
+1  #number of parameters
+#id  lower   upper jitter? init_val    phase   resample?   prior_wgt   prior_type  prior_params    prior_consts
+1     -1      1     OFF      0.0       -6       OFF           1        normal   0.0  1
+
+
+
+
+
+
+
+
+

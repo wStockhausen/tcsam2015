@@ -1,8 +1,0 @@
-#####################################################################
-#TCSAM2015 Model Datasets File                                      #
-#####################################################################
-./Model.Data.BioInfo.dat 			#biological info file
-1   #number of fishery data files
-./Model.Data.Fishery.TCF.dat #data file for TCF 
-1   #number of survey data files
-./Model.Data.Survey.NMFS_trawl_survey.dat 			#data file for NMFS trawl survey 
