@@ -10,6 +10,7 @@
  * 20140930: switched MALE, FEMALE so MALE=1, FEMALE=2
  * 20141030: switched ANY to ALL
  * 20150113: added FIT_BY_XSE, FIT_BY_XMSE
+ * 20150302: added RSTR_... constants and converter
  */
 
 #pragma once
@@ -24,6 +25,7 @@ class rpt{
 
 class tcsamDims{
     public:
+        static adstring formatForR(const adstring& s);
         static adstring getSXsForR(int mn,int mx);
         static adstring getMSsForR(int mn,int mx);
         static adstring getSCsForR(int mn,int mx);
@@ -59,6 +61,9 @@ namespace tcsam{
     const adstring STR_MALE    = "MALE";   //string indicating male
     const adstring STR_FEMALE  = "FEMALE"; //string indicating female
     const adstring STR_ALL_SXs = "ALL_SEX";//string indicating all sexes combined
+//    const adstring RSTR_MALE    = "male";   //string indicating male
+//    const adstring RSTR_FEMALE  = "female"; //string indicating female
+//    const adstring RSTR_ALL_SXs = "all sexes";//string indicating all sexes combined
 //    extern adstring_array STR_SXs(1,nSXs);  //string array
     
     //maturity states
@@ -69,6 +74,9 @@ namespace tcsam{
     const adstring STR_IMMATURE = "IMMATURE";//string indicating immature
     const adstring STR_MATURE   = "MATURE";  //string indicating mature
     const adstring STR_ALL_MSs  = "ALL_MATURITY"; //string indicating all maturity states combined
+//    const adstring RSTR_IMMATURE = "immature";//string indicating immature
+//    const adstring RSTR_MATURE   = "mature";  //string indicating mature
+//    const adstring RSTR_ALL_MSs  = "all maturity"; //string indicating all maturity states combined
 //    const adstring_array STR_MSs(1,nMSs);  //string array
         
     //shell conditions
@@ -79,6 +87,9 @@ namespace tcsam{
     const adstring STR_NEW_SHELL = "NEW_SHELL"; //string indicating new shell condition
     const adstring STR_OLD_SHELL = "OLD_SHELL"; //string indicating old shell condition
     const adstring STR_ALL_SCs   = "ALL_SHELL"; //string indicating all shell conditions combined
+//    const adstring RSTR_NEW_SHELL = "new shell"; //string indicating new shell condition
+//    const adstring RSTR_OLD_SHELL = "old shell"; //string indicating old shell condition
+//    const adstring RSTR_ALL_SCs   = "all shell"; //string indicating all shell conditions combined
 //    const adstring_array STR_SCs(1,nSCs);  //string array
     
     //objective function fitting option types

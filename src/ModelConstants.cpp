@@ -6,34 +6,83 @@
  * 20141203: 1. Changed std::exit(-1) to exit(-1) for MinGW compatibility.
  * 20150113: 1. Added FIT_BY_XSE, FIT_BY_XMSE
  * 20150210: 1. Added conversion from UNITS_KMT to other units
+ * 20150302: 1. Added tcsamDims::formatForR(adstring).
+ *           2. Revised getDDsForR(...) functions (DD=SX,SC,MS) to use formatForR(...)
 */
 
 using namespace tcsam;
 
 std::ofstream rpt::echo("EchoData.dat",std::ios::trunc);
 
+/**
+ * Format for R output: lower case, replace "_"'s with spaces
+ * @param s
+ * @return 
+ */
+adstring tcsamDims::formatForR(const adstring& s){
+//    rpt::echo<<"In formatForR() with '"<<s<<"'"<<endl;
+    adstring tmp; tmp = s; tmp.to_lower();
+//    rpt::echo<<"tmp = "<<tmp<<endl;
+    int p = tmp.pos('_');
+//    rpt::echo<<"p = "<<p<<endl;
+    while (p>0){
+        tmp(p)=' ';
+        p = tmp.pos('_');
+//        rpt::echo<<"p = "<<p<<endl;
+    }
+//    rpt::echo<<"original: '"<<s<<"'. Re-formatted: '"<<tmp<<"'"<<endl;
+    return tmp;
+}
+
+/**
+ * Convert a vector of model sexes (defined by the input indices) to an
+ * R character vector formatted as part of an R list, using 'x'
+ * as the name.
+ * 
+ * @param mn
+ * @param mx
+ * @return 
+ */
 adstring tcsamDims::getSXsForR(int mn,int mx){
-    adstring dms = "sex=c("+qt+getSexType(mn)+qt;
+    adstring dms = "x=c("+qt+formatForR(getSexType(mn))+qt;
     for (int i=(mn+1);i<=mx;i++) {
-        dms += cc+qt+getSexType(i)+qt;
+        dms += cc+qt+formatForR(getSexType(i))+qt;
     }
     dms += ")";
     return dms;
 }
 
+/**
+ * Convert a vector of model maturity states (defined by the input indices) to an
+ * R character vector formatted as part of an R list, using 'm'
+ * as the name.
+ * 
+ * @param mn
+ * @param mx
+ * @return 
+ */
 adstring tcsamDims::getMSsForR(int mn,int mx){
-    adstring dms = "maturity=c("+qt+getMaturityType(mn)+qt;
+    adstring dms = "m=c("+qt+formatForR(getMaturityType(mn))+qt;
     for (int i=(mn+1);i<=mx;i++) {
-        dms += cc+qt+getMaturityType(i)+qt;
+        dms += cc+qt+formatForR(getMaturityType(i))+qt;
     }
     dms += ")";
     return dms;
 }
 
+/**
+ * Convert a vector of model shell conditions (defined by the input indices) to an
+ * R character vector formatted as part of an R list, using 's'
+ * as the name.
+ * 
+ * @param mn
+ * @param mx
+ * @return 
+ */
 adstring tcsamDims::getSCsForR(int mn,int mx){
-    adstring dms = "'shell condition'=c("+qt+getShellType(mn)+qt;
+    adstring dms = "s=c("+qt+formatForR(getShellType(mn))+qt;
     for (int i=(mn+1);i<=mx;i++) {
-        dms += cc+qt+getShellType(i)+qt;
+        dms += cc+qt+formatForR(getShellType(i))+qt;
     }
     dms += ")";
     return dms;
@@ -67,6 +116,9 @@ int tcsam::getSexType(adstring s){
     if (s==STR_FEMALE)  return FEMALE;  else
     if (s==STR_ALL_SXs) return ALL_SXs; else
     std::cout<<"Unrecognized SexType '"<<s<<"'"<<std::endl;
+    std::cout<<"Potential values are:"<<endl;
+    std::cout<<"'"<<STR_MALE<<"'"<<std::endl;
+    std::cout<<"'"<<STR_FEMALE<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
     return 0;

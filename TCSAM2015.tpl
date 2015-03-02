@@ -69,6 +69,8 @@
 //              2. Revised model outputs to R to facilitate comparison with rsimTCSAM results
 //              3. Fixed problem with fsZ for selectivity functions constrained to be an integer
 //  2015-03-01: 1. Finished(?) revisions to R output.
+//  2015-03-02: 1. Changed R format for model dimensions so all are lower case and "_"s are replaced by spaces
+//              2. Changed R format for survey, fishery names so all "_"s are replaced by spaces
 //
 // =============================================================================
 // =============================================================================
@@ -1190,8 +1192,7 @@ FUNCTION void writeMCMCtoR(ofstream& mcmc)
         //write other quantities
         mcmc<<"R_y="; wts::writeToR(mcmc,value(R_y)); mcmc<<cc<<endl;
         ivector bnds = wts::getBounds(spb_yx);
-        adstring dsxs = tcsamDims::getSXsForR(bnds[3],bnds[4]);
-        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spb_yx)),dsxs,ptrMC->dimYrsToR); //mcmc<<cc<<endl;
+        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spb_yx)),xDms,yDms); //mcmc<<cc<<endl;
         
     mcmc<<")"<<cc<<endl;
     mcmc.close();

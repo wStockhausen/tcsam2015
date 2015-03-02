@@ -135,9 +135,9 @@ void ModelConfiguration::read(cifstream & is) {
     
     dimYrsToR   = "y=c("+csvYrs+")";
     dimYrsP1ToR = "y=c("+csvYrsP1+")";
-    dimSXsToR   = "x=c("+csvSXs+")";
-    dimMSsToR   = "m=c("+csvMSs+")";
-    dimSCsToR   = "s=c("+csvSCs+")";
+    dimSXsToR   = "x=c("+tcsamDims::getSXsForR(1,tcsam::nSXs)+")";
+    dimMSsToR   = "m=c("+tcsamDims::getMSsForR(1,tcsam::nMSs)+")";
+    dimSCsToR   = "s=c("+tcsamDims::getSCsForR(1,tcsam::nSCs)+")";
     dimZCsToR   = "zc=c("+wts::to_qcsv(zCutPts)+")";
     dimZBsToR   = "z=c("+wts::to_qcsv(zMidPts)+")";
     dimZPsToR   = "zp=c("+wts::to_qcsv(zMidPts)+")";
@@ -227,19 +227,19 @@ void ModelConfiguration::writeToR(ostream& os, std::string nm, int indent) {
             os<<"y=list(n="<<mxYr-mnYr<<cc<<"mny="<<mnYr<<cc<<"asy="<<asYr<<cc<<"mxy="<<mxYr<<cc<<
                            "nms=c("<<csvYrsP1<<"),vls="<<mnYr<<":"<<asYr<<"),"<<endl;
         for (int n=0;n<indent;n++) os<<tb;
-            os<<"x=list(n="<<tcsam::nSXs<<",nms=c("<<csvSXs<<"))"<<cc<<endl;
+            os<<"x=list(n="<<tcsam::nSXs<<",nms=c("<<tcsamDims::formatForR(csvSXs)<<"))"<<cc<<endl;
         for (int n=0;n<indent;n++) os<<tb;
-            os<<"m=list(n="<<tcsam::nMSs<<",nms=c("<<csvMSs<<"))"<<cc<<endl;
+            os<<"m=list(n="<<tcsam::nMSs<<",nms=c("<<tcsamDims::formatForR(csvMSs)<<"))"<<cc<<endl;
         for (int n=0;n<indent;n++) os<<tb;
-            os<<"s=list(n="<<tcsam::nSCs<<",nms=c("<<csvSCs<<"))"<<cc<<endl;
+            os<<"s=list(n="<<tcsam::nSCs<<",nms=c("<<tcsamDims::formatForR(csvSCs)<<"))"<<cc<<endl;
         for (int n=0;n<indent;n++) os<<tb;
             os<<"z=list(n="<<nZBs<<",nms=c("<<csvZBs<<"),vls=c("<<wts::to_csv(zMidPts)<<"))"<<cc<<endl;
         for (int n=0;n<indent;n++) os<<tb;
             os<<"zc=list(n="<<nZBs+1<<",nms=c("<<csvZCs<<"),vls=c("<<wts::to_csv(zCutPts)<<"))"<<cc<<endl;
         for (int n=0;n<indent;n++) os<<tb;
-            os<<"f=list(n="<<nFsh<<cc<<"nms=c("<<csvFsh<<"))"<<cc<<endl;
+            os<<"f=list(n="<<nFsh<<cc<<"nms=c("<<wts::replace('_',' ',csvFsh)<<"))"<<cc<<endl;
         for (int n=0;n<indent;n++) os<<tb;
-            os<<"v=list(n="<<nSrv<<cc<<"nms=c("<<csvSrv<<"))"<<endl;
+            os<<"v=list(n="<<nSrv<<cc<<"nms=c("<<wts::replace('_',' ',csvSrv)<<"))"<<endl;
         indent--;
     for (int n=0;n<indent;n++) os<<tb;
         os<<")"<<cc;

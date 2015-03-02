@@ -326,7 +326,7 @@ void SurveyData::write(ostream & os){
 void SurveyData::writeToR(ostream& os, std::string nm, int indent) {
     if (debug) cout<<"SurveyData::writing to R"<<endl;
     for (int n=0;n<indent;n++) os<<tb;
-    os<<nm<<"=list(name="<<qt<<name<<qt<<cc<<endl;
+    os<<nm<<"=list(name="<<qt<<wts::replace('_',' ',name)<<qt<<cc<<endl;
     indent++;
         //abundance
         if (hasN) {ptrN->writeToR(os,"abundance",indent); os<<cc<<endl;}
@@ -499,7 +499,7 @@ void FisheryData::write(ostream & os){
 void FisheryData::writeToR(ostream& os, std::string nm, int indent) {
     if (debug) cout<<"FisheryData::writing to R"<<endl;
     for (int n=0;n<indent;n++) os<<tb;
-    os<<nm<<"=list(name="<<qt<<name<<qt<<cc<<endl;
+    os<<nm<<"=list(name="<<qt<<wts::replace('_',' ',name)<<qt<<cc<<endl;
     indent++;
         //effort
         if (hasEff) {ptrEff->writeToR(os,"effort",indent); os<<cc<<endl;}

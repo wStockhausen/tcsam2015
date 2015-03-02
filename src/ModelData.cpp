@@ -1333,27 +1333,33 @@ void ModelDatasets::writeToR(ostream& os, std::string nm, int indent) {
             ptrBio->writeToR(os,"bio",indent); os<<cc<<std::endl;
         
         //survey data
+        adstring srvNm;
         for (int n=0;n<indent;n++) os<<tb;
         os<<"surveys=list("<<std::endl;
         indent++;
             if (ppSrv) {
                 for (int i=0;i<(nSrv-1);i++) {
-                    ppSrv[i]->writeToR(os,(char*)ppSrv[i]->name,indent); os<<cc<<std::endl;
+                    srvNm = "`"+wts::replace('_',' ',ppSrv[i]->name)+"`";
+                    ppSrv[i]->writeToR(os,(char*)srvNm,indent); os<<cc<<std::endl;
                 }
-                ppSrv[nSrv-1]->writeToR(os,(char*)ppSrv[nSrv-1]->name,indent); os<<std::endl;
+                srvNm = "`"+wts::replace('_',' ',ppSrv[nSrv-1]->name)+"`";
+                ppSrv[nSrv-1]->writeToR(os,(char*)srvNm,indent); os<<std::endl;
             }
         indent--;
         for (int n=0;n<indent;n++) os<<tb;
         os<<"),"<<std::endl;            
         
         //fishery data
+        adstring fshNm;
         for (int n=0;n<indent;n++) os<<tb;
         os<<"fisheries=list("<<std::endl;
         indent++;
             if (ppFsh) {
                 for (int i=0;i<(nFsh-1);i++) {
-                    ppFsh[i]->writeToR(os,(char*)ppFsh[i]->name,indent); os<<cc<<std::endl;
+                    fshNm = "`"+wts::replace('_',' ',ppFsh[i]->name)+"`";
+                    ppFsh[i]->writeToR(os,(char*)fshNm,indent); os<<cc<<std::endl;
                 }
+                fshNm = "`"+wts::replace('_',' ',ppFsh[nFsh-1]->name)+"`";
                 ppFsh[nFsh-1]->writeToR(os,(char*)ppFsh[nFsh-1]->name,indent); os<<std::endl;
             }
         indent--;

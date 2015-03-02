@@ -13,6 +13,8 @@
  *                the model configuration file. These should now be changed in ModelConstants.hpp
  *                and the model recompiled for different configurations.
  * 2014-12-03: 1. Added asYr (assessment year) as input, replacing mxYr. Now, mxYr = asYr-1.
+ * 2015-03-01: 1. Added "dims" adstring variables to facilitate output to R.
+ *             2. Added optsGrowth and optsInitNatZ options to ModelOptions.
  */
 
 #ifndef MODELCONFIGURATION_HPP
