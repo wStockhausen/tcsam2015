@@ -135,9 +135,9 @@ void ModelConfiguration::read(cifstream & is) {
     
     dimYrsToR   = "y=c("+csvYrs+")";
     dimYrsP1ToR = "y=c("+csvYrsP1+")";
-    dimSXsToR   = "x=c("+tcsamDims::getSXsForR(1,tcsam::nSXs)+")";
-    dimMSsToR   = "m=c("+tcsamDims::getMSsForR(1,tcsam::nMSs)+")";
-    dimSCsToR   = "s=c("+tcsamDims::getSCsForR(1,tcsam::nSCs)+")";
+    dimSXsToR   = tcsamDims::getSXsForR(1,tcsam::nSXs);
+    dimMSsToR   = tcsamDims::getMSsForR(1,tcsam::nMSs);
+    dimSCsToR   = tcsamDims::getSCsForR(1,tcsam::nSCs);
     dimZCsToR   = "zc=c("+wts::to_qcsv(zCutPts)+")";
     dimZBsToR   = "z=c("+wts::to_qcsv(zMidPts)+")";
     dimZPsToR   = "zp=c("+wts::to_qcsv(zMidPts)+")";
