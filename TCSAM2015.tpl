@@ -69,8 +69,10 @@
 //              2. Revised model outputs to R to facilitate comparison with rsimTCSAM results
 //              3. Fixed problem with fsZ for selectivity functions constrained to be an integer
 //  2015-03-01: 1. Finished(?) revisions to R output.
-//  2015-03-02: 1. Changed R format for model dimensions so all are lower case and "_"s are replaced by spaces
+//  2015-03-02: 1. Changed R format for model dimensions (sex, maturity, etc) so all are lower case and "_"s are replaced by spaces
 //              2. Changed R format for survey, fishery names so all "_"s are replaced by spaces
+//  2015-03-05: 1. Dropped 'm' dimension from prGr_yxmszz (now prGr_yxszz) to match rsimTCSAM (model assumes same growth for all molts)
+//              2. Dropped output of summary abundance arrays to decrease size of rep file.
 //
 // =============================================================================
 // =============================================================================
@@ -840,8 +842,8 @@ PARAMETER_SECTION
     3darray prMat_yxz(mnYr,mxYr,1,nSXs,1,nZBs);//prob. of immature crab molting to maturity given sex x, pre-molt size z
     
     //growth related quantities
-    3darray prGr_czz(1,npcGr,1,nZBs,1,nZBs);                          //prob of growth to z (row) from zp (col) by parameter combination
-    6darray prGr_yxmszz(mnYr,mxYr,1,nSXs,1,nMSs,1,nMSs,1,nZBs,1,nZBs);//prob of growth to z from zp given sex and whether molt is to maturity or not
+    3darray prGr_czz(1,npcGr,1,nZBs,1,nZBs);           //prob of growth to z (row) from zp (col) by parameter combination
+    5darray prGr_yxszz(mnYr,mxYr,1,nSXs,1,nSCs,1,nZBs,1,nZBs); //prob of growth to z (row) from zp (col) by year, sex, shell condition
     
     //Selectivity (and retention) functions
     matrix sel_cz(1,npcSel,1,nZBs);            //all selectivity functions (fisheries and surveys) by parameter combination (no devs))
@@ -1547,7 +1549,7 @@ FUNCTION void calcInitNatZ(int debug,ostream& cout)
         //use equilibrium calculation to set initial n-at-z (like gmacs)
         dvar3_array S1_msz(1,nMSs,1,nSCs,1,nZBs);       //survival until molting/mating
         dvar_matrix Th_sz(1,nSCs,1,nZBs);               //pr(molt to maturity|pre-molt size, molt)
-        dvar4_array T_mszz(1,nMSs,1,nSCs,1,nZBs,1,nZBs);//growth matrices
+        dvar3_array T_szz(1,nSCs,1,nZBs,1,nZBs);        //growth matrices (indep. of molt to maturity)
         dvar3_array S2_msz(1,nMSs,1,nSCs,1,nZBs);       //survival after molting/mating
 
         dvar_vector R_z(1,nZBs);
@@ -1555,13 +1557,13 @@ FUNCTION void calcInitNatZ(int debug,ostream& cout)
             R_z = initMnR*R_yx(mnYr,x)*R_yz(mnYr);//initial mean recruitment by size
             for (int s=1;s<=nSCs;s++){
                 Th_sz(s) = prMat_yxz(mnYr,x); //pr(molt to maturity|pre-molt size, molt)
+                for (int z=1;z<=nZBs;z++) T_szz(s,z) = prGr_yxszz(mnYr,x,s,z);//growth matrices
                 for (int m=1;m<=nMSs;m++){ 
                     S1_msz(m,s) = exp(-M_yxmsz(mnYr,x,m,s)*dtM(mnYr));      //survival until molting/growth/mating
                     S2_msz(m,s) = exp(-M_yxmsz(mnYr,x,m,s)*(1.0-dtM(mnYr)));//survival after molting/growth/mating
-                    for (int z=1;z<=nZBs;z++) T_mszz(m,s,z) = prGr_yxmszz(mnYr,x,m,s,z);//growth matrices
                 }//m
             }//s
-            n_yxmsz(mnYr,x) = calcEqNatZ(R_z, S1_msz, Th_sz, T_mszz, S2_msz, debug, cout);
+            n_yxmsz(mnYr,x) = calcEqNatZ(R_z, S1_msz, Th_sz, T_szz, S2_msz, debug, cout);
         }
     } else {
         cout<<"Unrecognized option for initial n-at-z: "<<optsInitNatZ<<endl;
@@ -1573,7 +1575,7 @@ FUNCTION void calcInitNatZ(int debug,ostream& cout)
 
 //-------------------------------------------------------------------------------------
 //calculate equilibrium size distribution
-FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar4_array& T_mszz, dvar3_array& S2_msz, int debug, ostream& cout)
+FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout)
     RETURN_ARRAYS_INCREMENT();
     if (debug>=dbgPopDy) cout<<"starting calcEqNatZ()"<<endl;
 
@@ -1590,19 +1592,19 @@ FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matri
     int o = OLD_SHELL;
     //immature new shell crab
     dvar_matrix S2_in = wts::diag(S2_msz(i,n)); //pr(survival|size) for immature new shell crab after molting occurs
-    dvar_matrix Tr_in = T_mszz(i,n);            //pr(Z_post|Z_pre, molt) for immature new shell crab pre-terminal molt
+    dvar_matrix Tr_in = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab pre-terminal molt
     dvar_matrix Th_in = wts::diag(Th_sz(n));    //pr(molt to maturity|pre-molt size,new shell, molting)
-    dvar_matrix Ph_in = identity_matrix(1,nZBs); //pr(molt|pre-molt size, new shell) [assumed that all immature crab molt]
+    dvar_matrix Ph_in = identity_matrix(1,nZBs);//pr(molt|pre-molt size, new shell) [assumed that all immature crab molt]
     dvar_matrix S1_in = wts::diag(S1_msz(i,n)); //pr(survival|size) for immature new shell crab before molting occurs
     //immature old shell crab [shouldn't be any of these]
     dvar_matrix S2_io = wts::diag(S2_msz(i,o)); //pr(survival|size) for immature old shell crab after molting occurs (but they didn't molt)
-    dvar_matrix Tr_io = T_mszz(i,o);             //pr(Z_post|Z_pre, molt) for immature old shell crab pre-terminal molt
+    dvar_matrix Tr_io = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab pre-terminal molt
     dvar_matrix Th_io = wts::diag(Th_sz(o));    //pr(molt to maturity|pre-molt size,old shell, molting)
-    dvar_matrix Ph_io = identity_matrix(1,nZBs);  //pr(molt|pre-molt size, old shell) [assumed all immature crab molt]
+    dvar_matrix Ph_io = identity_matrix(1,nZBs);//pr(molt|pre-molt size, old shell) [assumed all immature crab molt]
     dvar_matrix S1_io = wts::diag(S1_msz(i,o)); //pr(survival|size) for immature old shell crab before molting occurs
     //mature new shell crab
-    dvar_matrix Tr_mn = T_mszz(m,n);            //pr(Z_post|Z_pre, molt) for immature new shell crab undergoing terminal molt
-    dvar_matrix Tr_mo = T_mszz(m,o);            //pr(Z_post|Z_pre, molt) for immature old shell crab undergoing terminal molt
+    dvar_matrix Tr_mn = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab undergoing terminal molt (same as non-terminal molt)
+    dvar_matrix Tr_mo = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab undergoing terminal molt (same as non-terminal molt)
     dvar_matrix S2_mn = wts::diag(S2_msz(m,n)); //pr(survival|size) for mature new shell crab after molting occurs
     dvar_matrix S1_mn = wts::diag(S1_msz(m,n)); //pr(survival|size) for mature new shell crab before molting occurs (but they won't molt)
     //mature old shell crab
@@ -1801,9 +1803,9 @@ FUNCTION dvar4_array applyMGM(dvar4_array& n0_xmsz, int y, int debug, ostream& c
     dvar4_array n1_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
     n1_xmsz.initialize();
     for (int x=1;x<=nSXs;x++){
-        n1_xmsz(x,IMMATURE,NEW_SHELL) = prGr_yxmszz(y,x,IMMATURE,NEW_SHELL)*elem_prod(1.0-prMat_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
+        n1_xmsz(x,IMMATURE,NEW_SHELL) = prGr_yxszz(y,x,NEW_SHELL)*elem_prod(1.0-prMat_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
         n1_xmsz(x,IMMATURE,OLD_SHELL) = 0.0;
-        n1_xmsz(x,MATURE,NEW_SHELL)   = prGr_yxmszz(y,x,  MATURE,NEW_SHELL)*elem_prod(    prMat_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
+        n1_xmsz(x,MATURE,NEW_SHELL)   = prGr_yxszz(y,x,NEW_SHELL)*elem_prod(    prMat_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
         n1_xmsz(x,MATURE,OLD_SHELL)   = n0_xmsz(x,MATURE,NEW_SHELL)+n0_xmsz(x,MATURE,OLD_SHELL);
     }
     if (debug>dbgApply) cout<<"finished applyNatMGM("<<y<<")"<<endl;
@@ -2031,7 +2033,7 @@ FUNCTION void calcMaturity(int debug, ostream& cout)
 //* Returns:
 //*  void
 //* Alters:
-//*  prGr_yxmszz - year/sex/maturity state/size-specific growth transition matrices
+//*  prGr_yxszz - year/sex/maturity state/size-specific growth transition matrices
 //******************************************************************************
 FUNCTION void calcGrowth(int debug, ostream& cout)  
     if(debug>dbgCalcProcs) cout<<"Starting calcGrowth()"<<endl;
@@ -2043,7 +2045,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
     dvariable grBeta;
     
     prGr_czz.initialize();
-    prGr_yxmszz.initialize();
+    prGr_yxszz.initialize();
     
     dvar_matrix prGr_zz(1,nZBs,1,nZBs);
 
@@ -2110,13 +2112,11 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
             y = idxs(idx,1); //year index
             if ((mnYr<=y)&&(y<=mxYr)){
                 x = idxs(idx,2); //sex index
-                for (int m=1;m<=nMSs;m++){
-                    for (int s=1;s<=nSCs;s++){
-                        for (int z=1;z<=nZBs;z++) prGr_yxmszz(y,x,m,s,z) = prGr_czz(pc,z);
-                    }
-                }
+                for (int s=1;s<=nSCs;s++){
+                    for (int z=1;z<=nZBs;z++) prGr_yxszz(y,x,s,z) = prGr_czz(pc,z);
+                }//s
             }
-        }
+        }//idx
     }
     
     if (debug>dbgCalcProcs) cout<<"finished calcGrowth()"<<endl;
@@ -3528,20 +3528,20 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Starting ReportToR_ModelProcesses(...)"<<endl;
     
     os<<"mp=list("<<endl;
-        os<<"M_cxm         ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms); os<<cc<<endl;
-        os<<"prMolt2Mat_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);      os<<cc<<endl;
+        os<<"M_cxm         ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
+        os<<"prMolt2Mat_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
         os<<"prGr_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zbDms); os<<cc<<endl;
-        os<<"sel_cz        ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);      os<<cc<<endl;
+        os<<"sel_cz        ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
         
-        os<<"M_yxmsz        =";  wts::writeToR(os,wts::value(M_yxmsz),    yDms,xDms,mDms,sDms,zbDms);      os<<cc<<endl;
-        os<<"prMolt2Mat_yxz =";  wts::writeToR(os,     value(prMat_yxz),  yDms,xDms,zbDms);                os<<cc<<endl;
-        os<<"T_yxszz        =";  wts::writeToR(os,wts::value(prGr_yxmszz),yDms,xDms,mDms,sDms,zbDms,zpDms); os<<cc<<endl;
+        os<<"M_yxmsz        =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
+        os<<"prMolt2Mat_yxz =";  wts::writeToR(os,     value(prMat_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
+        os<<"T_yxszz        =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms); os<<cc<<endl;
         os<<"R_list=list("<<endl;
-            os<<"R_y   ="; wts::writeToR(os,value(R_y),  yDms);                              os<<cc<<endl;
-            os<<"R_yx  ="; wts::writeToR(os,value(R_yx), yDms,xDms);                         os<<cc<<endl;
-            os<<"R_yxz ="; wts::writeToR(os,value(R_yxz),yDms,xDms,zbDms);                    os<<cc<<endl;
-            os<<"Rx_c  ="; wts::writeToR(os,value(Rx_c),adstring("pc=1:"+str(npcRec)));      os<<cc<<endl;
-            os<<"R_cz  ="; wts::writeToR(os,value(R_cz),adstring("pc=1:"+str(npcRec)),zbDms); os<<endl;
+            os<<"R_y  ="; wts::writeToR(os,value(R_y), yDms);                              os<<cc<<endl;
+            os<<"R_yx ="; wts::writeToR(os,value(R_yx),yDms,xDms);                         os<<cc<<endl;
+            os<<"R_yz ="; wts::writeToR(os,value(R_yz),yDms,zbDms);                    os<<cc<<endl;
+            os<<"Rx_c ="; wts::writeToR(os,value(Rx_c),adstring("pc=1:"+str(npcRec)));      os<<cc<<endl;
+            os<<"R_cz ="; wts::writeToR(os,value(R_cz),adstring("pc=1:"+str(npcRec)),zbDms); os<<endl;
         os<<")"<<cc<<endl;
         os<<"F_list=list("<<endl;
             //handling mortality
@@ -3549,7 +3549,7 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
             os<<"cpF_fyxms ="; wts::writeToR(os,wts::value(cpF_fyxms ),fDms,yDms,xDms,mDms,sDms);      os<<cc<<endl;
             os<<"sel_fyxmsz="; wts::writeToR(os,wts::value(sel_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"ret_fyxmsz="; wts::writeToR(os,wts::value(ret_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-            os<<"tmF_yxmsz=";  wts::writeToR(os,wts::value(tmF_yxmsz),      yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
+            os<<"tmF_yxmsz ="; wts::writeToR(os,wts::value(tmF_yxmsz),      yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"cpF_fyxmsz="; wts::writeToR(os,wts::value(cpF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"rmF_fyxmsz="; wts::writeToR(os,wts::value(rmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"dmF_fyxmsz="; wts::writeToR(os,wts::value(dmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<endl;
@@ -3602,22 +3602,18 @@ FUNCTION void ReportToR_ModelResults(ostream& os, int debug, ostream& cout)
     d5_array b_vyxms   = tcsam::calcIYXMSfromIYXMSZ(vn_vyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
     
     os<<"mr=list("<<endl;
+        os<<"iN_xmsz ="; wts::writeToR(os,vn_yxmsz(mnYr),xDms,mDms,sDms,zbDms); os<<cc<<endl;
         os<<"P_list=list("<<endl;
             os<<"MB_yx    ="; wts::writeToR(os,value(spb_yx), yDms,xDms);                       os<<cc<<endl;
-            os<<"N_yxms   ="; wts::writeToR(os,       n_yxms,ypDms,xDms,mDms,sDms);             os<<cc<<endl;
             os<<"B_yxms   ="; wts::writeToR(os,       b_yxms,ypDms,xDms,mDms,sDms);             os<<cc<<endl;
             os<<"N_yxmsz  ="; wts::writeToR(os,     vn_yxmsz,ypDms,xDms,mDms,sDms,zbDms);        os<<cc<<endl;
             os<<"nmN_yxmsz="; wts::writeToR(os,wts::value(nmN_yxmsz),yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"tmN_yxmsz="; wts::writeToR(os,wts::value(tmN_yxmsz),yDms,xDms,mDms,sDms,zbDms); os<<endl;
         os<<")"<<cc<<endl;    
         os<<"F_list=list("<<endl;
-            os<<"cpN_fyxms ="; wts::writeToR(os,cpN_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
             os<<"cpB_fyxms ="; wts::writeToR(os,cpB_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
-            os<<"dsN_fyxms ="; wts::writeToR(os,dsN_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
             os<<"dsB_fyxms ="; wts::writeToR(os,dsB_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
-            os<<"rmN_fyxms ="; wts::writeToR(os,rmN_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
             os<<"rmB_fyxms ="; wts::writeToR(os,rmB_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
-            os<<"dmN_fyxms ="; wts::writeToR(os,dmN_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
             os<<"dmB_fyxms ="; wts::writeToR(os,dmB_fyxms,fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
             os<<"cpN_fyxmsz="; wts::writeToR(os,vcpN_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"dsN_fyxmsz="; wts::writeToR(os,vdsN_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
@@ -3626,7 +3622,6 @@ FUNCTION void ReportToR_ModelResults(ostream& os, int debug, ostream& cout)
         os<<")"<<cc<<endl;
         os<<"S_list=list("<<endl;
            os<<"MB_vyx  ="; wts::writeToR(os,value(mb_vyx),vDms,ypDms,xDms);            os<<cc<<endl;
-           os<<"N_vyxms ="; wts::writeToR(os,      n_vyxms,vDms,ypDms,xDms,mDms,sDms);  os<<cc<<endl;
            os<<"B_vyxms ="; wts::writeToR(os,      b_vyxms,vDms,ypDms,xDms,mDms,sDms);  os<<cc<<endl;
            os<<"N_vyxmsz="; wts::writeToR(os,    vn_vyxmsz,vDms,ypDms,xDms,mDms,sDms,zbDms); os<<endl;
        os<<")";
