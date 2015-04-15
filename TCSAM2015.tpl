@@ -73,6 +73,11 @@
 //              2. Changed R format for survey, fishery names so all "_"s are replaced by spaces
 //  2015-03-05: 1. Dropped 'm' dimension from prGr_yxmszz (now prGr_yxszz) to match rsimTCSAM (model assumes same growth for all molts)
 //              2. Dropped output of summary abundance arrays to decrease size of rep file.
+//  2015-03-24: 1. Added "writeParameters" function to write parameter info to csv 
+//  2015-04-01: 1. Assigned handling mortality by fishery, year to hmF_fy for output.
+//  2015-04-10: 1. Added penalties for final value in devs vectors to achieve consistency with bounds
+//              2. Added relative path functionality to data files
+//              3. Added debugModelOptions
 //
 // =============================================================================
 // =============================================================================
@@ -135,6 +140,7 @@ GLOBALS_SECTION
     int debugModelDatasets   = 0;
     int debugModelParamsInfo = 0;
     int debugModelParams     = 0;
+    int debugModelOptions    = 0;
     
     int debugDATA_SECTION    = 0;
     int debugPARAMS_SECTION  = 0;
@@ -251,6 +257,13 @@ DATA_SECTION
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugModelParamsInfo"))>-1) {
         debugModelParamsInfo=1;
         rpt::echo<<"#debugModelParamsInfo turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
+    //debugModelOptions
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugModelOptions"))>-1) {
+        debugModelOptions=1;
+        rpt::echo<<"#debugModelOptions turned ON"<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
@@ -449,7 +462,10 @@ DATA_SECTION
         if (debugModelParamsInfo<0) exit(1);
         ModelParametersInfo::debug=debugModelParamsInfo;
     }
-    rpt::echo<<"#----finished model parameters info---"<<endl;
+    rpt::echo<<"#----finished reading model parameters info---"<<endl;
+    rpt::echo<<"#-----------ModelParametersInfo---------------"<<endl;
+    rpt::echo<<(*ptrMPI)<<endl;
+    rpt::echo<<"#----finished ModelParametersInfo---"<<endl;
     if (debugDATA_SECTION){
         cout<<"#------------------ModelParametersInfo-----------------"<<endl;
         cout<<(*ptrMPI);
@@ -507,15 +523,15 @@ DATA_SECTION
  LOCAL_CALCS
     rpt::echo<<"#-----------------------------------"<<endl;
     rpt::echo<<"#Reading model options file '"<<ptrMC->fnMOs<<"'"<<endl;
-    if (debugModelParamsInfo) ModelOptions::debug=1;
+    if (debugModelOptions) ModelOptions::debug=1;
     ptrMOs = new ModelOptions(*ptrMC);
     ad_comm::change_datafile_name(ptrMC->fnMOs);
     ptrMOs->read(*(ad_comm::global_datafile));
-    if (debugModelParamsInfo) {
+    if (debugModelOptions) {
         cout<<"enter 1 to continue : ";
-        cin>>debugModelParamsInfo;
-        if (debugModelParamsInfo<0) exit(1);
-        ModelOptions::debug=debugModelParamsInfo;
+        cin>>debugModelOptions;
+        if (debugModelOptions<0) exit(1);
+        ModelOptions::debug=debugModelOptions;
     }
     rpt::echo<<"#------------------ModelOptions-----------------"<<endl;
     rpt::echo<<(*ptrMOs);
@@ -2390,6 +2406,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                             } else {//discard only
                                 dmF_fyxmsz(f,y,x,m,s) = hm*cpF_fyxmsz(f,y,x,m,s);//discard mortality
                             }
+                            hmF_fy(f,y) = hm;//save discard mortality rate
                         }
                     }
                 }
@@ -2610,11 +2627,90 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtNonDecLgtPrMat<<cc<<"pen="<<fPenNonDecLgtPrMat(i)<<cc<<"objfun="<<penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i)<<")";
     }
     if (debug<0) cout<<tb<<tb<<")"<<endl;//end of non-decreasing penalties list    
-    if (debug<0) cout<<tb<<")";//end of maturity penalties list
+    if (debug<0) cout<<tb<<"),";//end of maturity penalties list
+    
+    if (debug<0) cout<<tb<<"final.devs=list("<<endl;//start of devs penalties list
+    //penalties on final value of dev vectors
+    double penWgt = 1.0e6;//TODO: read in value from input file
+    //recruitment devs
+    if (ptrMPI->ptrRec->pDevsLnR->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsLnR=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsLnR,devsLnR);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //S1 devs
+    if (ptrMPI->ptrSel->pDevsS1->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsS1=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsS1,devsS1);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //S2 devs
+    if (ptrMPI->ptrSel->pDevsS2->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsS2=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsS2,devsS2);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //S3 devs
+    if (ptrMPI->ptrSel->pDevsS3->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsS3=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsS3,devsS3);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //S4 devs
+    if (ptrMPI->ptrSel->pDevsS4->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsS4=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsS4,devsS4);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //S5 devs
+    if (ptrMPI->ptrSel->pDevsS5->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsS5=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsS5,devsS5);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //S6 devs
+    if (ptrMPI->ptrSel->pDevsS6->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsS6=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsS6,devsS6);
+        if (debug<0) cout<<cc<<endl;
+    }
+    //capture rate devs
+    if (ptrMPI->ptrFsh->pDevsLnC->getSize()){
+        if (debug<0) cout<<tb<<tb<<"pDevsLnC=";
+        calcDevsPenalties(debug,cout,penWgt,pDevsLnC,devsLnC);
+        if (debug<0) cout<<cc<<endl;
+    }
+    
+    if (debug<0) cout<<tb<<"NULL)";//end of devs penalties list
     
     if (debug<0) cout<<")";//end of penalties list
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 
+//-------------------------------------------------------------------------------------
+//Calculate penalties on final values in devs vectors
+FUNCTION void calcDevsPenalties(int debug, ostream& cout, double penWgt, param_init_bounded_vector_vector& pDevs, dvar_matrix devs)    
+    double scale = 1.0e-2;//scale for posfun calculation
+    int idx;
+    double lower; double upper;
+    dvariable fPenLower;
+    dvariable fPenUpper;
+    if (debug<0) cout<<"list(";//start of list
+    for (int i=pDevs.indexmin();i<=pDevs.indexmax();i++){
+        if (pDevs(i).get_phase_start()){
+            idx = devs(i).indexmax();//index of final dev
+            lower = pDevs(i).get_minb();
+            upper = pDevs(i).get_maxb();
+            fPenLower.initialize();
+            fPenUpper.initialize();
+            posfun2(devs(i,idx)-lower,scale,fPenLower);
+            posfun2(upper-devs(i,idx),scale,fPenUpper);
+            objFun += penWgt*(fPenLower+fPenUpper);
+            if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgt<<cc<<"pen="<<fPenLower+fPenUpper<<cc<<"objfun="<<penWgt*(fPenLower+fPenUpper)<<cc<<
+                                                          "val="<<devs(i,idx)<<cc<<"minb="<<lower<<cc<<"maxb="<<upper<<cc<<"fPenL="<<fPenLower<<cc<<"fPenU="<<fPenUpper<<"),"<<endl;
+        }
+    }
+    if (debug<0) cout<<tb<<tb<<"NULL)";//end of penalties list
+    
 //-------------------------------------------------------------------------------------
 //Calculate 1st differences of vector
 FUNCTION dvar_vector calc1stDiffs(const dvar_vector& d)
@@ -3530,19 +3626,31 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
     os<<"mp=list("<<endl;
         os<<"M_cxm         ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
         os<<"prMolt2Mat_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
-        os<<"prGr_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zbDms); os<<cc<<endl;
+        os<<"prGr_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
         os<<"sel_cz        ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
         
         os<<"M_yxmsz        =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
         os<<"prMolt2Mat_yxz =";  wts::writeToR(os,     value(prMat_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
         os<<"T_yxszz        =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms); os<<cc<<endl;
         os<<"R_list=list("<<endl;
-            os<<"R_y  ="; wts::writeToR(os,value(R_y), yDms);                              os<<cc<<endl;
-            os<<"R_yx ="; wts::writeToR(os,value(R_yx),yDms,xDms);                         os<<cc<<endl;
-            os<<"R_yz ="; wts::writeToR(os,value(R_yz),yDms,zbDms);                    os<<cc<<endl;
-            os<<"Rx_c ="; wts::writeToR(os,value(Rx_c),adstring("pc=1:"+str(npcRec)));      os<<cc<<endl;
+            os<<"R_y  ="; wts::writeToR(os,value(R_y), yDms);                                os<<cc<<endl;
+            os<<"R_yx ="; wts::writeToR(os,value(R_yx),yDms,xDms);                           os<<cc<<endl;
+            os<<"R_yz ="; wts::writeToR(os,value(R_yz),yDms,zbDms);                          os<<cc<<endl;
+            os<<"Rx_c ="; wts::writeToR(os,value(Rx_c),adstring("pc=1:"+str(npcRec)));       os<<cc<<endl;
             os<<"R_cz ="; wts::writeToR(os,value(R_cz),adstring("pc=1:"+str(npcRec)),zbDms); os<<endl;
         os<<")"<<cc<<endl;
+        d6_array tmF_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);
+        for (int f=1;f<=nFsh;f++){
+            for (int y=mnYr;y<=mxYr;y++){
+                for (int x=1;x<=nSXs;x++){
+                    for (int m=1;m<=nMSs;m++){
+                        for (int s=1;s<=nSCs;s++){
+                            tmF_fyxmsz(f,y,x,m,s) = value(rmF_fyxmsz(f,y,x,m,s)+dmF_fyxmsz(f,y,x,m,s));
+                        }
+                    }
+                }
+            }
+        }
         os<<"F_list=list("<<endl;
             //handling mortality
             os<<"hm_fy     ="; wts::writeToR(os,     value(hmF_fy),    fDms,yDms);                     os<<cc<<endl;
@@ -3552,12 +3660,12 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
             os<<"tmF_yxmsz ="; wts::writeToR(os,wts::value(tmF_yxmsz),      yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"cpF_fyxmsz="; wts::writeToR(os,wts::value(cpF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
             os<<"rmF_fyxmsz="; wts::writeToR(os,wts::value(rmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-            os<<"dmF_fyxmsz="; wts::writeToR(os,wts::value(dmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<endl;
-//            os<<"tmF_fyxmsz="; wts::writeToR(os,wts::value(tmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<endl;
+            os<<"dmF_fyxmsz="; wts::writeToR(os,wts::value(dmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
+            os<<"tmF_fyxmsz="; wts::writeToR(os,            tmF_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<endl;
         os<<")"<<cc<<endl;
         os<<"S_list=list("<<endl;
             os<<"sel_vyxmsz="; wts::writeToR(os,wts::value(s_vyxmsz),vDms,ypDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-            os<<"Q_vyxms   ="; wts::writeToR(os,wts::value(q_vyxms), vDms,ypDms,xDms,mDms,sDms);      os<<cc<<endl;
+            os<<"Q_vyxms   ="; wts::writeToR(os,wts::value(q_vyxms), vDms,ypDms,xDms,mDms,sDms);       os<<cc<<endl;
             os<<"Q_vyxmsz  ="; wts::writeToR(os,wts::value(q_vyxmsz),vDms,ypDms,xDms,mDms,sDms,zbDms); os<<endl;
         os<<")";
     os<<")";
@@ -3994,6 +4102,63 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
     os<<")"<<endl;
     if (debug) cout<<"Finished ReportToR(...)"<<endl;
 
+//----------------------------------------------------------------------
+//Write parameter information to file
+FUNCTION void writeParameters(ofstream& os,int toR, int willBeActive)           
+    os<<"index, phase, idx.mn, idx.mx, min, max, value, name, type"<<endl;
+    //recruitment parameters
+    wts::writeParameter(os,pLnR,toR,willBeActive);      
+    wts::writeParameter(os,pLnRCV,toR,willBeActive);      
+    wts::writeParameter(os,pLgtRX,toR,willBeActive);      
+    wts::writeParameter(os,pLnRa,toR,willBeActive);      
+    wts::writeParameter(os,pLnRb,toR,willBeActive);      
+    wts::writeParameter(os,pDevsLnR,toR,willBeActive);      
+    
+    //natural mortality parameters
+    wts::writeParameter(os,pLnM,toR,willBeActive);      
+    wts::writeParameter(os,pLnDMT,toR,willBeActive);      
+    wts::writeParameter(os,pLnDMX,toR,willBeActive);      
+    wts::writeParameter(os,pLnDMM,toR,willBeActive);      
+    wts::writeParameter(os,pLnDMXM,toR,willBeActive);      
+    
+    //growth parameters
+    wts::writeParameter(os,pLnGrA,toR,willBeActive);      
+    wts::writeParameter(os,pLnGrB,toR,willBeActive);      
+    wts::writeParameter(os,pLnGrBeta,toR,willBeActive);      
+    
+    //maturity parameters
+    wts::writeParameter(os,pLgtPrMat,toR,willBeActive);      
+    
+    //selectivity parameters
+    wts::writeParameter(os,pS1,toR,willBeActive);      
+    wts::writeParameter(os,pS2,toR,willBeActive);      
+    wts::writeParameter(os,pS3,toR,willBeActive);      
+    wts::writeParameter(os,pS4,toR,willBeActive);      
+    wts::writeParameter(os,pS5,toR,willBeActive);      
+    wts::writeParameter(os,pS6,toR,willBeActive);      
+    wts::writeParameter(os,pDevsS1,toR,willBeActive);      
+    wts::writeParameter(os,pDevsS2,toR,willBeActive);      
+    wts::writeParameter(os,pDevsS3,toR,willBeActive);      
+    wts::writeParameter(os,pDevsS4,toR,willBeActive);      
+    wts::writeParameter(os,pDevsS5,toR,willBeActive);      
+    wts::writeParameter(os,pDevsS6,toR,willBeActive);      
+    
+    //fishery parameters
+    wts::writeParameter(os,pHM,toR,willBeActive);      
+    wts::writeParameter(os,pLnC,toR,willBeActive);      
+    wts::writeParameter(os,pLnDCT,toR,willBeActive);      
+    wts::writeParameter(os,pLnDCX,toR,willBeActive);      
+    wts::writeParameter(os,pLnDCM,toR,willBeActive);      
+    wts::writeParameter(os,pLnDCXM,toR,willBeActive);      
+    wts::writeParameter(os,pDevsLnC,toR,willBeActive);      
+    
+    //survey parameters
+    wts::writeParameter(os,pLnQ,toR,willBeActive);      
+    wts::writeParameter(os,pLnDQT,toR,willBeActive);      
+    wts::writeParameter(os,pLnDQX,toR,willBeActive);      
+    wts::writeParameter(os,pLnDQM,toR,willBeActive);      
+    wts::writeParameter(os,pLnDQXM,toR,willBeActive);      
+    
 // =============================================================================
 // =============================================================================
 REPORT_SECTION
@@ -4004,6 +4169,12 @@ REPORT_SECTION
     //write report as R file
     ReportToR(report,1,rpt::echo);
 
+    if (last_phase()) {
+        ofstream os("TCSAM2015.final_params.active.csv", ios::trunc);
+        writeParameters(os,0,1);
+        os.close();
+    }
+    
 // =============================================================================
 // =============================================================================
 BETWEEN_PHASES_SECTION

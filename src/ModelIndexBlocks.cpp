@@ -197,10 +197,10 @@ void IndexBlock::write(std::ostream & os){
     os<<(*ppIRs[nRCs-1])<<"]";
 }
 /*
- * Writes an IndexBlock as an un-named R list.
+ * Writes an IndexBlock as an unnamed character string.
  */
 void IndexBlock::writeToR(std::ostream& os){
-    
+    os<<"'"; write(os); os<<"'";
 }
 
 /*----------------------------------------------------------------------------*/
@@ -301,7 +301,10 @@ void IndexBlockSet::write(std::ostream & os){
  * Writes an IndexBlockSet as an un-named R list.
  */
 void IndexBlockSet::writeToR(std::ostream& os){
-    
+    os<<"list(type="<<type<<cc<<"nIBs="<<nIBs<<cc;
+    os<<"IBs=c("; 
+    for (int i=1;i<nIBs;i++) {ppIBs[i-1]->writeToR(os); os<<cc;}
+    ppIBs[nIBs-1]->writeToR(os); os<<")"<<")";
 }
 
 

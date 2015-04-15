@@ -1244,25 +1244,36 @@ ModelDatasets::~ModelDatasets(){
 *   read.                                                      *
 ***************************************************************/
 void ModelDatasets::read(cifstream & is){
+    cout<<"ModelDatasets input file name: '"<<is.get_file_name()<<"'"<<endl;
+    adstring parent = wts::getParentFolder(is);
+    cout<<"parent folder is '"<<parent<<endl;
+    
     rpt::echo<<"#------------------------------------------"<<std::endl;
     rpt::echo<<"reading Model Datasets file."<<std::endl;
     rpt::echo<<"#file name is '"<<is.get_file_name()<<"'"<<std::endl;
     rpt::echo<<"#------------------------------------------"<<std::endl;
     is>>fnBioData;
+    fnBioData = wts::concatenateFilePaths(parent,fnBioData);
     rpt::echo<<fnBioData<<tb<<"#bio data filename"<<std::endl;
     is>>nFsh;
     rpt::echo<<nFsh<<tb<<"#number of fishery datasets to read in"<<std::endl;
     if (nFsh){
         fnsFisheryData.allocate(1,nFsh);
         is>>fnsFisheryData; 
-        for (int i=1;i<=nFsh;i++) rpt::echo<<fnsFisheryData[i]<<tb<<"#fishery dataset "<<i<<std::endl;
+        for (int i=1;i<=nFsh;i++) {
+            fnsFisheryData[i] = wts::concatenateFilePaths(parent,fnsFisheryData[i]);
+            rpt::echo<<fnsFisheryData[i]<<tb<<"#fishery dataset "<<i<<std::endl;
+        }
     }
     is>>nSrv;
     rpt::echo<<nSrv<<tb<<"#number of survey datasets to read in"<<std::endl;
     if (nSrv){
         fnsSurveyData.allocate(1,nSrv);
         is>>fnsSurveyData; 
-        for (int i=1;i<=nSrv;i++) rpt::echo<<fnsSurveyData[i]<<tb<<"#survey dataset "<<i<<std::endl;
+        for (int i=1;i<=nSrv;i++) {
+            fnsSurveyData[i] = wts::concatenateFilePaths(parent,fnsSurveyData[i]);
+            rpt::echo<<fnsSurveyData[i]<<tb<<"#survey dataset "<<i<<std::endl;
+        }
     }
     
     //          Bio data

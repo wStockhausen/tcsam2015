@@ -65,6 +65,9 @@ void ModelConfiguration::write(const adstring & fn) {
 ***************************************************************/
 void ModelConfiguration::read(cifstream & is) {
     if (debug) cout<<"ModelConfiguration::read(cifstream & is)"<<endl;
+    cout<<"ModelConfiguration input file name: '"<<is.get_file_name()<<"'"<<endl;
+    adstring parent = wts::getParentFolder(is);
+    cout<<"parent folder is '"<<parent<<"'"<<endl;
     is>>cfgName;
     if (debug) cout<<cfgName<<endl;
     is>>mnYr;      //min model year
@@ -116,6 +119,10 @@ void ModelConfiguration::read(cifstream & is) {
     is>>fnMPI;//model parameters information file
     is>>fnMDS;//model datasets file
     is>>fnMOs;//model options file
+    
+    fnMPI = wts::concatenateFilePaths(parent,fnMPI);
+    fnMDS = wts::concatenateFilePaths(parent,fnMDS);
+    fnMOs = wts::concatenateFilePaths(parent,fnMOs);
     
     is>>str1; ModelConfiguration::jitter = wts::getOnOffType(str1);
     is>>ModelConfiguration::jitFrac;

@@ -10,3 +10,11 @@ TCF   3  #not used
 SCF   1  #average capture rate
 RKF   2  #average exploitation rate
 GTF   3  #not used
+#----Growth Function Options
+#0 - use gamma probability distribution (like TCSAM2013)
+#1 - use cumulative gamma distribution (like Gmacs)
+1
+#----Initial Numbers-At-Size Options
+#0 - build up n-at-z from recruitments (like TCSAM2013)
+#1 - calculate initial n-at-z using equilibrium calculations (like Gmacs)
+0
