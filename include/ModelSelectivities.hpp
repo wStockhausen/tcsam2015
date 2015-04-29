@@ -5,6 +5,7 @@
  * Created on August 13, 2012, 9:22 AM
  * 
  * 2014-12-05: 1. Added asclogisticLn50Ln95 and dbllogisticLn50Ln95 functions
+ * 2015-04-17: 1. Added dbllogistic50Ln95 function
  */
 
 #ifndef MODELSELECTIVITIES_HPP
@@ -46,8 +47,9 @@
             const static int ID_ASCLOGISTICLN50LN95=4; const static adstring STR_ASCLOGISTICLN50LN95; 
             const static int ID_DBLLOGISTIC        =5; const static adstring STR_DBLLOGISTIC; 
             const static int ID_DBLLOGISTIC5095    =6; const static adstring STR_DBLLOGISTIC5095; 
-            const static int ID_DBLLOGISTICLN50LN95=7; const static adstring STR_DBLLOGISTICLN50LN95; 
-            const static int ID_DBLNORMAL          =8; const static adstring STR_DBLNORMAL; 
+            const static int ID_DBLLOGISTIC50LN95  =7; const static adstring STR_DBLLOGISTIC50LN95; 
+            const static int ID_DBLLOGISTICLN50LN95=8; const static adstring STR_DBLLOGISTICLN50LN95; 
+            const static int ID_DBLNORMAL          =9; const static adstring STR_DBLNORMAL; 
 
             /**
              * Calculates ascending logistic function parameterized by 
@@ -130,6 +132,21 @@
              * @return - selectivity function values as dvar_vector
              */
             dvar_vector static dbllogistic5095(dvector& z, dvar_vector& params, double fsZ);
+            
+            /**
+             * Calculates double logistic function parameterized by 
+             *      params[1]: size where ascending limb = 0.5 (z50) 
+             *      params[2]: log-scale increment from z50 to z95 on ascending limb
+             *      params[3]: log-scale increment z95 on ascending limb to z95 on descending limb
+             *      params[4]: log-scale increment from z95 to z50 on descending limb
+             * Inputs:
+             * @param z      - dvector of sizes at which to compute function values
+             * @param params - dvar_vector of function parameters
+             * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+             * 
+             * @return - selectivity function values as dvar_vector
+             */
+            dvar_vector static dbllogistic50Ln95(dvector& z, dvar_vector& params, double fsZ);
             
             /**
              * Calculates double logistic function parameterized by 

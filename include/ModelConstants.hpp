@@ -11,6 +11,7 @@
  * 20141030: switched ANY to ALL
  * 20150113: added FIT_BY_XSE, FIT_BY_XMSE
  * 20150302: added RSTR_... constants and converter
+ * 20150417: revised STR_FIT_BY_ string values
  */
 
 #pragma once
@@ -95,14 +96,14 @@ namespace tcsam{
     //objective function fitting option types
     const adstring STR_FIT_NONE    = "NONE";
     const adstring STR_FIT_BY_TOT  = "BY_TOTAL";
-    const adstring STR_FIT_BY_X    = "BY_SEX";
-    const adstring STR_FIT_BY_XE   = "BY_SEX_EXTENDED";
-    const adstring STR_FIT_BY_XM   = "BY_SEX_MATURITY";
-    const adstring STR_FIT_BY_XME  = "BY_SEX_MATURITY_EXTENDED";
-    const adstring STR_FIT_BY_XS   = "BY_SEX_SHELL_CONDITON";
-    const adstring STR_FIT_BY_XSE  = "BY_SEX_SHELL_CONDITON_EXTENDED";
-    const adstring STR_FIT_BY_XMS  = "BY_SEX_MATURITY_SHELL_CONDITON";
-    const adstring STR_FIT_BY_XMSE = "BY_SEX_MATURITY_SHELL_CONDITON_EXTENDED";
+    const adstring STR_FIT_BY_X    = "BY_X";
+    const adstring STR_FIT_BY_XE   = "BY_XE";
+    const adstring STR_FIT_BY_XM   = "BY_XM";
+    const adstring STR_FIT_BY_XME  = "BY_XME";
+    const adstring STR_FIT_BY_XS   = "BY_XS";
+    const adstring STR_FIT_BY_XSE  = "BY_XSE";
+    const adstring STR_FIT_BY_XMS  = "BY_XMS";
+    const adstring STR_FIT_BY_XMSE = "BY_XMSE";
     const int FIT_NONE    = 0;
     const int FIT_BY_TOT  = 1;
     const int FIT_BY_X    = 2;

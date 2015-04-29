@@ -78,6 +78,9 @@
 //  2015-04-10: 1. Added penalties for final value in devs vectors to achieve consistency with bounds
 //              2. Added relative path functionality to data files
 //              3. Added debugModelOptions
+//  2015-04-20: 1. Added checks on fishery and survey names in DATA_SECTION.
+//  2015-04-28: 1. Fixed normalization for model size comps using BY_XMS option: it had been summing
+//                 over shell condition as well as size. SHould only have summed over size (now corrected).)
 //
 // =============================================================================
 // =============================================================================
@@ -554,6 +557,13 @@ DATA_SECTION
      int idx;
      for (int f=1;f<=nFsh;f++){
          idx = wts::which(ptrMDS->ppFsh[f-1]->name,ptrMC->lblsFsh);
+         if (idx<1){
+             cout<<"\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+             cout<<"Error specifying fishery names and labels in data file and config file."<<endl;
+             cout<<"Incorrect fishery name in data file is '"<<ptrMDS->ppFsh[f-1]<<"'"<<endl;
+             cout<<"Please fix names in files!!"<<endl;
+             exit(-1);
+         }
          mapD2MFsh(f)   = idx;//map from fishery data object f to model fishery idx
          mapM2DFsh(idx) = f;  //map from model fishery idx to fishery data object f
      }
@@ -570,6 +580,13 @@ DATA_SECTION
      int idx;
      for (int v=1;v<=nSrv;v++){
          idx = wts::which(ptrMDS->ppSrv[v-1]->name,ptrMC->lblsSrv);
+         if (idx<1){
+             cout<<"\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+             cout<<"Error specifying survey names and labels in data file and config file."<<endl;
+             cout<<"Incorrect survey name in data file is '"<<ptrMDS->ppSrv[v-1]<<"'"<<endl;
+             cout<<"Please fix names in files!!"<<endl;
+             exit(-1);
+         }
          mapD2MSrv(v)   = idx;//map from survey data object v to model survey idx
          mapM2DSrv(idx) = v;  //map from model survey idx to survey data object v
      }
@@ -2827,11 +2844,13 @@ FUNCTION void calcNormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivect
     dvariable nll = 0.0;
     dvar_vector zscr(mod.indexmin(),mod.indexmax());
     zscr.initialize();
-    for (int i=1;i<=yrs.size();i++){
-        y = yrs(i);
-        if ((zscr.indexmin()<=y)&&(y<=zscr.indexmax())) {
-            zscr(y) = (obs[i]-mod[y])/stdv[i];
-//            nll += log(stdv[i]);
+    if (sum(stdv)>0){
+        for (int i=1;i<=yrs.size();i++){
+            y = yrs(i);
+            if ((zscr.indexmin()<=y)&&(y<=zscr.indexmax())) {
+                zscr(y) = (obs[i]-mod[y])/stdv[i];
+                //  nll += log(stdv[i]);
+            }
         }
     }
     nll += 0.5*norm2(zscr);
@@ -2856,11 +2875,13 @@ FUNCTION void calcLognormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, iv
     dvariable nll = 0.0;
     dvar_vector zscr(mod.indexmin(),mod.indexmax());
     zscr.initialize();
-    for (int i=1;i<=yrs.size();i++){
-        y = yrs(i);
-        if ((zscr.indexmin()<=y)&&(y<=zscr.indexmax())) {
-            zscr(y) = (log(obs[i]+smlVal)-log(mod[y]+smlVal))/stdv[i];
-//            nll += log(stdv[i]);
+    if (sum(stdv)>0){
+        for (int i=1;i<=yrs.size();i++){
+            y = yrs(i);
+            if ((zscr.indexmin()<=y)&&(y<=zscr.indexmax())) {
+                zscr(y) = (log(obs[i]+smlVal)-log(mod[y]+smlVal))/stdv[i];
+                //nll += log(stdv[i]);
+            }
         }
     }
     nll += 0.5*norm2(zscr);
@@ -2888,7 +2909,8 @@ FUNCTION void calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int
         dvector vmod = value(mod);
         dvector nlls = -ss*(elem_prod(obs,log(vmod+smlVal)-log(obs+smlVal)));
         dvector zscrs = elem_div(obs-vmod,sqrt(elem_prod((vmod+smlVal),1.0-(vmod+smlVal))/ss));//pearson residuals
-        double effN = (vmod*(1.0-vmod))/norm2(obs-vmod);
+        double effN = 0.0;
+        if (ss>0) effN = (vmod*(1.0-vmod))/norm2(obs-vmod);
         cout<<"list(nll.type='multinomial',wgt="<<wgt<<cc<<"nll="<<nll<<cc<<"objfun="<<wgt*nll<<cc<<"ss="<<ss<<cc<<"effN="<<effN<<cc<<endl; 
         adstring dzbs = "size=c("+ptrMC->csvZBs+")";
         cout<<"nlls=";  wts::writeToR(cout,nlls, dzbs); cout<<cc<<endl;
@@ -3135,7 +3157,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                             }
                         }
                     }
-                    oP_z /= sum(oP_z);
+                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
                     if (debug>0){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
@@ -3174,7 +3196,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
                         }
-                        oP_z /= sum(oP_z);
+                        if (sum(oP_z)>0) oP_z /= sum(oP_z);
                         if (debug>0){
                             cout<<"ss = "<<ss<<endl;
                             cout<<"oP_Z = "<<oP_z<<endl;
@@ -3218,7 +3240,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                             for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
                         }
                     }//x
-                    oP_z /= sum(oP_z);
+                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
                     if (debug>0){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
@@ -3257,7 +3279,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 ss   += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
-                            oP_z /= sum(oP_z);
+                            if (sum(oP_z)>0) oP_z /= sum(oP_z);
                             if (debug>0){
                                 cout<<"ss = "<<ss<<endl;
                                 cout<<"oP_Z = "<<oP_z<<endl;
@@ -3302,7 +3324,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                             if (m<=nMSs) {for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);}
                         }//m
                     }//x
-                    oP_z /= sum(oP_z);
+                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
                     if (debug>0){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
@@ -3336,7 +3358,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                     for (int s=1;s<=nSCs;s++){
                         ss = 0;
                         nT.initialize();
-                        for (int m=1;m<=ALL_MSs;m++) nT += sum(mA_yxmsz(y,x,m,s));//=0 if not calculated
+                        for (int m=1;m<=nMSs;m++) nT += sum(mA_yxmsz(y,x,m,s));//=0 if not calculated
                         if (value(nT)>0){
                             oP_z.initialize();//observed size comp.
                             mP_z.initialize();//model size comp.
@@ -3344,7 +3366,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 ss   += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
-                            oP_z /= sum(oP_z);
+                            if (sum(oP_z)>0) oP_z /= sum(oP_z);
                             if (debug>0){
                                 cout<<"ss = "<<ss<<endl;
                                 cout<<"oP_Z = "<<oP_z<<endl;
@@ -3373,13 +3395,13 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                     for (int m=1;m<=nMSs;m++){
                         for (int s=1;s<=nSCs;s++) {
                             ss = 0;
-                            nT = sum(mA_yxmsz(y,x,m));//=0 if not calculated
+                            nT = sum(mA_yxmsz(y,x,m,s));//=0 if not calculated
                             if (value(nT)>0){
                                 oP_z.initialize();//observed size comp.
                                 mP_z.initialize();//model size comp.                            
                                 ss   += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
-                                oP_z /= sum(oP_z);
+                                if (sum(oP_z)>0) oP_z /= sum(oP_z);
                                 if (debug>0){
                                     cout<<"ss = "<<ss<<endl;
                                     cout<<"oP_Z = "<<oP_z<<endl;
@@ -4211,8 +4233,8 @@ FINAL_SECTION
 // =============================================================================
 RUNTIME_SECTION
 //one number for each phase, if more phases then uses the last number
-  maximum_function_evaluations 1000,5000,5000,5000,5000,5000,10000
-  convergence_criteria 1,1,.01,.001,.001,.001,1e-3,1e-3
+  maximum_function_evaluations 5000,5000,5000,5000,5000,5000,10000
+  convergence_criteria 0.1,0.1,.01,.001,.001,.001,1e-3,1e-4
 
 // =============================================================================
 // =============================================================================

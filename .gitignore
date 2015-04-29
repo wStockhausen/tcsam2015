@@ -20,3 +20,12 @@ Makefile
 /test/InputFiles/rsimTCSAM.A2/Model.Data.Fishery.GTF.dat
 /test/InputFiles/rsimTCSAM.A2/devs.csv
 /test/InputFiles/rsimTCSAM.A2/runADMB.TCSAM2015.fit.rsimData.sh
+/test/InputFiles/rsimTCSAM.A1/Model.Data.Fishery.TCF.dat
+/test/InputFiles/rsimTCSAM.A1/Model.Data.Survey.NMFS_trawl_survey.dat
+/test/InputFiles/rsimTCSAM.A1/rsimTCSAM.A1.RData
+/test/InputFiles/rsimTCSAM.A1/Model.Datasets.dat
+/test/InputFiles/rsimTCSAM.A1/rsimTCSAM.A1.pdf
+/test/InputFiles/rsimTCSAM.A1/Model.Data.BioInfo.dat
+/test/InputFiles/rsimTCSAM.A1/Model.Config.dat
+/test/InputFiles/rsimTCSAM.A1/devs.csv
+/test/InputFiles/rsimTCSAM.A1/rsim.ParametersInfo.dat

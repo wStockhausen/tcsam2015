@@ -49,6 +49,7 @@ int SelFcns::getSelFcnID(adstring str){
     if (str==STR_ASCLOGISTICLN50LN95) return ID_ASCLOGISTICLN50LN95;
     if (str==STR_DBLLOGISTIC)         return ID_DBLLOGISTIC;
     if (str==STR_DBLLOGISTIC5095)     return ID_DBLLOGISTIC5095;
+    if (str==STR_DBLLOGISTIC50LN95)   return ID_DBLLOGISTIC50LN95;
     if (str==STR_DBLLOGISTICLN50LN95) return ID_DBLLOGISTICLN50LN95;
     if (str==STR_DBLNORMAL)           return ID_DBLNORMAL;
     cout<<"Error in SelFcns::getSelFcnID(adstring str)"<<endl;
@@ -86,6 +87,9 @@ adstring SelFcns::getSelFcnID(int id){
         case ID_DBLLOGISTIC5095: 
             if (debug) cout<<"SelFcn = "<<STR_DBLLOGISTIC5095<<endl;
             return STR_DBLLOGISTIC5095;
+        case ID_DBLLOGISTIC50LN95: 
+            if (debug) cout<<"SelFcn = "<<STR_DBLLOGISTIC50LN95<<endl;
+            return STR_DBLLOGISTIC50LN95;
         case ID_DBLLOGISTICLN50LN95: 
             if (debug) cout<<"SelFcn = "<<STR_DBLLOGISTICLN50LN95<<endl;
             return STR_DBLLOGISTICLN50LN95;
@@ -127,6 +131,7 @@ dvar_vector SelFcns::calcSelFcn(int id,dvector& z, dvar_vector& params, double f
         case ID_ASCLOGISTICLN50LN95: {s=asclogisticLn50Ln95(z,params,fsZ); break;}
         case ID_DBLLOGISTIC:         {s=dbllogistic(z,params,fsZ);         break;}
         case ID_DBLLOGISTIC5095:     {s=dbllogistic5095(z,params,fsZ);     break;}
+        case ID_DBLLOGISTIC50LN95:   {s=dbllogistic50Ln95(z,params,fsZ);   break;}
         case ID_DBLLOGISTICLN50LN95: {s=dbllogisticLn50Ln95(z,params,fsZ); break;}
         case ID_DBLNORMAL:           {s=dblnormal(z,params,fsZ);           break;}
         default:
@@ -149,6 +154,7 @@ const adstring SelFcns::STR_ASCLOGISTIC50LN95  ="asclogistic50ln95";
 const adstring SelFcns::STR_ASCLOGISTICLN50LN95="asclogisticln50ln95";
 const adstring SelFcns::STR_DBLLOGISTIC        ="dbllogistic";
 const adstring SelFcns::STR_DBLLOGISTIC5095    ="dbllogistic5095";
+const adstring SelFcns::STR_DBLLOGISTIC50LN95  ="dbllogistic50ln95";
 const adstring SelFcns::STR_DBLLOGISTICLN50LN95="dbllogisticln50ln95";
 const adstring SelFcns::STR_DBLNORMAL          ="dblnormal";
 
@@ -372,6 +378,48 @@ dvar_vector SelFcns::dbllogistic5095(dvector& z, dvar_vector& params, double fsZ
 
 /**
  * Calculates double logistic function parameterized by 
+ *      params[1]: size where ascending limb = 0.5 (z50) 
+ *      params[2]: log-scale increment from z50 to z95 on ascending limb
+ *      params[3]: log-scale increment z95 on ascending limb to z95 on descending limb
+ *      params[4]: log-scale increment from z95 to z50 on descending limb
+ * Inputs:
+ * @param z      - dvector of sizes at which to compute function values
+ * @param params - dvar_vector of function parameters
+ * @param fsZ    - size at which function = 1 (i.e., fully-selected size) [double]
+ * 
+ * @return - selectivity function values as dvar_vector
+ */
+dvar_vector SelFcns::dbllogistic50Ln95(dvector& z, dvar_vector& params, double fsZ){
+    RETURN_ARRAYS_INCREMENT();
+    if (debug) cout<<"Starting SelFcns::dbllogistic50Ln95(...)"<<endl;
+    dvariable n; n.initialize();
+    dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
+    dvariable z50a = params(1);
+    dvariable dza  = exp(params(2));//increment from z50a to z95a
+    dvariable dzz  = exp(params(3));//increment from z95a to z95d
+    dvariable dzd  = exp(params(4));//increment from z95d to z50d
+    dvariable z50d = z50a+dza+dzz+dzd; 
+    s = elem_prod(1.0/(1.0+exp(-log(19.0)*(z-z50a)/dza)),1.0/(1.0+exp(-log(19.0)*(z50d-z)/dzd)));
+    if (fsZ>0){
+        n = (1.0+exp(-log(19.0)*(fsZ-z50a)/dza))*(1.0+exp(-log(19.0)*(z50d-fsZ)/dzd));//normalization constant
+        s *= n;
+    } else if (fsZ<0) {
+        n = 1.0/max(s);
+        s *= n; //normalize by max
+    } //otherwise don't normalize it
+    if (debug) {
+        rpt::echo<<"params, fsZ = "<<params(1)<<tb<<params(2)<<tb<<fsZ<<endl;
+        rpt::echo<<"n = "<<n<<endl;
+        rpt::echo<<"z = "<<z<<endl;
+        rpt::echo<<"s = "<<s<<endl;
+        cout<<"Finished SelFcns::dbllogistic50Ln95(...)"<<endl;
+    }
+    RETURN_ARRAYS_DECREMENT();
+    return s;
+}
+
+/**
+ * Calculates double logistic function parameterized by 
  *      params[1]: log-scale size where ascending limb = 0.5 (z50) 
  *      params[2]: log-scale increment from z50 to z95 on ascending limb
  *      params[3]: log-scale increment z95 on ascending limb to z95 on descending limb
@@ -385,7 +433,7 @@ dvar_vector SelFcns::dbllogistic5095(dvector& z, dvar_vector& params, double fsZ
  */
 dvar_vector SelFcns::dbllogisticLn50Ln95(dvector& z, dvar_vector& params, double fsZ){
     RETURN_ARRAYS_INCREMENT();
-    if (debug) cout<<"Starting SelFcns::dbllogistic5095(...)"<<endl;
+    if (debug) cout<<"Starting SelFcns::dbllogisticLn50Ln95(...)"<<endl;
     dvariable n; n.initialize();
     dvar_vector s(z.indexmin(),z.indexmax()); s.initialize();
     dvariable z50a = exp(params(1));
@@ -406,7 +454,7 @@ dvar_vector SelFcns::dbllogisticLn50Ln95(dvector& z, dvar_vector& params, double
         rpt::echo<<"n = "<<n<<endl;
         rpt::echo<<"z = "<<z<<endl;
         rpt::echo<<"s = "<<s<<endl;
-        cout<<"Finished SelFcns::dbllogistic5095(...)"<<endl;
+        cout<<"Finished SelFcns::dbllogisticLn50Ln95(...)"<<endl;
     }
     RETURN_ARRAYS_DECREMENT();
     return s;
