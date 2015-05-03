@@ -3,8 +3,8 @@
 #
 # This file runs the model from 1950 to 2014 to test generate
 # test files for TCSAM2015. Basic configuration is:
-#	1 time period for most biological processes, 2 for natural mortality
-#	4 fishery, 3 time period for parameters, same F for M/F
+#	1 time period for all biological processes
+#	4 fishery, 1 time period for parameters, same F for M/F
 #	1 survey,  1 time period for parameters, same Q for M/F
 #====================
 #-----------------------------------------------------------------------------------
@@ -52,19 +52,13 @@ mny:asy #time block 1 (asy=assessment year)
 #'female'      1.0
 #--Natural mortality
 NaturalMortality  #required keyword
-2      #number of time blocks
-c(mny:1979,1985:mxy)  #time block 1
+1      #number of time blocks
+mny:mxy  #time block 1
 #sex      maturity          M    cv   
   'male'      'mature'     0.230  0.0
   'male'    'immature'     0.276  0.0
 'female'      'mature'     0.253  0.0
 'female'    'immature'     0.304  0.0
-1980:1984  #time block 2
-#sex      maturity         M    cv   
-  'male'      'mature'    0.345  0.0
-  'male'    'immature'    0.414  0.0
-'female'      'mature'    0.380  0.0
-'female'    'immature'    0.455  0.0
 #--Molting
 Molting  #required keyword
 1   #number of time blocks
@@ -145,16 +139,11 @@ Fisheries  #required keyword
  TRUE      BY_XS       LOGNORMAL        0.05        1.0     #abundance
  TRUE      BY_XS       LOGNORMAL        0.10        1.0     #biomass
  TRUE      BY_XS       MULTINOMIAL       50         1.0     #size comps
-2   #number of time blocks
+1   #number of time blocks
 #-----time block 1
-1965:1984   #years
+1990   #years
 #sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
   'male'       0.321          log(0.3)      0.4         6              5
-'female'       0.321          log(0.3)      0.4         8              0
-#-----time block 2
-c(1987:1996,2005:2009,2013)   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.321          log(0.3)      0.4         7              5
 'female'       0.321          log(0.3)      0.4         8              0
 #-fishery 2
 'SCF'  #snow crab discard fishery
@@ -173,22 +162,12 @@ c(1987:1996,2005:2009,2013)   #years
  TRUE      BY_XS      LOGNORMAL        0.05        1.0     #abundance
  TRUE      BY_XS      LOGNORMAL        0.10        1.0     #biomass
  TRUE      BY_XS      MULTINOMIAL       50         1.0     #size comps
-3   #number of time blocks
+1   #number of time blocks
 #-----time block 1
-1978:1996   #years
+1990   #years
 #sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
   'male'       0.321          log(0.15)      0.4         9              0
 'female'       0.321          log(0.15)      0.4        12              0
-#-----time block 2
-1997:2004   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.321          log(0.1)      0.4        10              0
-'female'       0.321          log(0.1)      0.4        13              0
-#-----time block 3
-2005:mxy   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.321          log(0.1)      0.4        11              0
-'female'       0.321          log(0.1)      0.4        14              0
 #-fishery 3
 'RKF'  #BBRKC discard fishery
 #output info: retained catch
@@ -206,22 +185,12 @@ c(1987:1996,2005:2009,2013)   #years
  TRUE      BY_XS       LOGNORMAL        0.05        1.0     #abundance
  TRUE      BY_XS       LOGNORMAL        0.10        1.0     #biomass
  TRUE      BY_XS       MULTINOMIAL       50         1.0     #size comps
-3   #number of time blocks
+1   #number of time blocks
 #-----time block 1
-c(1978:1983,1986:1993,1996)   #years
+1990   #years
 #sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
   'male'       0.321          log(0.1)      0.4        15              0
 'female'       0.321          log(0.1)      0.4        18              0
-#-----time block 2
-1997:2004   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.321          log(0.05)      0.4        16              0
-'female'       0.321          log(0.05)      0.4        19              0
-#-----time block 3
-2005:mxy   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.321          log(0.01)      0.4        17              0
-'female'       0.321          log(0.01)      0.4        20              0
 #-fishery 4
 'GTF'  #groundfish trawl discard fishery
 #output info: retained catch
@@ -239,22 +208,12 @@ c(1978:1983,1986:1993,1996)   #years
  TRUE      BY_X      LOGNORMAL        0.05        1.0     #abundance
  TRUE      BY_X      LOGNORMAL        0.10        1.0     #biomass
  TRUE      BY_X      MULTINOMIAL       50         1.0     #size comps
-3   #number of time blocks
+1   #number of time blocks
 #-----time block 1
-1973:1986   #years
+1990   #years
 #sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
   'male'       0.8          log(0.15)      0.4        21              0
 'female'       0.8          log(0.15)      0.4        24              0
-#-----time block 2
-1987:1996   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.8          log(0.1)      0.4        22              0
-'female'       0.8          log(0.1)      0.4        25              0
-#-----time block 3
-1997:mxy   #years
-#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
-  'male'       0.8          log(0.05)      0.4        23              0
-'female'       0.8          log(0.05)      0.4        26              0
 #--Surveys
 Surveys  #required keyword
 #-survey 1
@@ -264,15 +223,10 @@ Surveys  #required keyword
    TRUE      BY_XMS       LOGNORMAL      0.15        1.0     #abundance
    TRUE      BY_XMS       LOGNORMAL      0.20        1.0     #biomass
    TRUE      BY_XMS       MULTINOMIAL     25         1.0     #size comps
-2   #number of time blocks
+1   #number of time blocks
 #-----time block 1
-1975:1981   #years
+1975:asy   #years
 #  sex      lnQ        sd Q    selFcnIndex
    'male' log(1.0)     0.0          1
  'female' log(0.8)     0.0          2
- #-----time block 2
- 1982:asy   #years
- #  sex      lnQ        sd Q    selFcnIndex
-    'male' log(1.0)     0.0          3
-  'female' log(0.8)     0.0          4
 DONE #keyword
