@@ -81,6 +81,12 @@
 //  2015-04-20: 1. Added checks on fishery and survey names in DATA_SECTION.
 //  2015-04-28: 1. Fixed normalization for model size comps using BY_XMS option: it had been summing
 //                 over shell condition as well as size. SHould only have summed over size (now corrected).)
+//  2015-05-12: 1. Added fishery effort extrapolation calculations to R output (mp/Eff_list)
+//              2. Increased stringency of convergence criteria
+//  2015-05-13: 1. Added phase-specific penalties on F-devs that reduce to 0 at some phase
+//              2. Added dbgNLLs as debug value. Must consider using std::bitset to implement debug flags
+//              3. Incremented internal version to 01.60.
+//              4. Can now specify penalty weight and starting phase for last devs to ModelOptions file
 //
 // =============================================================================
 // =============================================================================
@@ -91,7 +97,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "01.50"; 
+    adstring modVer = "01.60"; 
     
     time_t start,finish;
     
@@ -157,8 +163,10 @@ GLOBALS_SECTION
     
     int debugMCMC = 0;
     
+    //note: consider using std::bitset to implement debug functionality
     int dbgCalcProcs = 10;
     int dbgObjFun = 20;
+    int dbgNLLs   = 25;
     int dbgPriors = tcsam::dbgPriors;
     int dbgPopDy  = 70;
     int dbgApply  = 80;
@@ -733,7 +741,8 @@ DATA_SECTION
     //model options
     ivector optsFcAvg(1,nFsh);//option flags for fishery capture rate averaging
     !!optsFcAvg = ptrMOs->optsFcAvg;
-    vector avgEff(1,nFsh);//average effort over fishery-specific time period
+    matrix eff_fy(1,nFsh,mnYr,mxYr);//effort for averaging over fishery-specific time periods
+    vector avgEff(1,nFsh);//average effort over fishery-specific time periods
     int optsGrowth;    //growth function option
     !!optsGrowth = ptrMOs->optsGrowth;
     int optsInitNatZ;  //initial n-at-z option
@@ -883,10 +892,11 @@ PARAMETER_SECTION
     3darray sel_iyz(1,nSel,mnYr,mxYr+1,1,nZBs);//all selectivity functions (fisheries and surveys) by year
     
     //fishery-related quantities
-    matrix dvsLnC_fy(1,nFsh,mnYr,mxYr);                   //matrix to capture lnC-devs
-    4darray avgFc(1,nFsh,1,nSXs,1,nMSs,1,nSCs);           //avg capture rate over a fishery-specific period
-    4darray avgRatioFc2Eff(1,nFsh,1,nSXs,1,nMSs,1,nSCs);  //ratio of avg capture rate to effort
-    matrix  hmF_fy(1,nFsh,mnYr,mxYr);                                //handling mortality
+    matrix dvsLnC_fy(1,nFsh,mnYr,mxYr);                      //matrix to capture lnC-devs
+    5darray cpF_fxmsy(1,nFsh,1,nSXs,1,nMSs,1,nSCs,mnYr,mxYr);//capture rates contributing to averages over a fishery-specific period
+    4darray avgFc_fxms(1,nFsh,1,nSXs,1,nMSs,1,nSCs);         //avg capture rate over a fishery-specific period
+    4darray avgRatioFc2Eff(1,nFsh,1,nSXs,1,nMSs,1,nSCs);     //ratio of avg capture rate to effort
+    matrix  hmF_fy(1,nFsh,mnYr,mxYr);                        //handling mortality
     5darray cpF_fyxms(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs);        //fully-selected fishing capture rates NOT mortality)
     6darray sel_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//selectivity functions
     6darray ret_fyxmsz(1,nFsh,mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//retention functions
@@ -963,16 +973,22 @@ PRELIMINARY_CALCS_SECTION
     
     //calculate average effort for fisheries over specified time periods
     avgEff = 0.0;
-    for (int f=1;f<=nFsh;f++){//fishery data object
-        if (ptrMDS->ppFsh[f-1]->ptrEff){
-            IndexRange* pir = ptrMDS->ppFsh[f-1]->ptrEff->ptrAvgIR;
-            int fm = mapD2MFsh(f);//index of corresponding model fishery
+    for (int fd=1;fd<=nFsh;fd++){//fishery data object
+        if (ptrMDS->ppFsh[fd-1]->ptrEff){
+            IndexRange* pir = ptrMDS->ppFsh[fd-1]->ptrEff->ptrAvgIR;
+            int fm = mapD2MFsh(fd);//index of corresponding model fishery
             int mny = max(mnYr,pir->getMin());
             int mxy = min(mxYr,pir->getMax());
-            avgEff(fm) = mean(ptrMDS->ppFsh[f-1]->ptrEff->eff_y(mny,mxy));
+            eff_fy(fm).deallocate();
+            eff_fy(fm).allocate(mny,mxy);
+            eff_fy(fm) = ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(mny,mxy);
+            avgEff(fm) = mean(ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(mny,mxy));
         }
     }
-    if (debug) rpt::echo<<"avgEff = "<<avgEff<<endl;
+    if (debug) {
+        rpt::echo<<"eff_fy = "<<endl<<eff_fy<<endl;
+        rpt::echo<<"avgEff = "<<avgEff<<endl;
+    }
 
     if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")<0) {
         cout<<"testing calcRecruitment():"<<endl;
@@ -1053,6 +1069,7 @@ PRELIMINARY_CALCS_SECTION
         }
         cout<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
         rpt::echo<<"#finished PRELIMINARY_CALCS_SECTION"<<endl;
+        rpt::echo<<"#----------------------------------"<<endl<<endl;
 //        int tmp = 1;
 //        cout<<"Enter 1 to continue > ";
 //        cin>>tmp;
@@ -2446,22 +2463,24 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                 for (int m=1;m<=nMSs;m++){
                     for (int s=1;s<=nSCs;s++){
                         tot.initialize();
+                        cpF_fxmsy(f,x,m,s).deallocate();
+                        cpF_fxmsy(f,x,m,s).allocate(mny,mxy);
                         switch (optsFcAvg(f)){
                             case 1:
-                                for (int y=mny;y<=mxy;y++) tot += cpF_fyxms(f,y,x,m,s);
-                                avgFc(f,x,m,s) = tot/(mxy-mny+1); break;
+                                for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = cpF_fyxms(f,y,x,m,s);
+                                avgFc_fxms(f,x,m,s) = sum(cpF_fxmsy(f,x,m,s))/(mxy-mny+1); break;
                             case 2:
-                                for (int y=mny;y<=mxy;y++) tot += 1.0-exp(-cpF_fyxms(f,y,x,m,s));
-                                avgFc(f,x,m,s) = tot/(mxy-mny+1); break;
+                                for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = 1.0-exp(-cpF_fyxms(f,y,x,m,s));
+                                avgFc_fxms(f,x,m,s) = sum(cpF_fxmsy(f,x,m,s))/(mxy-mny+1); break;
                             case 3:
-                                for (int y=mny;y<=mxy;y++) tot += mean(cpF_fyxmsz(f,y,x,m,s));
-                                avgFc(f,x,m,s) = tot/(mxy-mny+1); break;
+                                for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = mean(cpF_fyxmsz(f,y,x,m,s));
+                                avgFc_fxms(f,x,m,s) = sum(cpF_fxmsy(f,x,m,s))/(mxy-mny+1); break;
                             default:
                                 cout<<"optsFcAvg("<<f<<") = "<<optsFcAvg(f)<<" to calculate average Fc is invalid."<<endl;
                                 cout<<"Aborting..."<<endl;
                                 exit(-1);
                         }
-                        avgRatioFc2Eff(f,x,m,s) = avgFc(f,x,m,s)/avgEff(f);
+                        avgRatioFc2Eff(f,x,m,s) = avgFc_fxms(f,x,m,s)/avgEff(f);
                     }
                 }
             }
@@ -2646,9 +2665,10 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     if (debug<0) cout<<tb<<tb<<")"<<endl;//end of non-decreasing penalties list    
     if (debug<0) cout<<tb<<"),";//end of maturity penalties list
     
-    if (debug<0) cout<<tb<<"final.devs=list("<<endl;//start of devs penalties list
     //penalties on final value of dev vectors
-    double penWgt = 1.0e6;//TODO: read in value from input file
+    double penWgt = 0.0;
+    if (current_phase()>=ptrMOs->phsLastDevsPen) penWgt = ptrMOs->wgtLastDevsPen;
+    if (debug<0) cout<<tb<<"final.devs=list("<<endl;//start of devs penalties list
     //recruitment devs
     if (ptrMPI->ptrRec->pDevsLnR->getSize()){
         if (debug<0) cout<<tb<<tb<<"pDevsLnR=";
@@ -2698,9 +2718,39 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
         if (debug<0) cout<<cc<<endl;
     }
     
-    if (debug<0) cout<<tb<<"NULL)";//end of devs penalties list
+    if (debug<0) cout<<tb<<"NULL)"<<endl;//end of devs penalties list
+    if (debug<0) cout<<")"<<cc<<endl;//end of penalties list
     
-    if (debug<0) cout<<")";//end of penalties list
+    //Apply penalties to F-devs
+    {
+        if (debug<0) cout<<"penFDevs=list("<<endl;
+        double penWgt = 1.0/log(1.0+square(ptrMOs->cvFDevsPen));
+        if (ptrMOs->phsDecrFDevsPen<=current_phase()){
+            double scl = max(1.0,(double)(ptrMOs->phsZeroFDevsPen-ptrMOs->phsDecrFDevsPen));
+            penWgt *= max(0.0,(double)(ptrMOs->phsZeroFDevsPen-current_phase()))/scl;
+        }
+        double effCV = std::numeric_limits<double>::infinity();
+        if (penWgt>0) {
+            effCV = sqrt(exp(1.0/penWgt)-1.0);
+            if (debug<0) rpt::echo<<"phase: "<<current_phase()<<"; penWgt = "<<penWgt<<"; effCV = "<<effCV<<endl;
+        } else {
+            if (debug<0) rpt::echo<<"phase: "<<current_phase()<<"; penWgt = "<<penWgt<<"; effCV = Inf"<<endl;
+        }
+        for (int i=pDevsLnC.indexmin();i<=pDevsLnC.indexmax();i++){
+            dvariable fpen = 0.5*norm2(pDevsLnC(i));
+            objFun += penWgt*fpen;
+            if (debug<0) {
+                rpt::echo<<tb<<i<<": pen="<<fpen<<cc<<" objfun="<<penWgt*fpen<<endl;
+                if (penWgt>0) {
+                    cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgt<<cc<<"effCV="<<effCV<<cc<<"pen="<<fpen<<cc<<"objfun="<<penWgt*fpen<<"),"<<endl;
+                } else {
+                    cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgt<<cc<<"effCV=Inf"    <<cc<<"pen="<<fpen<<cc<<"objfun="<<penWgt*fpen<<"),"<<endl;
+                }
+            }
+        }
+        if (debug<0) cout<<tb<<tb<<"NULL)"<<endl;//end of penFDevs lists
+    }
+    
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 
 //-------------------------------------------------------------------------------------
@@ -3117,7 +3167,7 @@ FUNCTION void calcNLLs_AggregateCatch(AggregateCatchData* ptrAB, dvar5_array& mA
 //-------------------------------------------------------------------------------------
 //Calculate catch size frequencies components to objective function
 FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxmsz, int debug, ostream& cout)
-    if (debug>=dbgAll) cout<<"Starting calcNLLs_CatchNatZ()"<<endl;
+    if (debug>=dbgNLLs) cout<<"Starting calcNLLs_CatchNatZ()"<<endl;
     if (ptrZFD->optFit==tcsam::FIT_NONE) return;
     ivector yrs = ptrZFD->yrs;
     int y;
@@ -3141,7 +3191,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
     if (debug<0) cout<<"list("<<endl;
     for (int iy=1;iy<=yrs.size();iy++) {
         y = yrs[iy];
-        if (debug>0) cout<<"y = "<<y<<endl;
+        if (debug>=dbgNLLs) cout<<"y = "<<y<<endl;
         if ((mny<=y)&&(y<=mxy)) {
             if (ptrZFD->optFit==tcsam::FIT_BY_TOT){
                 ss = 0;
@@ -3158,7 +3208,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                         }
                     }
                     if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                    if (debug>0){
+                    if (debug>=dbgNLLs){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
                     }
@@ -3168,7 +3218,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                         }
                     }
                     mP_z /= nT;//normalize model size comp
-                    if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                     if (debug<0) {
                         cout<<"'"<<y<<"'=list(";
                         cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
@@ -3197,7 +3247,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                             }
                         }
                         if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                        if (debug>0){
+                        if (debug>=dbgNLLs){
                             cout<<"ss = "<<ss<<endl;
                             cout<<"oP_Z = "<<oP_z<<endl;
                         }
@@ -3205,7 +3255,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                             for (int s=1;s<=nSCs;s++) mP_z += mA_yxmsz(y,x,m,s);
                         }
                         mP_z /= nT;//normalize model size comp
-                        if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                        if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                         if (debug<0) {
                             cout<<"'"<<y<<"'=list(";
                             cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
@@ -3241,12 +3291,12 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                         }
                     }//x
                     if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                    if (debug>0){
+                    if (debug>=dbgNLLs){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
                     }
                     mP_z /= nT;//normalize model size comp
-                    if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                     for (int x=1;x<=nSXs;x++) {
                         int mnz = 1+(x-1)*nZBs;
                         int mxz = mnz+nZBs-1;
@@ -3280,13 +3330,13 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
                             if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                            if (debug>0){
+                            if (debug>=dbgNLLs){
                                 cout<<"ss = "<<ss<<endl;
                                 cout<<"oP_Z = "<<oP_z<<endl;
                             }
                             for (int s=1;s<=nSCs;s++) mP_z += mA_yxmsz(y,x,m,s);
                             mP_z /= nT;//normalize model size comp
-                            if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                            if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                             if (debug<0) {
                                 cout<<"'"<<y<<"'=list(";
                                 cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
@@ -3317,7 +3367,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 ss += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
-                            if (debug>0){
+                            if (debug>=dbgNLLs){
                                 cout<<"ss = "<<ss<<endl;
                                 cout<<"oP_Z = "<<oP_z<<endl;
                             }
@@ -3325,12 +3375,12 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                         }//m
                     }//x
                     if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                    if (debug>0){
+                    if (debug>=dbgNLLs){
                         cout<<"ss = "<<ss<<endl;
                         cout<<"oP_Z = "<<oP_z<<endl;
                     }
                     mP_z /= nT;//normalize model size comp
-                    if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                     for (int x=1;x<=nSXs;x++) {
                         for (int m=1;m<=nMSs;m++) {
                             int mnz = 1+(m-1)*nZBs+(x-1)*nMSs*nZBs;
@@ -3367,13 +3417,13 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                             }
                             if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                            if (debug>0){
+                            if (debug>=dbgNLLs){
                                 cout<<"ss = "<<ss<<endl;
                                 cout<<"oP_Z = "<<oP_z<<endl;
                             }
                             for (int m=1;m<=nMSs;m++) mP_z += mA_yxmsz(y,x,m,s);
                             mP_z /= nT;//normalize model size comp
-                            if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                            if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                             if (debug<0) {
                                 cout<<"'"<<y<<"'=list(";
                                 cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
@@ -3402,13 +3452,13 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                                 ss   += ptrZFD->ss_xmsy(x,m,s,iy);
                                 oP_z += ptrZFD->PatZ_xmsyz(x,m,s,iy);
                                 if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                                if (debug>0){
+                                if (debug>=dbgNLLs){
                                     cout<<"ss = "<<ss<<endl;
                                     cout<<"oP_Z = "<<oP_z<<endl;
                                 }
                                 mP_z += mA_yxmsz(y,x,m,s);
                                 mP_z /= nT;//normalize model size comp
-                                if (debug>0) cout<<"mP_z = "<<mP_z<<endl;
+                                if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
                                 if (debug<0) {
                                     cout<<"'"<<y<<"'=list(";
                                     cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
@@ -3435,34 +3485,34 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
         } //if ((mny<=y)&&(y<=mxy))
     } //loop over iy
     if (debug<0) cout<<"NULL)";
-    if (debug>=dbgAll) cout<<"Finished calcNLLs_CatchNatZ()"<<endl;
+    if (debug>=dbgNLLs) cout<<"Finished calcNLLs_CatchNatZ()"<<endl;
 
 //-------------------------------------------------------------------------------------
 //Calculate fishery components to objective function
 FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
-    if (debug>0) debug = dbgAll+10;
+//    if (debug>0) debug = dbgAll+10;
     if (debug>=dbgAll) cout<<"Starting calcNLLs_Fisheries()"<<endl;
     if (debug<0) cout<<"list("<<endl;
     for (int f=1;f<=nFsh;f++){
-        if (debug>0) cout<<"calculating NLLs for fishery "<<ptrMC->lblsFsh[f]<<endl;
+        if (debug>=dbgAll) cout<<"calculating NLLs for fishery "<<ptrMC->lblsFsh[f]<<endl;
         if (debug<0) cout<<ptrMC->lblsFsh[f]<<"=list("<<endl;
         FisheryData* ptrObs = ptrMDS->ppFsh[f-1];
         if (ptrObs->hasRCD){//retained catch data
             if (debug<0) cout<<"retained.catch=list("<<endl;
             if (ptrObs->ptrRCD->hasN && ptrObs->ptrRCD->ptrN->optFit){
-                if (debug>0) cout<<"---retained catch abundance"<<endl;
+                if (debug>=dbgAll) cout<<"---retained catch abundance"<<endl;
                 if (debug<0) cout<<"abundance="<<endl;
                 calcNLLs_AggregateCatch(ptrObs->ptrRCD->ptrN,rmN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (ptrObs->ptrRCD->hasB && ptrObs->ptrRCD->ptrB->optFit){
-                if (debug>0) cout<<"---retained catch biomass"<<endl;
+                if (debug>=dbgAll) cout<<"---retained catch biomass"<<endl;
                 if (debug<0) cout<<"biomass="<<endl;
                 calcNLLs_AggregateCatch(ptrObs->ptrRCD->ptrB,rmN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (ptrObs->ptrRCD->hasZFD && ptrObs->ptrRCD->ptrZFD->optFit){
-                if (debug>0) cout<<"---retained catch size frequencies"<<endl;
+                if (debug>=dbgAll) cout<<"---retained catch size frequencies"<<endl;
                 if (debug<0) cout<<"n.at.z="<<endl;
                 calcNLLs_CatchNatZ(ptrObs->ptrRCD->ptrZFD,rmN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
@@ -3472,19 +3522,19 @@ FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
         if (ptrObs->hasTCD){//observed total catch data
             if (debug<0) cout<<"total.catch=list("<<endl;
             if (ptrObs->ptrTCD->hasN && ptrObs->ptrTCD->ptrN->optFit){
-                if (debug>0) cout<<"---total catch abundance"<<endl;
+                if (debug>=dbgAll) cout<<"---total catch abundance"<<endl;
                 if (debug<0) cout<<"abundance="<<endl;
                 calcNLLs_AggregateCatch(ptrObs->ptrTCD->ptrN,cpN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (ptrObs->ptrTCD->hasB && ptrObs->ptrTCD->ptrB->optFit){
-                if (debug>0) cout<<"---total catch biomass"<<endl;
+                if (debug>=dbgAll) cout<<"---total catch biomass"<<endl;
                 if (debug<0) cout<<"biomass="<<endl;
                 calcNLLs_AggregateCatch(ptrObs->ptrTCD->ptrB,cpN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (ptrObs->ptrTCD->hasZFD && ptrObs->ptrTCD->ptrZFD->optFit){
-                if (debug>0) cout<<"---total catch size frequencies"<<endl;
+                if (debug>=dbgAll) cout<<"---total catch size frequencies"<<endl;
                 if (debug<0) cout<<"n.at.z="<<endl;
                 calcNLLs_CatchNatZ(ptrObs->ptrTCD->ptrZFD,cpN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
@@ -3494,19 +3544,19 @@ FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
         if (ptrObs->hasDCD){//observed discard catch data
             if (debug<0) cout<<"discard.catch=list("<<endl;
             if (ptrObs->ptrDCD->hasN && ptrObs->ptrDCD->ptrN->optFit){
-                if (debug>0) cout<<"---discard catch abundance"<<endl;
+                if (debug>=dbgAll) cout<<"---discard catch abundance"<<endl;
                 if (debug<0) cout<<"abundance="<<endl;
                 calcNLLs_AggregateCatch(ptrObs->ptrDCD->ptrN,dsN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (ptrObs->ptrDCD->hasB && ptrObs->ptrDCD->ptrB->optFit){
-                if (debug>0) cout<<"---discard catch biomass"<<endl;
+                if (debug>=dbgAll) cout<<"---discard catch biomass"<<endl;
                 if (debug<0) cout<<"biomass="<<endl;
                 calcNLLs_AggregateCatch(ptrObs->ptrDCD->ptrB,dsN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
             }
             if (ptrObs->ptrDCD->hasZFD && ptrObs->ptrDCD->ptrZFD->optFit){
-                if (debug>0) cout<<"---discard catch size frequencies"<<endl;
+                if (debug>=dbgAll) cout<<"---discard catch size frequencies"<<endl;
                 if (debug<0) cout<<"n.at.z="<<endl;
                 calcNLLs_CatchNatZ(ptrObs->ptrDCD->ptrZFD,dsN_fyxmsz(f),debug,cout);
                 if (debug<0) cout<<","<<endl;
@@ -3521,27 +3571,27 @@ FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
 //-------------------------------------------------------------------------------------
 //Calculate survey components to objective function
 FUNCTION void calcNLLs_Surveys(int debug, ostream& cout)
-    if (debug>0) debug = dbgAll+10;
+//    if (debug>0) debug = dbgAll+10;
     if (debug>=dbgAll) cout<<"Starting calcNLLs_Surveys()"<<endl;
     if (debug<0) cout<<"list("<<endl;
     for (int v=1;v<=nSrv;v++){
-        if (debug>0) cout<<"calculating NLLs for survey "<<ptrMC->lblsSrv[v]<<endl;
+        if (debug>=dbgAll) cout<<"calculating NLLs for survey "<<ptrMC->lblsSrv[v]<<endl;
         if (debug<0) cout<<ptrMC->lblsSrv[v]<<"=list("<<endl;
         SurveyData* ptrObs = ptrMDS->ppSrv[v-1];
         if (ptrObs->hasN && ptrObs->ptrN->optFit){
-            if (debug>0) cout<<"---survey abundance"<<endl;
+            if (debug>=dbgAll) cout<<"---survey abundance"<<endl;
             if (debug<0) cout<<"abundance="<<endl;
             calcNLLs_AggregateCatch(ptrObs->ptrN,n_vyxmsz(v),debug,cout);
             if (debug<0) cout<<","<<endl;
         }
         if (ptrObs->hasB && ptrObs->ptrB->optFit){
-            if (debug>0) cout<<"---survey biomass"<<endl;
+            if (debug>=dbgAll) cout<<"---survey biomass"<<endl;
             if (debug<0) cout<<"biomass="<<endl;
             calcNLLs_AggregateCatch(ptrObs->ptrB,n_vyxmsz(v),debug,cout);
             if (debug<0) cout<<","<<endl;
         }
         if (ptrObs->hasZFD && ptrObs->ptrZFD->optFit){
-            if (debug>0) cout<<"---survey size frequencies"<<endl;
+            if (debug>=dbgAll) cout<<"---survey size frequencies"<<endl;
             if (debug<0) cout<<"n.at.z="<<endl;
             calcNLLs_CatchNatZ(ptrObs->ptrZFD,n_vyxmsz(v),debug,cout);
             if (debug<0) cout<<","<<endl;
@@ -3673,6 +3723,21 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
                 }
             }
         }
+        os<<"Eff_list=list("<<endl;
+        for (int f=1;f<=nFsh;f++){
+            int fd = mapM2DFsh(f);//index of corresponding fishery data object
+            os<<"`"<<ptrMDS->ppFsh[fd-1]->name<<"`=list("<<endl;
+            if (ptrMDS->ppFsh[fd-1]->ptrEff) {
+                adstring yDmsp = "y="+str(eff_fy(f).indexmin())+":"+str(eff_fy(f).indexmax());
+                os<<"optFcAvg="<<optsFcAvg(f)<<cc;
+                os<<"avgEff="<<avgEff(f)<<cc<<endl;
+                os<<"eff_y ="; wts::writeToR(os,eff_fy(f),yDmsp); os<<cc<<endl;
+                os<<"cpF_xmsy ="; wts::writeToR(os,wts::value(cpF_fxmsy(f)), xDms,mDms,sDms,yDmsp); os<<cc<<endl;
+                os<<"avgFc_xms ="; wts::writeToR(os,    value(avgFc_fxms(f)),xDms,mDms,sDms); os<<endl;
+            }
+            os<<")"<<cc<<endl;
+        }
+        os<<"NULL)"<<cc<<endl;
         os<<"F_list=list("<<endl;
             //handling mortality
             os<<"hm_fy     ="; wts::writeToR(os,     value(hmF_fy),    fDms,yDms);                     os<<cc<<endl;
@@ -3758,238 +3823,6 @@ FUNCTION void ReportToR_ModelResults(ostream& os, int debug, ostream& cout)
     os<<")";
     if (debug) cout<<"Finished ReportToR_ModelResults(...)"<<endl;
     
-////-------------------------------------------------------------------------------------
-////Write population quantities to file as R list
-//FUNCTION void ReportToR_PopQuants(ostream& os, int debug, ostream& cout)
-//    if (debug) cout<<"Starting ReportToR_PopQuants(...)"<<endl;
-//    //abundance
-////    d5_array vN_yxmsz = wts::value(n_yxmsz);
-////    d5_array n_xmsyz = tcsam::rearrangeYXMSZtoXMSYZ(vn_yxmsz);
-//    //natural mortality (numbers)
-////    d5_array vnmN_yxmsz = wts::value(nmN_yxmsz);
-////    d5_array nmN_xmsyz = tcsam::rearrangeYXMSZtoXMSYZ(vnmN_yxmsz);
-//    //total mortality (numbers)
-////    d5_array vtmN_yxmsz = wts::value(tmN_yxmsz);
-////    d5_array tmN_xmsyz = tcsam::rearrangeYXMSZtoXMSYZ(vtmN_yxmsz);
-//        
-//    //total fishing mortality rates
-////    d5_array vtmF_yxmsz = wts::value(tmF_yxmsz);
-////    d5_array tmF_xmsyz  = tcsam::rearrangeYXMSZtoXMSYZ(vtmF_yxmsz);
-////    if (debug) cout<<"finished tmF_xmsyz"<<endl;
-//    
-//    os<<"pop.quants=list("<<endl;
-//    os<<"R_y      ="; wts::writeToR(os,value(R_y), ptrMC->dimYrsToR);os<<cc<<endl;
-//    os<<"R_yx     ="; wts::writeToR(os,value(R_yx),ptrMC->dimYrsToR,ptrMC->dimSXsToR);os<<cc<<endl;
-//    os<<"Rx_c     ="; wts::writeToR(os,value(Rx_c),adstring("pc=1:"+str(npcRec))); os<<cc<<endl;
-//    os<<"R_cz     ="; wts::writeToR(os,value(R_cz),adstring("pc=1:"+str(npcRec)),    ptrMC->dimZBsToR); os<<cc<<endl;
-//    os<<"M_cxm    ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM)), ptrMC->dimSXsToR,ptrMC->dimMSsToR); os<<cc<<endl;
-//    os<<"prMat_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),ptrMC->dimZBsToR); os<<cc<<endl;
-//    os<<"prGr_czz ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr)), ptrMC->dimZBsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//    os<<"MB_yx    ="; wts::writeToR(os,value(spb_yx),ptrMC->dimYrsToR,ptrMC->dimSXsToR); os<<cc<<endl;
-//    os<<"N_yxmsz  ="; wts::writeToR(os,wts::value(n_yxmsz),ptrMC->dimYrsP1ToR,ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//    os<<"nmN_yxmsz="; wts::writeToR(os,wts::value(nmN_yxmsz),ptrMC->dimYrsToR,  ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//    os<<"tmN_yxmsz="; wts::writeToR(os,wts::value(tmN_yxmsz),ptrMC->dimYrsToR,  ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//    os<<"tmF_yxmsz="; wts::writeToR(os,wts::value(tmF_yxmsz),ptrMC->dimYrsToR,  ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimZBsToR); os<<endl;
-//    os<<")";
-//    if (debug) cout<<"Finished ReportToR_PopQuants(...)"<<endl;
-//
-////-------------------------------------------------------------------------------------
-////Write selectivity functions to file as R list
-//FUNCTION void ReportToR_SelFuncs(ostream& os, int debug, ostream& cout)
-//    if (debug) cout<<"Starting ReportToR_SelFuncs(...)"<<endl;
-//    os<<"sel.funcs=list("<<endl;
-//    os<<"sel_cz=";  wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),ptrMC->dimZBsToR);os<<endl;
-//    os<<")";
-//    if (debug) cout<<"Finished ReportToR_SelFuncs(...)"<<endl;
-//
-//-------------------------------------------------------------------------------------
-//Write fishery-related quantities to file as R list
-//FUNCTION void ReportToR_FshQuants(ostream& os, int debug, ostream& cout)
-//    if (debug) cout<<"Starting ReportToR_FshQuants(...)"<<endl;
-//
-//    //fishing capture rates (NOT mortality rates)
-//    d5_array vcF_fyxms = wts::value(cpF_fyxms);//fully-selected
-//    d5_array cF_fxmsy  = tcsam::rearrangeIYXMStoIXMSY(vcF_fyxms);
-//    if (debug) cout<<"finished cF_fxmsy"<<endl;
-//    d6_array vFc_fyxmsz = wts::value(cpF_fyxmsz);
-//    d6_array cF_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vFc_fyxmsz);
-//    if (debug) {
-//        cout<<"idxDevsLnC_fy, dvsLnc_fy"<<endl;
-//        for (int f=1;f<=nFsh;f++){
-//            cout<<"fishery"<<tb; for (int y=mnYr;y<=mxYr;y++) cout<<y<<tb; cout<<endl;
-//            cout<<f<<tb<<idxDevsLnC_fy(f)<<endl;
-//            cout<<f<<tb<<dvsLnC_fy(f)<<endl;
-//        }
-//        cout<<"cpF_fyxms"<<endl;
-//        for (int f=1;f<=nFsh;f++){
-//            for (int y=(mxYr-1);y<=mxYr;y++){
-//                cout<<"f, y = "<<f<<tb<<y<<endl;
-//                cout<<cpF_fyxms(f,y)<<endl;
-//            }
-//        }
-//        cout<<"cpF_fyxmsz"<<endl;
-//        for (int f=1;f<=nFsh;f++){
-//            for (int y=(mxYr-1);y<=mxYr;y++){
-//                cout<<"f, y = "<<f<<tb<<y<<endl;
-//                cout<<cpF_fyxmsz(f,y)<<endl;
-//            }
-//        }
-//        cout<<"finished cF_fxmsyz"<<endl;
-//    }
-//    
-//    //retention mortality rates
-//    d6_array vrmF_fyxmsz = wts::value(rmF_fyxmsz);
-//    d6_array rmF_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vrmF_fyxmsz);
-//    if (debug) cout<<"finished rmF_fxmsyz"<<endl;
-//    
-//    //discard mortality rates
-//    d6_array vdmF_fyxmsz = wts::value(dmF_fyxmsz);
-//    d6_array dmF_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vdmF_fyxmsz);
-//    if (debug) cout<<"finished dmF_fxmsyz"<<endl;
-//    
-//    //numbers, biomass captured (NOT mortality)
-//    d6_array vcN_fyxmsz = wts::value(cpN_fyxmsz);
-//    d3_array cN_fxy     = tcsam::calcIXYfromIYXMSZ(vcN_fyxmsz);
-//    d3_array cB_fxy     = tcsam::calcIXYfromIYXMSZ(vcN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    d6_array cN_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vcN_fyxmsz);
-//    if (debug) {
-//        cout<<"cpN_fyxmsz"<<endl;
-//        for (int f=1;f<=nFsh;f++){
-//            for (int y=(mxYr-1);y<=mxYr;y++){
-//                cout<<"f, y = "<<f<<tb<<y<<endl;
-//                cout<<cpN_fyxmsz(f,y)<<endl;
-//            }
-//        }
-//        cout<<"finished cN_fxmsyz"<<endl;
-//    }
-//    
-//    //numbers, biomass discards (NOT mortality)
-//    d6_array vdN_fyxmsz = wts::value(dsN_fyxmsz);
-//    d3_array dN_fxy     = tcsam::calcIXYfromIYXMSZ(vdN_fyxmsz);
-//    d3_array dB_fxy     = tcsam::calcIXYfromIYXMSZ(vdN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    d6_array dN_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vdN_fyxmsz);
-//    if (debug) cout<<"finished dN_fxmsyz"<<endl;
-//    
-//    //numbers, biomass retained (mortality)
-//    d6_array vrmN_fyxmsz = wts::value(rmN_fyxmsz);
-//    d3_array rmN_fxy     = tcsam::calcIXYfromIYXMSZ(vrmN_fyxmsz);
-//    d3_array rmB_fxy     = tcsam::calcIXYfromIYXMSZ(vrmN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    d6_array rmN_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vrmN_fyxmsz);
-//    if (debug) cout<<"finished rmN_fxmsyz"<<endl;
-//    
-//    //numbers, biomass discard mortality
-//    d6_array vdmN_fyxmsz = wts::value(dmN_fyxmsz);
-//    d3_array dmN_fxy     = tcsam::calcIXYfromIYXMSZ(vdmN_fyxmsz);
-//    d3_array dmB_fxy     = tcsam::calcIXYfromIYXMSZ(vdmN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    d6_array dmN_fxmsyz  = tcsam::rearrangeIYXMSZtoIXMSYZ(vdmN_fyxmsz);
-//    if (debug) cout<<"finished dmN_fxmsyz"<<endl;   
-//    
-//    //numbers, biomass captured (NOT mortality)
-//    d6_array vcpN_fyxmsz = wts::value(cpN_fyxmsz);
-//    d3_array cpN_fyx     = tcsam::calcIYXfromIYXMSZ(vcpN_fyxmsz);
-//    d3_array cpB_fyx     = tcsam::calcIYXfromIYXMSZ(vcpN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    
-//    //numbers, biomass discards (NOT mortality)
-//    d6_array vdsN_fyxmsz = wts::value(dsN_fyxmsz);
-//    d3_array dsN_fyx     = tcsam::calcIYXfromIYXMSZ(vdsN_fyxmsz);
-//    d3_array dsB_fyx     = tcsam::calcIYXfromIYXMSZ(vdsN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    
-//    //numbers, biomass retained (mortality)
-//    d6_array vrmN_fyxmsz = wts::value(rmN_fyxmsz);
-//    d3_array rmN_fyx     = tcsam::calcIYXfromIYXMSZ(vrmN_fyxmsz);
-//    d3_array rmB_fyx     = tcsam::calcIYXfromIYXMSZ(vrmN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    
-//    //numbers, biomass discard mortality
-//    d6_array vdmN_fyxmsz = wts::value(dmN_fyxmsz);
-//    d3_array dmN_fyx     = tcsam::calcIYXfromIYXMSZ(vdmN_fyxmsz);
-//    d3_array dmB_fyx     = tcsam::calcIYXfromIYXMSZ(vdmN_fyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    
-//    os<<"fisheries=list("<<endl;
-//        os<<"hmF_fy    ="; wts::writeToR(os,     value(hmF_fy),    fDms,yDms); os<<cc<<endl;
-//        os<<"cpN_fyx   ="; wts::writeToR(os,           cpN_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"cpB_fyx   ="; wts::writeToR(os,           cpB_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"dsN_fyx   ="; wts::writeToR(os,           dsN_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"dsB_fyx   ="; wts::writeToR(os,           dsB_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"rmN_fyx   ="; wts::writeToR(os,           rmN_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"rmB_fyx   ="; wts::writeToR(os,           rmB_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"dmN_fyx   ="; wts::writeToR(os,           dmN_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"dmB_fyx   ="; wts::writeToR(os,           dmB_fyx,    fDms,yDms,xDms); os<<cc<<endl;
-//        os<<"cpF_fyxms ="; wts::writeToR(os,wts::value(cpF_fyxms ),fDms,yDms,xDms,mDms,sDms); os<<cc<<endl;
-//        os<<"cpF_fyxmsz="; wts::writeToR(os,wts::value(cpF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"rmF_fyxmsz="; wts::writeToR(os,wts::value(rmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"dmF_fyxmsz="; wts::writeToR(os,wts::value(dmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"tmF_fyxmsz="; wts::writeToR(os,wts::value(tmF_fyxmsz),fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"cpN_fyxmsz="; wts::writeToR(os,           vcpN_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"dsN_fyxmsz="; wts::writeToR(os,           vdsN_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"rmN_fyxmsz="; wts::writeToR(os,           vrmN_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"dmN_fyxmsz="; wts::writeToR(os,           vdmN_fyxmsz,fDms,yDms,xDms,mDms,sDms,zbDms); os<<endl;
-//    os<<")";
-//    for (int f=1;f<=nFsh;f++){
-//        os<<ptrMC->lblsFsh[f]<<"=list("<<endl;
-//        os<<"cap=list("<<endl;
-//            os<<"n.xy=";   wts::writeToR(os,cN_fxy(f),   ptrMC->dimSXsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//            os<<"b.xy=";   wts::writeToR(os,cB_fxy(f),   ptrMC->dimSXsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//            os<<"n.xmsyz=";wts::writeToR(os,cN_fxmsyz(f),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//            os<<"F.xmsy="; wts::writeToR(os,cF_fxmsy(f), ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//            os<<"F.xmsyz=";wts::writeToR(os,cF_fxmsyz(f),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR,ptrMC->dimZBsToR); 
-//        os<<")"<<cc<<endl;
-//        os<<"dm=list("<<endl;
-//            os<<"n.xy="; wts::writeToR(os,dmN_fxy(f),      ptrMC->dimSXsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//            os<<"b.xy="; wts::writeToR(os,dmB_fxy(f),      ptrMC->dimSXsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//            os<<"n.xmsyz="; wts::writeToR(os,dmN_fxmsyz(f),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//            os<<"F.xmsyz="; wts::writeToR(os,dmF_fxmsyz(f),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR,ptrMC->dimZBsToR); 
-//        os<<")"<<cc<<endl;
-//        if (sum(rmN_fxy(f))>0){
-//            os<<"rm=list("<<endl;
-//                os<<"n.xy="; wts::writeToR(os,rmN_fxy(f),      ptrMC->dimSXsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//                os<<"b.xy="; wts::writeToR(os,rmB_fxy(f),      ptrMC->dimSXsToR,ptrMC->dimYrsToR); os<<cc<<endl;
-//                os<<"n.xmsyz="; wts::writeToR(os,rmN_fxmsyz(f),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//                os<<"F.xmsyz="; wts::writeToR(os,rmF_fxmsyz(f),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsToR,ptrMC->dimZBsToR); 
-//            os<<")"<<cc<<endl;
-//        }
-//        os<<"NULL),"<<endl;    
-//    }
-//    os<<"NULL)";
-//    if (debug) cout<<"Finished ReportToR_FshQuants(...)"<<endl;
-//
-////-------------------------------------------------------------------------------------
-////Write survey-related quantities to file as R list
-//FUNCTION void ReportToR_SrvQuants(ostream& os, int debug, ostream& cout)
-//    if (debug) cout<<"Starting ReportToR_SrvQuants(...)"<<endl;
-//    d5_array vq_vyxms = wts::value(q_vyxms);
-//    d5_array q_vxmsy = tcsam::rearrangeIYXMStoIXMSY(vq_vyxms);
-//    d6_array vq_vyxmsz = wts::value(q_vyxmsz);
-//    d6_array q_vxmsyz = tcsam::rearrangeIYXMSZtoIXMSYZ(vq_vyxmsz);
-//    
-//    d6_array vn_vyxmsz = wts::value(n_vyxmsz);
-//    d3_array n_vyx = tcsam::calcIYXfromIYXMSZ(vn_vyxmsz);
-//    d3_array b_vyx = tcsam::calcIYXfromIYXMSZ(vn_vyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    d3_array n_vxy = tcsam::calcIXYfromIYXMSZ(vn_vyxmsz);
-//    d3_array b_vxy = tcsam::calcIXYfromIYXMSZ(vn_vyxmsz,ptrMDS->ptrBio->wAtZ_xmz);
-//    d6_array n_vxmsyz = tcsam::rearrangeIYXMSZtoIXMSYZ(vn_vyxmsz);
-//    
-//    os<<"surveys=list("<<endl;
-//        os<<"MB_vyx  ="; wts::writeToR(os,     value(mb_vyx),  vDms,ypDms,xDms); os<<cc<<endl;
-//        os<<"N_vyx   ="; wts::writeToR(os,     value(n_vyx),   vDms,ypDms,xDms); os<<cc<<endl;
-//        os<<"B_vyx   ="; wts::writeToR(os,     value(b_vyx),   vDms,ypDms,xDms); os<<cc<<endl;
-//        os<<"q_vyxms ="; wts::writeToR(os,wts::value(q_vyxms), vDms,ypDms,xDms,mDms,sDms); os<<cc<<endl;
-//        os<<"q_vyxmsz="; wts::writeToR(os,wts::value(q_vyxmsz),vDms,ypDms,xDms,mDms,sDms,zbDms); os<<cc<<endl;
-//        os<<"N_vyxmsz="; wts::writeToR(os,           vn_vyxmsz,vDms,ypDms,xDms,mDms,sDms,zbDms); os<<endl;
-//    os<<")";
-//    os<<"surveys=list("<<endl;
-//    for (int v=1;v<=nSrv;v++){
-//        os<<ptrMC->lblsSrv[v]<<"=list("<<endl;
-//        os<<"q.xmsy=";  wts::writeToR(os,q_vxmsy(v), ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsP1ToR); os<<cc<<endl;
-//        os<<"q.xmsyz="; wts::writeToR(os,q_vxmsyz(v),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsP1ToR,ptrMC->dimZBsToR); os<<cc<<endl;
-//        os<<"n.xy=";    wts::writeToR(os,n_vxy(v),  ptrMC->dimSXsToR,ptrMC->dimYrsP1ToR); os<<cc<<endl;
-//        os<<"b.xy=";    wts::writeToR(os,b_vxy(v),  ptrMC->dimSXsToR,ptrMC->dimYrsP1ToR); os<<cc<<endl;
-//        os<<"spb.yx=";  wts::writeToR(os,value(mb_vyx(v)),ptrMC->dimYrsP1ToR,ptrMC->dimSXsToR); os<<cc<<endl;
-//        os<<"n.xmsyz="; wts::writeToR(os,n_vxmsyz(v),ptrMC->dimSXsToR,ptrMC->dimMSsToR,ptrMC->dimSCsToR,ptrMC->dimYrsP1ToR,ptrMC->dimZBsToR); os<<endl;
-//        os<<")"<<cc<<endl;
-//    }
-//    os<<"NULL)";
-//    if (debug) cout<<"Finished ReportToR_SrvQuants(...)"<<endl;
-
 //-------------------------------------------------------------------------------------
 //Write quantities related to model fits to file as R list
 FUNCTION void ReportToR_ModelFits(ostream& os, int debug, ostream& cout)
@@ -4200,6 +4033,8 @@ REPORT_SECTION
 // =============================================================================
 // =============================================================================
 BETWEEN_PHASES_SECTION
+    rpt::echo<<endl<<endl<<"#---------------------"<<endl;
+    rpt::echo<<"Starting phase "<<current_phase()<<" of "<<initial_params::max_number_phases<<endl;
 
 // =============================================================================
 // =============================================================================
@@ -4234,7 +4069,8 @@ FINAL_SECTION
 RUNTIME_SECTION
 //one number for each phase, if more phases then uses the last number
   maximum_function_evaluations 5000,5000,5000,5000,5000,5000,10000
-  convergence_criteria 0.1,0.1,.01,.001,.001,.001,1e-3,1e-4
+//  convergence_criteria 0.1,0.1,.01,.001,.001,.001,1e-3,1e-4
+  convergence_criteria 0.5,0.1,.01,.001,1e-3,1e-4
 
 // =============================================================================
 // =============================================================================

@@ -303,10 +303,17 @@ void ModelOptions::read(cifstream & is) {
     cout<<optsGrowth<<tb<<"#"<<lblsGrowthOpts(optsGrowth)<<endl;
     is>>optsInitNatZ;
     cout<<optsInitNatZ<<tb<<"#"<<lblsInitNatZOpts(optsInitNatZ)<<endl;
+    is>>cvFDevsPen;
+    cout<<cvFDevsPen<<tb<<"#initial cv for F-devs penalties"<<endl;
+    is>>phsDecrFDevsPen;
+    cout<<phsDecrFDevsPen<<tb<<"#phase at which to start decreasing the penalties on F-devs"<<endl;
+    is>>phsZeroFDevsPen;
+    cout<<phsZeroFDevsPen<<tb<<"#phase at which to turn off the penalties on F-devs"<<endl;
+    is>>wgtLastDevsPen;
+    cout<<wgtLastDevsPen<<tb<<"#weight for last-devs penalties"<<endl;
+    is>>phsLastDevsPen;
+    cout<<phsLastDevsPen<<tb<<"#min phase to apply penalty"<<endl;
     if (debug){
-        cout<<"optsFcAvg    = "<<optsFcAvg<<endl;
-        cout<<"optsGrowth   = "<<optsGrowth<<endl;
-        cout<<"optsInitNatZ = "<<optsInitNatZ<<endl;
         cout<<"enter 1 to continue : ";
         cin>>debug;
         if (debug<0) exit(1);
@@ -348,6 +355,17 @@ void ModelOptions::write(ostream & os) {
     }
     os<<optsInitNatZ<<endl;
     
+    //F-devs penalties
+    os<<"#----F-devs penalty options"<<endl;
+    os<<cvFDevsPen<<tb<<"#initial cv for F-devs penalties"<<endl;
+    os<<phsDecrFDevsPen<<tb<<"#phase at which to start decreasing the penalties on F-devs"<<endl;
+    os<<phsZeroFDevsPen<<tb<<"#phase at which to turn off the penalties on F-devs"<<endl;
+    
+    //Last-dev penalties
+    os<<"#----Last dev penalty options"<<endl;
+    os<<wgtLastDevsPen<<tb<<"#weight for last-dev penalties"<<endl;
+    os<<phsDecrFDevsPen<<tb<<"#min phase to apply penalty"<<endl;
+    
     if (debug) cout<<"#end ModelOptions::write(ostream)"<<endl;
 }
 
@@ -359,7 +377,9 @@ void ModelOptions::writeToR(ostream& os, std::string nm, int indent) {
         os<<nm<<"=list("<<endl;
     indent++;
         for (int n=0;n<indent;n++) os<<tb;
-        os<<"growth="<<optsGrowth<<cc<<"initNatZ="<<optsInitNatZ<<endl;
+        os<<"growth="<<optsGrowth<<cc<<"initNatZ="<<optsInitNatZ<<cc
+            <<"cvFDevsPen="<<cvFDevsPen<<cc<<"phsDecr="<<phsDecrFDevsPen<<cc<<"phsZero="<<phsZeroFDevsPen<<cc
+            <<"wgtLastDevPen="<<wgtLastDevsPen<<cc<<"phsLastDevsPen="<<phsLastDevsPen<<endl;
     indent--;
     for (int n=0;n<indent;n++) os<<tb;
         os<<")";

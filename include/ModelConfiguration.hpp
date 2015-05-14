@@ -15,6 +15,8 @@
  * 2014-12-03: 1. Added asYr (assessment year) as input, replacing mxYr. Now, mxYr = asYr-1.
  * 2015-03-01: 1. Added "dims" adstring variables to facilitate output to R.
  *             2. Added optsGrowth and optsInitNatZ options to ModelOptions.
+ * 2015-05-12: 1. Added cvFDevsPen, phsDecrFDevsPen,phsZeroFDevsPen for F-devs penalties
+ * 2015-05-13: 1. Added phsLastDevPen, wgtLastDevPen
  */
 
 #ifndef MODELCONFIGURATION_HPP
@@ -117,6 +119,11 @@
         int optsGrowth;                 //selected option for growth calculations
         adstring_array lblsInitNatZOpts;//labels for initial n-at-z options
         int optsInitNatZ;               //selected option for initial n-at-z calculations
+        double cvFDevsPen;              //penalty for F-devs
+        int phsDecrFDevsPen;            //phase to start decreasing fpenCV
+        int phsZeroFDevsPen;            //phase at which to turn off penalties on F-devs
+        double wgtLastDevsPen;          //penalty for last dev in each devs vector
+        int phsLastDevsPen;             //phase to start the penalty on the last devs
 
     public:
         ModelOptions(ModelConfiguration& mc);
