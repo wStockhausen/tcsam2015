@@ -129,17 +129,17 @@ void AggregateCatchData::aggregateData(void){
         xxmn=1; xxmx=tcsam::ALL_SXs;
         mmmn=mmmx=tcsam::ALL_MSs;
         ssmn=ssmx=tcsam::ALL_SCs;
-    } else if ((optFit==tcsam::FIT_BY_XM)||(optFit==tcsam::FIT_BY_XME)){
+    } else if ((optFit==tcsam::FIT_BY_XM)||(optFit==tcsam::FIT_BY_X_ME)||(optFit==tcsam::FIT_BY_XME)){
         //aggregate over shell condition
         xxmn=1; xxmx=tcsam::ALL_SXs;
         mmmn=1; mmmx=tcsam::ALL_MSs;
         ssmn=ssmx=tcsam::ALL_SCs;
-    } else if ((optFit==tcsam::FIT_BY_XS)||(optFit==tcsam::FIT_BY_XSE)){
+    } else if ((optFit==tcsam::FIT_BY_XS)||(optFit==tcsam::FIT_BY_X_SE)){
         //aggregate over maturity
         xxmn=1; xxmx=tcsam::ALL_SXs;
         mmmn=mmmx=tcsam::ALL_MSs;
         ssmn=1; ssmx=tcsam::ALL_SCs;
-    } else if ((optFit==tcsam::FIT_BY_XMS)||(optFit==tcsam::FIT_BY_XMSE)){
+    } else if ((optFit==tcsam::FIT_BY_XMS)||(optFit==tcsam::FIT_BY_XM_SE)){
         //don't aggregate
         return;
     }

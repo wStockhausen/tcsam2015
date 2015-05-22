@@ -12,6 +12,7 @@
  * 20150113: added FIT_BY_XSE, FIT_BY_XMSE
  * 20150302: added RSTR_... constants and converter
  * 20150417: revised STR_FIT_BY_ string values
+ * 20150518: revised FIT_BY_ and STR_FIT_BY_ values
  */
 
 #pragma once
@@ -97,23 +98,25 @@ namespace tcsam{
     const adstring STR_FIT_NONE    = "NONE";
     const adstring STR_FIT_BY_TOT  = "BY_TOTAL";
     const adstring STR_FIT_BY_X    = "BY_X";
-    const adstring STR_FIT_BY_XE   = "BY_XE";
     const adstring STR_FIT_BY_XM   = "BY_XM";
-    const adstring STR_FIT_BY_XME  = "BY_XME";
     const adstring STR_FIT_BY_XS   = "BY_XS";
-    const adstring STR_FIT_BY_XSE  = "BY_XSE";
     const adstring STR_FIT_BY_XMS  = "BY_XMS";
-    const adstring STR_FIT_BY_XMSE = "BY_XMSE";
+    const adstring STR_FIT_BY_XE   = "BY_XE";
+    const adstring STR_FIT_BY_X_ME = "BY_X_ME";
+    const adstring STR_FIT_BY_X_SE = "BY_X_SE";
+    const adstring STR_FIT_BY_XME  = "BY_XME";
+    const adstring STR_FIT_BY_XM_SE = "BY_XM_SE";
     const int FIT_NONE    = 0;
     const int FIT_BY_TOT  = 1;
     const int FIT_BY_X    = 2;
-    const int FIT_BY_XE   = 3;
-    const int FIT_BY_XM   = 4;
-    const int FIT_BY_XME  = 5;
-    const int FIT_BY_XS   = 6;
-    const int FIT_BY_XSE  = 7;
-    const int FIT_BY_XMS  = 8;
-    const int FIT_BY_XMSE = 9;
+    const int FIT_BY_XM   = 3;
+    const int FIT_BY_XS   = 4;
+    const int FIT_BY_XMS  = 5;
+    const int FIT_BY_XE   = 6;
+    const int FIT_BY_X_ME = 7;
+    const int FIT_BY_X_SE = 8;
+    const int FIT_BY_XME  = 9;
+    const int FIT_BY_XM_SE = 10;
     
     //likelihood types
     const adstring STR_LL_NONE        = "NONE";

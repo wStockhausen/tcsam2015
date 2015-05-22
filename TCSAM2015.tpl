@@ -87,6 +87,10 @@
 //              2. Added dbgNLLs as debug value. Must consider using std::bitset to implement debug flags
 //              3. Incremented internal version to 01.60.
 //              4. Can now specify penalty weight and starting phase for last devs to ModelOptions file
+//  2015-05-18: 1. Added FIT_BY_XS, FIT_BY_X_ME, FIT_BY_X_SE, FIT_BY_XM_SE options to fit size comps
+//              2. Cleaned up application of pS?Devs to pS? so this only happens for required years
+//              3. Added mean growth info (mnGrZ_cz, mnGrZ_yxsz) to model rep file
+//              4. Reconfigured growth-related model output to mp$T_list$... to amtch rsimTCSAM
 //
 // =============================================================================
 // =============================================================================
@@ -884,7 +888,9 @@ PARAMETER_SECTION
     3darray prMat_yxz(mnYr,mxYr,1,nSXs,1,nZBs);//prob. of immature crab molting to maturity given sex x, pre-molt size z
     
     //growth related quantities
-    3darray prGr_czz(1,npcGr,1,nZBs,1,nZBs);           //prob of growth to z (row) from zp (col) by parameter combination
+    matrix mnGrZ_cz(1,npcGr,1,nZBs);           //mean post-molt size by parameter combination, pre-molt size
+    3darray prGr_czz(1,npcGr,1,nZBs,1,nZBs);   //prob of growth to z (row) from zp (col) by parameter combination
+    4darray mnGrZ_yxsz(mnYr,mxYr,1,nSXs,1,nSCs,1,nZBs); //mean post-molt size by by year, sex, shell condition, pre-molt size
     5darray prGr_yxszz(mnYr,mxYr,1,nSXs,1,nSCs,1,nZBs,1,nZBs); //prob of growth to z (row) from zp (col) by year, sex, shell condition
     
     //Selectivity (and retention) functions
@@ -2094,7 +2100,9 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
     dvariable grB;
     dvariable grBeta;
     
+    mnGrZ_cz.initialize();
     prGr_czz.initialize();
+    mnGrZ_yxsz.initialize();
     prGr_yxszz.initialize();
     
     dvar_matrix prGr_zz(1,nZBs,1,nZBs);
@@ -2113,6 +2121,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
         //compute growth transition matrix for this pc
         prGr_zz.initialize();
         dvar_vector mnZ = exp(grA)*pow(zBs,grB);//mean size after growth from zBs
+        mnGrZ_cz(pc) = mnZ;
         if (optsGrowth==0) {
             //old style (TCSAM2013)
             dvar_vector alZ = (mnZ-zBs)/grBeta;//scaled mean growth increment from zBs
@@ -2163,6 +2172,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
             if ((mnYr<=y)&&(y<=mxYr)){
                 x = idxs(idx,2); //sex index
                 for (int s=1;s<=nSCs;s++){
+                    mnGrZ_yxsz(y,x,s) = mnGrZ_cz(pc);
                     for (int z=1;z<=nZBs;z++) prGr_yxszz(y,x,s,z) = prGr_czz(pc,z);
                 }//s
             }
@@ -2282,9 +2292,10 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
 //        fsZ   = pids[idxFSZ];
         fsZ   = pXDs[idxFSZ];
         idSel = pids[ptrSel->nIVs+ptrSel->nPVs+idxFSZ+1];
-        if (debug>dbgCalcProcs) cout<<tb<<"fsZ: "<<fsZ<<tb<<"idSel"<<tb<<idSel<<tb<<SelFcns::getSelFcnID(idSel)<<endl;;
+        if (debug>dbgCalcProcs) cout<<tb<<"fsZ: "<<fsZ<<tb<<"idSel"<<tb<<idSel<<tb<<SelFcns::getSelFcnID(idSel)<<endl;
 
         sel_cz(pc) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
+        if (debug>dbgCalcProcs) cout<<tb<<"pc = "<<pc<<tb<<"sel_cz: "<<sel_cz(pc)<<endl;
             
         //loop over model indices as defined in the index blocks
         imatrix idxs = ptrSel->getModelIndices(pc);
@@ -2292,19 +2303,24 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
             y = idxs(idx,1);//year
             if ((mnYr<=y)&&(y<=mxYr+1)){
                 k=ptrSel->nIVs+1+6;//1st devs vector variable column
-                if (useDevsS1) {params[1] += devsS1(useDevsS1,idxDevsS1[y]);}
-                if (useDevsS2) {params[2] += devsS2(useDevsS2,idxDevsS2[y]);}
-                if (useDevsS3) {params[3] += devsS3(useDevsS3,idxDevsS3[y]);}
-                if (useDevsS4) {params[4] += devsS4(useDevsS4,idxDevsS4[y]);}
-                if (useDevsS5) {params[5] += devsS5(useDevsS5,idxDevsS5[y]);}
-                if (useDevsS6) {params[6] += devsS6(useDevsS6,idxDevsS6[y]);}
+                if (useDevsS1){
+                    if (idxDevsS1[y]){
+                        if (debug>dbgCalcProcs) cout<<tb<<idx<<tb<<y<<tb<<useDevsS1<<tb<<idxDevsS1[y]<<endl;
+                        params[1] += devsS1(useDevsS1,idxDevsS1[y]);
+                    }
+                }
+                if (useDevsS2) if (idxDevsS2[y]){params[2] += devsS2(useDevsS2,idxDevsS2[y]);}
+                if (useDevsS3) if (idxDevsS3[y]){params[3] += devsS3(useDevsS3,idxDevsS3[y]);}
+                if (useDevsS4) if (idxDevsS4[y]){params[4] += devsS4(useDevsS4,idxDevsS4[y]);}
+                if (useDevsS5) if (idxDevsS5[y]){params[5] += devsS5(useDevsS5,idxDevsS5[y]);}
+                if (useDevsS6) if (idxDevsS6[y]){params[6] += devsS6(useDevsS6,idxDevsS6[y]);}
                 sel_iyz(pc,y) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
                 if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"sel: "<<sel_iyz(pc,y)<<endl;
             } else {
                 if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"y outside model range--skipping year!"<<endl;
             }
-        }
-    }
+        }//idx
+    }//pc
     if (debug>dbgCalcProcs) cout<<"finished calcSelectivities()"<<endl;
 
 //******************************************************************************
@@ -3181,10 +3197,23 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
         oP_z.allocate(1,nSXs*nZBs);
         mP_z.allocate(1,nSXs*nZBs);
     } else 
+    if (ptrZFD->optFit==tcsam::FIT_BY_X_ME){
+        oP_z.allocate(1,nMSs*nZBs);
+        mP_z.allocate(1,nMSs*nZBs);
+    } else
+    if (ptrZFD->optFit==tcsam::FIT_BY_X_SE){
+        oP_z.allocate(1,nSCs*nZBs);
+        mP_z.allocate(1,nSCs*nZBs);
+    } else
     if (ptrZFD->optFit==tcsam::FIT_BY_XME){
         oP_z.allocate(1,nSXs*nMSs*nZBs);
         mP_z.allocate(1,nSXs*nMSs*nZBs);
-    } else {
+    } else 
+    if (ptrZFD->optFit==tcsam::FIT_BY_XM_SE){
+        oP_z.allocate(1,nSCs*nZBs);
+        mP_z.allocate(1,nSCs*nZBs);
+    } else 
+    {
         oP_z.allocate(1,nZBs);
         mP_z.allocate(1,nZBs);
     }
@@ -3195,7 +3224,7 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
         if ((mny<=y)&&(y<=mxy)) {
             if (ptrZFD->optFit==tcsam::FIT_BY_TOT){
                 ss = 0;
-                nT = sum(mA_yxmsz[y]);//=0 if not calculated
+                nT = sum(mA_yxmsz(y));//=0 if not calculated
                 if (value(nT)>0){
                     oP_z.initialize();//observed size comp.
                     mP_z.initialize();//model size comp.
@@ -3271,52 +3300,6 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                 }//x
                 //FIT_BY_X
             } else 
-            if (ptrZFD->optFit==tcsam::FIT_BY_XE){
-                ss = 0;
-                nT = sum(mA_yxmsz[y]);//=0 if not calculated
-                if (value(nT)>0){
-                    oP_z.initialize();//observed size comp.
-                    mP_z.initialize();//model size comp.
-                    for (int x=1;x<=nSXs;x++) {
-                        int mnz = 1+(x-1)*nZBs;
-                        int mxz = x*nZBs;
-                        for (int m=1;m<=ALL_MSs;m++) {
-                            for (int s=1;s<=ALL_SCs;s++) {
-                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
-                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
-                            }
-                        }
-                        for (int m=1;m<=nMSs;m++) {
-                            for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
-                        }
-                    }//x
-                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                    if (debug>=dbgNLLs){
-                        cout<<"ss = "<<ss<<endl;
-                        cout<<"oP_Z = "<<oP_z<<endl;
-                    }
-                    mP_z /= nT;//normalize model size comp
-                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
-                    for (int x=1;x<=nSXs;x++) {
-                        int mnz = 1+(x-1)*nZBs;
-                        int mxz = mnz+nZBs-1;
-                        dvar_vector mPt = mP_z(mnz,mxz);
-                        dvector oPt = oP_z(mnz,mxz);
-                        if (debug<0) {
-                            cout<<"'"<<y<<"'=list(";
-                            cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
-                            cout<<"y="<<y<<cc;
-                            cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
-                            cout<<"m='"<<tcsam::getMaturityType(ALL_MSs)<<"'"<<cc;
-                            cout<<"s='"<<tcsam::getShellType(ALL_SCs)<<"'"<<cc;
-                            cout<<"fit=";
-                        }
-                        calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
-                        if (debug<0) cout<<")"<<cc<<endl;
-                    }//x
-                }//nT>0
-                //FIT_BY_XE
-            } else
             if (ptrZFD->optFit==tcsam::FIT_BY_XM){
                 for (int x=1;x<=nSXs;x++) {
                     for (int m=1;m<=nMSs;m++){
@@ -3352,56 +3335,6 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                     }//m
                 }//x
                 //FIT_BY_XM
-            } else 
-            if (ptrZFD->optFit==tcsam::FIT_BY_XME){
-                ss = 0;
-                nT = sum(mA_yxmsz[y]);//=0 if not calculated
-                if (value(nT)>0){
-                    oP_z.initialize();//observed size comp.
-                    mP_z.initialize();//model size comp.
-                    for (int x=1;x<=nSXs;x++) {
-                        for (int m=1;m<=nMSs;m++) {
-                            int mnz = 1+(m-1)*nZBs+(x-1)*nMSs*nZBs;
-                            int mxz = mnz+nZBs-1;
-                            for (int s=1;s<=ALL_SCs;s++) {
-                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
-                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
-                            }
-                            if (debug>=dbgNLLs){
-                                cout<<"ss = "<<ss<<endl;
-                                cout<<"oP_Z = "<<oP_z<<endl;
-                            }
-                            if (m<=nMSs) {for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);}
-                        }//m
-                    }//x
-                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
-                    if (debug>=dbgNLLs){
-                        cout<<"ss = "<<ss<<endl;
-                        cout<<"oP_Z = "<<oP_z<<endl;
-                    }
-                    mP_z /= nT;//normalize model size comp
-                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
-                    for (int x=1;x<=nSXs;x++) {
-                        for (int m=1;m<=nMSs;m++) {
-                            int mnz = 1+(m-1)*nZBs+(x-1)*nMSs*nZBs;
-                            int mxz = mnz+nZBs-1;
-                            dvar_vector mPt = mP_z(mnz,mxz);
-                            dvector oPt = oP_z(mnz,mxz);
-                            if (debug<0) {
-                                cout<<"'"<<y<<"'=list(";
-                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
-                                cout<<"y="<<y<<cc;
-                                cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
-                                cout<<"m='"<<tcsam::getMaturityType(m)<<"'"<<cc;
-                                cout<<"s='"<<tcsam::getShellType(ALL_SCs)<<"'"<<cc;
-                                cout<<"fit=";
-                            }
-                            calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
-                            if (debug<0) cout<<")"<<cc<<endl;
-                        }//m
-                    }//x
-                    //FIT_BY_XME
-                }//nT>0
             } else 
             if (ptrZFD->optFit==tcsam::FIT_BY_XS){
                 for (int x=1;x<=nSXs;x++) {
@@ -3475,6 +3408,238 @@ FUNCTION void calcNLLs_CatchNatZ(SizeFrequencyData* ptrZFD, dvar5_array& mA_yxms
                     }//m
                 }//x
                 //FIT_BY_XMS
+            } else 
+            if (ptrZFD->optFit==tcsam::FIT_BY_XE){
+                ss = 0;
+                nT = sum(mA_yxmsz(y));//=0 if not calculated
+                if (value(nT)>0){
+                    oP_z.initialize();//observed size comp.
+                    mP_z.initialize();//model size comp.
+                    for (int x=1;x<=nSXs;x++) {
+                        int mnz = 1+(x-1)*nZBs;
+                        int mxz = x*nZBs;
+                        for (int m=1;m<=ALL_MSs;m++) {
+                            for (int s=1;s<=ALL_SCs;s++) {
+                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                            }
+                        }
+                        for (int m=1;m<=nMSs;m++) {
+                            for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
+                        }
+                    }//x
+                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
+                    if (debug>=dbgNLLs){
+                        cout<<"ss = "<<ss<<endl;
+                        cout<<"oP_Z = "<<oP_z<<endl;
+                    }
+                    mP_z /= nT;//normalize model size comp
+                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
+                    for (int x=1;x<=nSXs;x++) {
+                        int mnz = 1+(x-1)*nZBs;
+                        int mxz = x*nZBs;
+                        dvar_vector mPt = mP_z(mnz,mxz);
+                        dvector oPt = oP_z(mnz,mxz);
+                        if (debug<0) {
+                            cout<<"'"<<y<<"'=list(";
+                            cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                            cout<<"y="<<y<<cc;
+                            cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
+                            cout<<"m='"<<tcsam::getMaturityType(ALL_MSs)<<"'"<<cc;
+                            cout<<"s='"<<tcsam::getShellType(ALL_SCs)<<"'"<<cc;
+                            cout<<"fit=";
+                        }
+                        calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                        if (debug<0) cout<<")"<<cc<<endl;
+                    }//x
+                }//nT>0
+                //FIT_BY_XE
+            } else
+            if (ptrZFD->optFit==tcsam::FIT_BY_X_ME){
+                for (int x=1;x<=nSXs;x++) {
+                    ss = 0;
+                    nT = sum(mA_yxmsz(y,x));//=0 if not calculated
+                    if (value(nT)>0){
+                        oP_z.initialize();//observed size comp.
+                        mP_z.initialize();//model size comp.
+                        for (int m=1;m<=nMSs;m++) {
+                            int mnz = 1+(m-1)*nZBs;
+                            int mxz = m*nZBs;
+                            for (int s=1;s<=ALL_SCs;s++) {
+                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                            }//s
+                            for (int s=1;s<=nSCs;s++) {
+                                mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
+                            }//s
+                        }//m
+                        if (sum(oP_z)>0) oP_z /= sum(oP_z);
+                        if (debug>=dbgNLLs){
+                            cout<<"ss = "<<ss<<endl;
+                            cout<<"oP_Z = "<<oP_z<<endl;
+                        }
+                        mP_z /= nT;//normalize model size comp
+                        if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
+                        for (int m=1;m<=nMSs;m++) {
+                            int mnz = 1+(m-1)*nZBs;
+                            int mxz = m*nZBs;
+                            dvar_vector mPt = mP_z(mnz,mxz);
+                            dvector oPt = oP_z(mnz,mxz);
+                            if (debug<0) {
+                                cout<<"'"<<y<<"'=list(";
+                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                cout<<"y="<<y<<cc;
+                                cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                cout<<"m='"<<tcsam::getMaturityType(m)<<"'"<<cc;
+                                cout<<"s='"<<tcsam::getShellType(ALL_SCs)<<"'"<<cc;
+                                cout<<"fit=";
+                            }
+                            calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                            if (debug<0) cout<<")"<<cc<<endl;
+                        }//m
+                    }//nT>0
+                }//x
+                //FIT_BY_X_ME
+            } else
+            if (ptrZFD->optFit==tcsam::FIT_BY_X_SE){
+                for (int x=1;x<=nSXs;x++) {
+                    ss = 0;
+                    nT = sum(mA_yxmsz(y,x));//=0 if not calculated
+                    if (value(nT)>0){
+                        oP_z.initialize();//observed size comp.
+                        mP_z.initialize();//model size comp.
+                        for (int s=1;s<=nSCs;s++) {
+                            int mnz = 1+(s-1)*nZBs;
+                            int mxz = s*nZBs;
+                            for (int m=1;m<=ALL_MSs;m++) {
+                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                            }//m
+                            for (int m=1;m<=nMSs;m++) {
+                                mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
+                            }//m
+                        }//s
+                        if (sum(oP_z)>0) oP_z /= sum(oP_z);
+                        if (debug>=dbgNLLs){
+                            cout<<"ss = "<<ss<<endl;
+                            cout<<"oP_Z = "<<oP_z<<endl;
+                        }
+                        mP_z /= nT;//normalize model size comp
+                        if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
+                        for (int s=1;s<=nSCs;s++) {
+                            int mnz = 1+(s-1)*nZBs;
+                            int mxz = s*nZBs;
+                            dvar_vector mPt = mP_z(mnz,mxz);
+                            dvector oPt = oP_z(mnz,mxz);
+                            if (debug<0) {
+                                cout<<"'"<<y<<"'=list(";
+                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                cout<<"y="<<y<<cc;
+                                cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                cout<<"m='"<<tcsam::getMaturityType(ALL_MSs)<<"'"<<cc;
+                                cout<<"s='"<<tcsam::getShellType(s)<<"'"<<cc;
+                                cout<<"fit=";
+                            }
+                            calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                            if (debug<0) cout<<")"<<cc<<endl;
+                        }//s
+                    }//nT>0
+                }//x
+                //FIT_BY_X_SE
+            } else
+            if (ptrZFD->optFit==tcsam::FIT_BY_XME){
+                ss = 0;
+                nT = sum(mA_yxmsz(y));//=0 if not calculated
+                if (value(nT)>0){
+                    oP_z.initialize();//observed size comp.
+                    mP_z.initialize();//model size comp.
+                    for (int x=1;x<=nSXs;x++) {
+                        for (int m=1;m<=nMSs;m++) {
+                            int mnz = 1+(m-1)*nZBs+(x-1)*nMSs*nZBs;
+                            int mxz = mnz+nZBs-1;
+                            for (int s=1;s<=ALL_SCs;s++) {
+                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                            }
+                            if (debug>=dbgNLLs){
+                                cout<<"ss = "<<ss<<endl;
+                                cout<<"oP_Z = "<<oP_z<<endl;
+                            }
+                            if (m<=nMSs) {for (int s=1;s<=nSCs;s++) mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);}
+                        }//m
+                    }//x
+                    if (sum(oP_z)>0) oP_z /= sum(oP_z);
+                    if (debug>=dbgNLLs){
+                        cout<<"ss = "<<ss<<endl;
+                        cout<<"oP_Z = "<<oP_z<<endl;
+                    }
+                    mP_z /= nT;//normalize model size comp
+                    if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
+                    for (int x=1;x<=nSXs;x++) {
+                        for (int m=1;m<=nMSs;m++) {
+                            int mnz = 1+(m-1)*nZBs+(x-1)*nMSs*nZBs;
+                            int mxz = mnz+nZBs-1;
+                            dvar_vector mPt = mP_z(mnz,mxz);
+                            dvector oPt = oP_z(mnz,mxz);
+                            if (debug<0) {
+                                cout<<"'"<<y<<"'=list(";
+                                cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                cout<<"y="<<y<<cc;
+                                cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                cout<<"m='"<<tcsam::getMaturityType(m)<<"'"<<cc;
+                                cout<<"s='"<<tcsam::getShellType(ALL_SCs)<<"'"<<cc;
+                                cout<<"fit=";
+                            }
+                            calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                            if (debug<0) cout<<")"<<cc<<endl;
+                        }//m
+                    }//x
+                }//nT>0
+                //FIT_BY_XME
+            } else 
+            if (ptrZFD->optFit==tcsam::FIT_BY_XM_SE){
+                for (int x=1;x<=nSXs;x++) {
+                    for (int m=1;m<=nMSs;m++) {
+                        ss = 0;
+                        nT = sum(mA_yxmsz(y,x,m));//=0 if not calculated
+                        if (value(nT)>0){
+                            oP_z.initialize();//observed size comp.
+                            mP_z.initialize();//model size comp.
+                            for (int s=1;s<=nSCs;s++) {
+                                int mnz = 1+(s-1)*nZBs;
+                                int mxz = s*nZBs;
+                                ss += ptrZFD->ss_xmsy(x,m,s,iy);
+                                oP_z(mnz,mxz).shift(1) += ptrZFD->PatZ_xmsyz(x,m,s,iy);
+                                mP_z(mnz,mxz).shift(1) += mA_yxmsz(y,x,m,s);
+                            }//s
+                            if (sum(oP_z)>0) oP_z /= sum(oP_z);
+                            if (debug>=dbgNLLs){
+                                cout<<"ss = "<<ss<<endl;
+                                cout<<"oP_Z = "<<oP_z<<endl;
+                            }
+                            mP_z /= nT;//normalize model size comp
+                            if (debug>=dbgNLLs) cout<<"mP_z = "<<mP_z<<endl;
+                            for (int s=1;s<=nSCs;s++) {
+                                int mnz = 1+(s-1)*nZBs;
+                                int mxz = s*nZBs;
+                                dvar_vector mPt = mP_z(mnz,mxz);
+                                dvector oPt = oP_z(mnz,mxz);
+                                if (debug<0) {
+                                    cout<<"'"<<y<<"'=list(";
+                                    cout<<"fit.type='"<<tcsam::getFitType(ptrZFD->optFit)<<"'"<<cc;
+                                    cout<<"y="<<y<<cc;
+                                    cout<<"x='"<<tcsam::getSexType(x)<<"'"<<cc;
+                                    cout<<"m='"<<tcsam::getMaturityType(m)<<"'"<<cc;
+                                    cout<<"s='"<<tcsam::getShellType(s)<<"'"<<cc;
+                                    cout<<"fit=";
+                                }
+                                calcNLL(ptrZFD->llType,mPt,oPt,ss,debug,cout);
+                                if (debug<0) cout<<")"<<cc<<endl;
+                            }//s
+                        }//nT>0
+                    }//m
+                }//x
+                //FIT_BY_XM_SE
             } else 
             {
                 std::cout<<"Calling calcNLLs_CatchNatZ with invalid fit option."<<endl;
@@ -3698,12 +3863,16 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
     os<<"mp=list("<<endl;
         os<<"M_cxm         ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
         os<<"prMolt2Mat_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
-        os<<"prGr_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
         os<<"sel_cz        ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
         
         os<<"M_yxmsz        =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
         os<<"prMolt2Mat_yxz =";  wts::writeToR(os,     value(prMat_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
-        os<<"T_yxszz        =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms); os<<cc<<endl;
+        os<<"T_list=list("<<endl;
+            os<<"mnZAM_cz   ="; wts::writeToR(os,value(mnGrZ_cz),adstring("pc=1:"+str(npcGr )),zbDms);       os<<cc<<endl;
+            os<<"T_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
+            os<<"mnZAM_yxsz =";  wts::writeToR(os,wts::value(mnGrZ_yxsz),yDms,xDms,sDms,zbDms);              os<<cc<<endl;
+            os<<"T_yxszz    =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms);        os<<endl;
+        os<<")"<<cc<<endl;
         os<<"R_list=list("<<endl;
             os<<"R_y  ="; wts::writeToR(os,value(R_y), yDms);                                os<<cc<<endl;
             os<<"R_yx ="; wts::writeToR(os,value(R_yx),yDms,xDms);                           os<<cc<<endl;
@@ -3933,18 +4102,6 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
         
         //model results
         ReportToR_ModelResults(os,debug,cout); os<<","<<endl;
-
-//        //selectivity functions
-//        ReportToR_SelFuncs(os,debug,cout); os<<","<<endl;
-//
-//        //population quantities
-//        ReportToR_PopQuants(os,debug,cout); os<<","<<endl;
-//
-//        //fishery quantities
-//        ReportToR_FshQuants(os,debug,cout); os<<","<<endl;
-//
-//        //survey quantities 
-//        ReportToR_SrvQuants(os,debug,cout); os<<","<<endl;
 
         //model fit quantities
         ReportToR_ModelFits(os,debug,cout); os<<","<<endl;
