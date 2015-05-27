@@ -313,6 +313,10 @@ void ModelOptions::read(cifstream & is) {
     cout<<wgtLastDevsPen<<tb<<"#weight for last-devs penalties"<<endl;
     is>>phsLastDevsPen;
     cout<<phsLastDevsPen<<tb<<"#min phase to apply penalty"<<endl;
+    is>>wgtSmthLgtPrMat;
+    cout<<wgtSmthLgtPrMat<<tb<<"#weight for maturity ogive smoothness penalties"<<endl;
+    is>>wgtNonDecLgtPrMat;
+    cout<<wgtNonDecLgtPrMat<<tb<<"#weight for maturity ogive non-decreaing penalties"<<endl;
     if (debug){
         cout<<"enter 1 to continue : ";
         cin>>debug;
@@ -365,6 +369,11 @@ void ModelOptions::write(ostream & os) {
     os<<"#----Last dev penalty options"<<endl;
     os<<wgtLastDevsPen<<tb<<"#weight for last-dev penalties"<<endl;
     os<<phsDecrFDevsPen<<tb<<"#min phase to apply penalty"<<endl;
+    
+    //Penalties on maturity ogives
+    os<<"#----Penalty weights for maturity ogives"<<endl;
+    os<<wgtSmthLgtPrMat<<tb<<"#weight for maturity ogive smoothness penalties"<<endl;
+    os<<wgtNonDecLgtPrMat<<tb<<"#weight for maturity ogive non-decreaing penalties"<<endl;
     
     if (debug) cout<<"#end ModelOptions::write(ostream)"<<endl;
 }
