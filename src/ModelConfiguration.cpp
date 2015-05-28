@@ -373,7 +373,7 @@ void ModelOptions::write(ostream & os) {
     //Penalties on maturity ogives
     os<<"#----Penalty weights for maturity ogives"<<endl;
     os<<wgtSmthLgtPrMat<<tb<<"#weight for maturity ogive smoothness penalties"<<endl;
-    os<<wgtNonDecLgtPrMat<<tb<<"#weight for maturity ogive non-decreaing penalties"<<endl;
+    os<<wgtNonDecLgtPrMat<<tb<<"#weight for maturity ogive non-decreasing penalties"<<endl;
     
     if (debug) cout<<"#end ModelOptions::write(ostream)"<<endl;
 }
@@ -388,7 +388,8 @@ void ModelOptions::writeToR(ostream& os, std::string nm, int indent) {
         for (int n=0;n<indent;n++) os<<tb;
         os<<"growth="<<optsGrowth<<cc<<"initNatZ="<<optsInitNatZ<<cc
             <<"cvFDevsPen="<<cvFDevsPen<<cc<<"phsDecr="<<phsDecrFDevsPen<<cc<<"phsZero="<<phsZeroFDevsPen<<cc
-            <<"wgtLastDevPen="<<wgtLastDevsPen<<cc<<"phsLastDevsPen="<<phsLastDevsPen<<endl;
+            <<"wgtLastDevPen="<<wgtLastDevsPen<<cc<<"phsLastDevsPen="<<phsLastDevsPen<<cc
+            <<"wgtSmthLgtPrMat="<<wgtSmthLgtPrMat<<cc<<"wgtNonDecLgtPrMat="<<wgtNonDecLgtPrMat<<endl;
     indent--;
     for (int n=0;n<indent;n++) os<<tb;
         os<<")";
