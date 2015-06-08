@@ -97,6 +97,7 @@
 GLOBALS_SECTION
     #include <math.h>
     #include <time.h>
+    #include <limits>
     #include <admodel.h>
     #include "TCSAM.hpp"
 
