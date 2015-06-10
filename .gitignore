@@ -29,3 +29,4 @@ Makefile
 /test/InputFiles/rsimTCSAM.A1/Model.Config.dat
 /test/InputFiles/rsimTCSAM.A1/devs.csv
 /test/InputFiles/rsimTCSAM.A1/rsim.ParametersInfo.dat
+/tcsam2015-Makefile.mk

@@ -4178,11 +4178,11 @@ REPORT_SECTION
         
     //write active parameters to rpt::echo
     rpt::echo<<"Finished phase "<<current_phase()<<endl;
-    
-    //write report as R file
-    ReportToR(report,1,rpt::echo);
 
     if (last_phase()) {
+        //write report as R file
+        ReportToR(report,1,rpt::echo);
+        //write parameter values to csv
         ofstream os("TCSAM2015.final_params.active.csv", ios::trunc);
         writeParameters(os,0,1);
         os.close();
