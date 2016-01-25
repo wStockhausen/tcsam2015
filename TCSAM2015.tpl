@@ -90,7 +90,11 @@
 //  2015-05-18: 1. Added FIT_BY_XS, FIT_BY_X_ME, FIT_BY_X_SE, FIT_BY_XM_SE options to fit size comps
 //              2. Cleaned up application of pS?Devs to pS? so this only happens for required years
 //              3. Added mean growth info (mnGrZ_cz, mnGrZ_yxsz) to model rep file
-//              4. Reconfigured growth-related model output to mp$T_list$... to amtch rsimTCSAM
+//              4. Reconfigured growth-related model output to mp$T_list$... to match rsimTCSAM
+//  2016-01-21: 1. Combined SurveyData, FisheryData classes into a single class: FleetData.
+//                  This standardizes data input files, R output lists, and simplifies
+//                  adding additional data types (e.g., tagging data, chela height data).
+//              2. Updated model version (modVer) to 2016.00. Will create git tag of same to track development.
 //
 // =============================================================================
 // =============================================================================
@@ -102,7 +106,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "01.60"; 
+    adstring modVer = "2016.00"; 
     
     time_t start,finish;
     
@@ -498,8 +502,7 @@ DATA_SECTION
     rpt::echo<<"#Reading datasets file '"<<ptrMC->fnMDS<<"'"<<endl;
     if (debugModelDatasets) {
         BioData::debug=1;
-        FisheryData::debug=1;
-        SurveyData::debug=1;
+        FleetData::debug=1;
     }
     ptrMDS = new ModelDatasets(ptrMC);
     ad_comm::change_datafile_name(ptrMC->fnMDS);
@@ -510,7 +513,7 @@ DATA_SECTION
         if (debugModelDatasets<0) exit(1);
         ModelDatasets::debug=debugModelDatasets;
         BioData::debug=debugModelDatasets;
-        SurveyData::debug=debugModelDatasets;
+        FleetData::debug=debugModelDatasets;
     }
     rpt::echo<<"#----finished model datasets---"<<endl;
     if (debugDATA_SECTION){
@@ -1264,11 +1267,11 @@ FUNCTION void createSimData(int debug, ostream& cout, int iSimDataSeed, ModelDat
     d6_array vrmN_fyxmsz = wts::value(rmN_fyxmsz);
     for (int f=1;f<=nFsh;f++) {
         if (debug) cout<<"fishery f: "<<f<<endl;
-        (ptrSim->ppFsh[f-1])->replaceCatchData(iSimDataSeed,rngSimData,vcN_fyxmsz(f),vrmN_fyxmsz(f),ptrSim->ptrBio->wAtZ_xmz);
+        (ptrSim->ppFsh[f-1])->replaceFisheryCatchData(iSimDataSeed,rngSimData,vcN_fyxmsz(f),vrmN_fyxmsz(f),ptrSim->ptrBio->wAtZ_xmz);
     }
     for (int v=1;v<=nSrv;v++) {
         if (debug) cout<<"survey "<<v<<endl;
-        (ptrSim->ppSrv[v-1])->replaceCatchData(iSimDataSeed,rngSimData,vn_vyxmsz(v),ptrSim->ptrBio->wAtZ_xmz);
+        (ptrSim->ppSrv[v-1])->replaceIndexCatchData(iSimDataSeed,rngSimData,vn_vyxmsz(v),ptrSim->ptrBio->wAtZ_xmz);
     }
     if (debug) cout<<"finished simulating model results as data"<<endl;
      
@@ -3662,7 +3665,7 @@ FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
     for (int f=1;f<=nFsh;f++){
         if (debug>=dbgAll) cout<<"calculating NLLs for fishery "<<ptrMC->lblsFsh[f]<<endl;
         if (debug<0) cout<<ptrMC->lblsFsh[f]<<"=list("<<endl;
-        FisheryData* ptrObs = ptrMDS->ppFsh[f-1];
+        FleetData* ptrObs = ptrMDS->ppFsh[f-1];
         if (ptrObs->hasRCD){//retained catch data
             if (debug<0) cout<<"retained.catch=list("<<endl;
             if (ptrObs->ptrRCD->hasN && ptrObs->ptrRCD->ptrN->optFit){
@@ -3743,24 +3746,28 @@ FUNCTION void calcNLLs_Surveys(int debug, ostream& cout)
     for (int v=1;v<=nSrv;v++){
         if (debug>=dbgAll) cout<<"calculating NLLs for survey "<<ptrMC->lblsSrv[v]<<endl;
         if (debug<0) cout<<ptrMC->lblsSrv[v]<<"=list("<<endl;
-        SurveyData* ptrObs = ptrMDS->ppSrv[v-1];
-        if (ptrObs->hasN && ptrObs->ptrN->optFit){
-            if (debug>=dbgAll) cout<<"---survey abundance"<<endl;
-            if (debug<0) cout<<"abundance="<<endl;
-            calcNLLs_AggregateCatch(ptrObs->ptrN,n_vyxmsz(v),debug,cout);
-            if (debug<0) cout<<","<<endl;
-        }
-        if (ptrObs->hasB && ptrObs->ptrB->optFit){
-            if (debug>=dbgAll) cout<<"---survey biomass"<<endl;
-            if (debug<0) cout<<"biomass="<<endl;
-            calcNLLs_AggregateCatch(ptrObs->ptrB,n_vyxmsz(v),debug,cout);
-            if (debug<0) cout<<","<<endl;
-        }
-        if (ptrObs->hasZFD && ptrObs->ptrZFD->optFit){
-            if (debug>=dbgAll) cout<<"---survey size frequencies"<<endl;
-            if (debug<0) cout<<"n.at.z="<<endl;
-            calcNLLs_CatchNatZ(ptrObs->ptrZFD,n_vyxmsz(v),debug,cout);
-            if (debug<0) cout<<","<<endl;
+        FleetData* ptrObs = ptrMDS->ppSrv[v-1];
+        if (ptrObs->hasICD){//index catch data
+            if (debug<0) cout<<"index.catch=list("<<endl;
+            if (ptrObs->ptrICD->hasN && ptrObs->ptrICD->ptrN->optFit){
+                if (debug>=dbgAll) cout<<"---index catch abundance"<<endl;
+                if (debug<0) cout<<"abundance="<<endl;
+                calcNLLs_AggregateCatch(ptrObs->ptrICD->ptrN,n_vyxmsz(v),debug,cout);
+                if (debug<0) cout<<","<<endl;
+            }
+            if (ptrObs->ptrICD->hasB && ptrObs->ptrICD->ptrB->optFit){
+                if (debug>=dbgAll) cout<<"---index catch biomass"<<endl;
+                if (debug<0) cout<<"biomass="<<endl;
+                calcNLLs_AggregateCatch(ptrObs->ptrICD->ptrB,n_vyxmsz(v),debug,cout);
+                if (debug<0) cout<<","<<endl;
+            }
+            if (ptrObs->ptrICD->hasZFD && ptrObs->ptrICD->ptrZFD->optFit){
+                if (debug>=dbgAll) cout<<"---index catch size frequencies"<<endl;
+                if (debug<0) cout<<"n.at.z="<<endl;
+                calcNLLs_CatchNatZ(ptrObs->ptrICD->ptrZFD,n_vyxmsz(v),debug,cout);
+                if (debug<0) cout<<","<<endl;
+            }
+            if (debug<0) cout<<"NULL),"<<endl;
         }
         if (debug<0) cout<<"NULL),"<<endl;
     }//surveys loop

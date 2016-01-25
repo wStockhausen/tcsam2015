@@ -6,6 +6,8 @@
  * 
  * 20140930: 1. Added recLag to BioData.
  * 20150209: 1. Removed prMature_xz, frMature_xsz, cvMnMxZ_xc from BioData.
+ * 20150121: 1. Combined FisheryData, SurveyData classes into a FleetData class
+ *           2. Updated some documentation.
  */
 
 #ifndef MODELDATA_HPP
@@ -17,10 +19,7 @@
 //      EffortData
 //      SizeFrequencyData
 //      BioData
-//      SurveyData
-//      RetainedCatchData
-//      ObservedCatchData
-//      FisehryData
+//      FleetData
 //      ModelDatasets
 //**********************************************************************
 class ModelConfiguration; //forward definition
@@ -59,10 +58,13 @@ class IndexRange;
         AggregateCatchData(){}
         ~AggregateCatchData(){}
         /**
-         * Replace catch data C_xmsy with new data. Also modifies inpC_xmsyc to reflect new data.
+         * Replace catch data C_xmsy with new data. 
+         * Also modifies inpC_xmsyc to reflect new data.
          * Error-related quantities remain the same.
          * 
-         * @param dmatrix newC_xmsy (note index order)
+         * @param iSeed - flag (!=0) to add random noise
+         * @param rng - random number generator
+         * @param newC_xmsy - d4_array with new catch data
          */
         void replaceCatchData(int iSeed,random_number_generator& rng,d4_array& newC_xmsy);
         void read(cifstream & is);//read file in ADMB format
@@ -135,7 +137,9 @@ class IndexRange;
          * Also modifies inpNatZ_xmsyc to reflect new data.
          * Error-related quantities remain the same.
          * 
-         * @param d5_array newNatZ_yxmsz
+         * @param iSeed - flag (!=0) to add random noise
+         * @param rng - random number generator
+         * @param newNatZ_yxmsz - d5_array with new numbers-at-size data
          */
         void replaceSizeFrequencyData(int iSeed,random_number_generator& rng,d5_array& newNatZ_xmsyz);
         /**
@@ -187,9 +191,10 @@ class IndexRange;
         friend std::ostream&   operator <<(std::ostream & os,   BioData & obj){obj.write(os); return os;}
     };
 
-//--------------------------------------------------------------------------------
-//          CatchData
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+    /**
+     * CatchData class.
+     */
     class CatchData {
     public:
         static int debug;
@@ -210,13 +215,21 @@ class IndexRange;
         SizeFrequencyData* ptrZFD;//pointer to numbers-at-size data
         
     public:
+        /**
+         * Constructor.
+         */
         CatchData();
+        /**
+         * Destructor
+         */
         ~CatchData();
         /**
-         * Replaces catch data based on newNatZ_yxmsz.
+         * Replace catch data based on newNatZ_yxmsz.
          * 
-         * @param newNatZ_yxmsz - catch-at-size by sex/maturity/shell condition/year
-         * @param wAtZ_xmz - weight-at-size by sex/maturity
+         * @param iSeed - flag (!=0) to add random noise
+         * @param rng - random number generator
+         * @param newNatZ_yxmsz - d5_array of catch-at-size by sex/maturity/shell condition/year
+         * @param wAtZ_xmz - d3_arrray of weight-at-size by sex/maturity
          */
         virtual void replaceCatchData(int iSeed,random_number_generator& rng,d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz);
         virtual void read(cifstream & is);//read file in ADMB format
@@ -226,54 +239,71 @@ class IndexRange;
         friend ostream&   operator <<(ostream & os,   CatchData & obj){obj.write(os); return os;}
     };
 
-//--------------------------------------------------------------------------------
-//          SurveyData
-//--------------------------------------------------------------------------------
-class SurveyData: public CatchData {
+//------------------------------------------------------------------------------    
+    /**
+     * Fleet data class.
+     */
+    class FleetData {
     public:
         static int debug;
-        const static adstring KW_SURVEY_DATA;
+        const static adstring KW_FISHERY;
+        const static adstring KW_SURVEY;
     public:
-        SurveyData():CatchData(){type="survey";}
-        ~SurveyData(){}
-        void read(cifstream & is);//read file in ADMB format
-        void write(ostream & os); //write object to file in ADMB format
-        void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
-    };
-
-//--------------------------------------------------------------------------------
-//          FisheryData
-//--------------------------------------------------------------------------------
-    class FisheryData {
-    public:
-        static int debug;
-        const static adstring KW_FISHERY_DATA;
-    public:
-        adstring name;     //fishery name
-        int hasEff;        //flag indicating effort data
-        EffortData* ptrEff;//pointer to effort data
+        adstring name;     //fleet name
+        adstring type;     //fleet type (survey or fishery)
+        int hasICD;        //flag indicating observed index (survey) catch data
+        CatchData* ptrICD; //pointer to CatchData object for index survey) catch data
         int hasRCD;        //flag indicating retained catch data
         CatchData* ptrRCD; //pointer to CatchData object for retained catch
-        int hasTCD;        //flag indicating observed total catch data
-        CatchData* ptrTCD; //pointer to CatchData object for observed total catch
         int hasDCD;        //flag indicating observed discard catch data
         CatchData* ptrDCD; //pointer to CatchData object for observed discards
+        int hasTCD;        //flag indicating observed total catch data
+        CatchData* ptrTCD; //pointer to CatchData object for observed total catch
+        int hasEff;        //flag indicating effort data
+        EffortData* ptrEff;//pointer to effort data
     public:
-        FisheryData();
-        ~FisheryData();
+        /**
+         * Constructor.
+         */
+        FleetData();
+        /**
+         * Destructor.
+         */
+        ~FleetData();
         /**
          * Replace existing catch data with new values.
          * 
-         * @param newCatZ_yxmsz - new total catch-at-size
-         * @param newRatZ_yxmsz - new retained catch-at-size
-         * @param wAtZ_xmz - weight-at-size
+         * @param iSeed - flag (!=0) to add random noise
+         * @param rng - random number generator
+         * @param newNatZ_yxmsz - catch data array
+         * @param wAtZ_xmz - weight-at-size array
          */
-        void replaceCatchData(int iSeed,random_number_generator& rng,d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxmsz,d3_array& wAtZ_xmz);
+        void replaceIndexCatchData(int iSeed,random_number_generator& rng,d5_array& newNatZ_yxmsz, d3_array& wAtZ_xmz);
+        /**
+         * Replace existing fishery catch (retained, discarded, total) data with new values.
+         * 
+         * @param iSeed - flag (!=0) to add random noise
+         * @param rng - random number generator
+         * @param newCatZ_yxmsz - total catch data array
+         * @param newRatZ_yxmsz - retained catch data array
+         * @param wAtZ_xmz      - weight-at-size array
+         */
+        void replaceFisheryCatchData(int iSeed,random_number_generator& rng,d5_array& newCatZ_yxmsz,d5_array& newRatZ_yxmsz,d3_array& wAtZ_xmz);
+        /**
+         * Read input file in ADMB format from input stream.
+         * 
+         * @param is - input stream
+         */
         void read(cifstream & is);//read file in ADMB format
+        /**
+         * Write the fleet data in ADMB format (i.e., as an input file)
+         * 
+         * @param os - output stream to write to
+         */
         void write(ostream & os); //write object to file in ADMB format
         void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
-        friend cifstream& operator >>(cifstream & is, FisheryData & obj){obj.read(is); return is;}
-        friend ostream&   operator <<(ostream & os,   FisheryData & obj){obj.write(os); return os;}
+        friend cifstream& operator >>(cifstream & is, FleetData & obj){obj.read(is); return is;}
+        friend ostream&   operator <<(ostream & os,   FleetData & obj){obj.write(os); return os;}
     };
 
 //--------------------------------------------------------------------------------
@@ -289,11 +319,11 @@ class SurveyData: public CatchData {
         
         int nFsh;//number of fishery datasets to read
         adstring_array fnsFisheryData;//fishery data file names       
-        FisheryData**  ppFsh;         //pointer to array of pointers to fishery dataset objects
+        FleetData**    ppFsh;         //pointer to array of pointers to fishery dataset objects
         
         int nSrv;//number of survey datasets to read
         adstring_array fnsSurveyData;//survey data files names
-        SurveyData**   ppSrv;        //pointer to array of pointers to survey dataset objects
+        FleetData**    ppSrv;        //pointer to array of pointers to survey dataset objects
     public:
         ModelDatasets(ModelConfiguration* ptrMC);
         ~ModelDatasets();

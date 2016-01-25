@@ -201,6 +201,7 @@ class model_data : public ad_comm{
   dvector dtF;
   dvector dtM;
   ivector optsFcAvg;
+  dmatrix eff_fy;
   dvector avgEff;
   int optsGrowth;
   int optsInitNatZ;
@@ -320,12 +321,15 @@ private:
   param_5array M_yxmsz;
   param_matrix prMat_cz;
   param_3array prMat_yxz;
+  param_matrix mnGrZ_cz;
   param_3array prGr_czz;
-  param_6array prGr_yxmszz;
+  param_4array mnGrZ_yxsz;
+  param_5array prGr_yxszz;
   param_matrix sel_cz;
   param_3array sel_iyz;
   param_matrix dvsLnC_fy;
-  param_4array avgFc;
+  param_5array cpF_fxmsy;
+  param_4array avgFc_fxms;
   param_4array avgRatioFc2Eff;
   param_matrix hmF_fy;
   param_5array cpF_fyxms;
@@ -380,7 +384,7 @@ public:
  void runPopDyMod(int debug, ostream& cout);
  void initPopDyMod(int debug, ostream& cout);
  void calcInitNatZ(int debug,ostream& cout);
- dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar4_array& T_mszz, dvar3_array& S2_msz, int debug, ostream& cout);
+ dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout);
  void doSurveys(int y,int debug,ostream& cout);
  void runPopDyModOneYear(int yr, int debug, ostream& cout);
  dvar_vector calcSpB(dvar4_array& n0_xmsz, int y, int debug, ostream& cout);
@@ -395,6 +399,7 @@ public:
  void calcFisheryFs(int debug, ostream& cout);
  void calcSurveyQs(int debug, ostream& cout);
  void calcPenalties(int debug, ostream& cout);
+ void calcDevsPenalties(int debug, ostream& cout, double penWgt, param_init_bounded_vector_vector& pDevs, dvar_matrix devs);
  dvar_vector calc1stDiffs(const dvar_vector& d);
  dvar_vector calc2ndDiffs(const dvar_vector& d);
  void calcNLLs_Recruitment(int debug, ostream& cout);
@@ -417,6 +422,7 @@ public:
  void ReportToR_ModelFits(ostream& os, int debug, ostream& cout);
  void updateMPI(int debug, ostream& cout);
  void ReportToR(ostream& os, int debug, ostream& cout);
+ void writeParameters(ofstream& os,int toR, int willBeActive);
   void between_phases_calculations(void);
 
 };

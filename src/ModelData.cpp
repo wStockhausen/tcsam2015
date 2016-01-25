@@ -329,7 +329,9 @@ void AggregateCatchData::aggregateData(void){
  * Also modifies inpC_xmsyc to reflect new data, but keeps original units.
  * Error-related quantities remain the same.
  * 
- * @param dmatrix newC_yxms
+ * @param iSeed - flag to add noise to data (if !=0)
+ * @param rng - random number generator
+ * @param newC_yxms - d4_array of new catch data
  */
 void AggregateCatchData::replaceCatchData(int iSeed,random_number_generator& rng,d4_array& newC_yxms){
     if (debug) rpt::echo<<"starting AggregateCatchData::replaceCatchData(d4_array& newC_yxms)"<<std::endl;
@@ -582,7 +584,7 @@ void AggregateCatchData::writeToR(ostream& os, std::string nm, int indent) {
         os<<"optFit="<<qt<<tcsam::getFitType(optFit)<<qt<<cc; 
         os<<"llType="<<qt<<tcsam::getLikelihoodType(llType)<<qt<<cc<<std::endl; 
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"years="; wts::writeToR(os,yrs); os<<cc<<std::endl;
+        os<<"y="; wts::writeToR(os,yrs); os<<cc<<std::endl;
     for (int n=0;n<indent;n++) os<<tb;
         os<<"data="<<std::endl;
         wts::writeToR(os,C_xmsy,x,m,s,y); os<<cc<<std::endl;
@@ -619,13 +621,15 @@ void SizeFrequencyData::normalize(void){
     }
 }
 
-/*******************************************************\n
+/**
  * Replace catch-at-size data NatZ_xmsyz with new data. 
  * Also modifies inpNatZ_xmsyc to reflect new data.
  * Error-related quantities remain the same.
  * 
- * @param d5_array newNatZ_yxmsz
- *****************************************************/
+ * @param iSeed - flag to add noise to data (if !=0)
+ * @param rng - random number generator
+ * @param newNatZ_yxmsz - d5_array of numbers-at-size by yxms
+ */
 void SizeFrequencyData::replaceSizeFrequencyData(int iSeed,random_number_generator& rng,d5_array& newNatZ_yxmsz){
     if (debug) std::cout<<"starting SizeFrequencyData::replaceSizeFrequencyData(...) "<<this<<std::endl;
     
@@ -1286,9 +1290,9 @@ void ModelDatasets::read(cifstream & is){
     //          Fishery data 
     if (nFsh) {
         rpt::echo<<"#-------Fishery Datasets---------"<<std::endl;
-        ppFsh = new FisheryData*[nFsh];
+        ppFsh = new FleetData*[nFsh];
         for (int i=0;i<nFsh;i++) {
-            ppFsh[i] = new FisheryData();
+            ppFsh[i] = new FleetData();
             cifstream strm(fnsFisheryData(i+1),ios::in);
             rpt::echo<<std::endl<<"#----------Fishery Data "<<i+1<<"-----"<<std::endl;
             strm>>(*ppFsh[i]);
@@ -1298,9 +1302,9 @@ void ModelDatasets::read(cifstream & is){
     //          Survey data
     if (nSrv) {
         rpt::echo<<"#-------Survey Datasets---------"<<std::endl;
-        ppSrv = new SurveyData*[nSrv];
+        ppSrv = new FleetData*[nSrv];
         for (int i=0;i<nSrv;i++) {
-            ppSrv[i] = new SurveyData();
+            ppSrv[i] = new FleetData();
             cifstream strm(fnsSurveyData(i+1),ios::in);
             rpt::echo<<std::endl<<"#----------Survey Data "<<i+1<<"-----"<<std::endl;
             strm>>(*ppSrv[i]);

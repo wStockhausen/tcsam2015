@@ -125,20 +125,20 @@ Fisheries  #required keyword
 #-fishery 1
 'TCF'  #Tanner crab directed fishery
 #output info: retained catch
-#include   aggregate type   pdf type    cv/ss      weighting
-   TRUE      BY_XS      LOGNORMAL     0.05        1.0     #abundance
-   TRUE      BY_XS      LOGNORMAL     0.10        1.0     #biomass
-   TRUE      BY_XS      MULTINOMIAL    50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+   TRUE      BY_XS      LOGNORMAL     0.05          TRUE        1.0     #abundance
+   TRUE      BY_XS      LOGNORMAL     0.10          TRUE        1.0     #biomass
+   TRUE      BY_XS      MULTINOMIAL    50           TRUE        1.0     #size comps
 #output info: discard catch
-#include   aggregate type   pdf type    cv/ss      weighting
-  TRUE      BY_XS       LOGNORMAL       0.05        1.0     #abundance
-  TRUE      BY_XS       LOGNORMAL       0.10        1.0     #biomass
-  TRUE      BY_XS       MULTINOMIAL      50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+  TRUE      BY_XS       LOGNORMAL       0.05        TRUE        1.0     #abundance
+  TRUE      BY_XS       LOGNORMAL       0.10        TRUE        1.0     #biomass
+  TRUE      BY_XS       MULTINOMIAL      50         TRUE        1.0     #size comps
 #output info: total catch
-#include   aggregate type   pdf type    cv/ss      weighting
- TRUE      BY_XS       LOGNORMAL        0.05        1.0     #abundance
- TRUE      BY_XS       LOGNORMAL        0.10        1.0     #biomass
- TRUE      BY_XS       MULTINOMIAL       50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+ TRUE      BY_XS       LOGNORMAL        0.05        TRUE        1.0     #abundance
+ TRUE      BY_XS       LOGNORMAL        0.10        TRUE        1.0     #biomass
+ TRUE      BY_XS       MULTINOMIAL       50         TRUE        1.0     #size comps
 1   #number of time blocks
 #-----time block 1
 1990   #years
@@ -148,20 +148,20 @@ Fisheries  #required keyword
 #-fishery 2
 'SCF'  #snow crab discard fishery
 #output info: retained catch
-#include   aggregate type   pdf type    cv/ss      weighting
-   FALSE      BY_XS      LOGNORMAL     0.05        1.0     #abundance
-   FALSE      BY_XS      LOGNORMAL     0.10        1.0     #biomass
-   FALSE      BY_XS      MULTINOMIAL    50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+   FALSE      BY_XS      LOGNORMAL     0.05          TRUE        1.0     #abundance
+   FALSE      BY_XS      LOGNORMAL     0.10          TRUE        1.0     #biomass
+   FALSE      BY_XS      MULTINOMIAL    50           TRUE        1.0     #size comps
 #output info: discard catch
-#include   aggregate type   pdf type    cv/ss      weighting
-  FALSE     BY_XS      LOGNORMAL       0.05        1.0     #abundance
-  FALSE     BY_XS      LOGNORMAL       0.10        1.0     #biomass
-  FALSE     BY_XS      MULTINOMIAL      50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+  FALSE     BY_XS      LOGNORMAL       0.05          TRUE        1.0     #abundance
+  FALSE     BY_XS      LOGNORMAL       0.10          TRUE        1.0     #biomass
+  FALSE     BY_XS      MULTINOMIAL      50           TRUE        1.0     #size comps
 #output info: total catch
-#include   aggregate type   pdf type    cv/ss      weighting
- TRUE      BY_XS      LOGNORMAL        0.05        1.0     #abundance
- TRUE      BY_XS      LOGNORMAL        0.10        1.0     #biomass
- TRUE      BY_XS      MULTINOMIAL       50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+ TRUE      BY_XS      LOGNORMAL        0.05        TRUE        1.0     #abundance
+ TRUE      BY_XS      LOGNORMAL        0.10        TRUE        1.0     #biomass
+ TRUE      BY_XS      MULTINOMIAL       50         TRUE        1.0     #size comps
 1   #number of time blocks
 #-----time block 1
 1990   #years
@@ -171,20 +171,20 @@ Fisheries  #required keyword
 #-fishery 3
 'RKF'  #BBRKC discard fishery
 #output info: retained catch
-#include   aggregate type   pdf type    cv/ss      weighting
-   FALSE      BY_XS      LOGNORMAL     0.05        1.0     #abundance
-   FALSE      BY_XS      LOGNORMAL     0.10        1.0     #biomass
-   FALSE      BY_XS      MULTINOMIAL    50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+   FALSE      BY_XS      LOGNORMAL     0.05          TRUE        1.0     #abundance
+   FALSE      BY_XS      LOGNORMAL     0.10          TRUE        1.0     #biomass
+   FALSE      BY_XS      MULTINOMIAL    50           TRUE        1.0     #size comps
 #output info: discard catch
-#include   aggregate type   pdf type    cv/ss      weighting
-  FALSE     BY_XS       LOGNORMAL       0.05        1.0     #abundance
-  FALSE     BY_XS       LOGNORMAL       0.10        1.0     #biomass
-  FALSE     BY_XS       MULTINOMIAL      50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+  FALSE     BY_XS       LOGNORMAL       0.05         TRUE        1.0     #abundance
+  FALSE     BY_XS       LOGNORMAL       0.10         TRUE        1.0     #biomass
+  FALSE     BY_XS       MULTINOMIAL      50          TRUE        1.0     #size comps
 #output info: total catch
-#include   aggregate type   pdf type    cv/ss      weighting
- TRUE      BY_XS       LOGNORMAL        0.05        1.0     #abundance
- TRUE      BY_XS       LOGNORMAL        0.10        1.0     #biomass
- TRUE      BY_XS       MULTINOMIAL       50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+ TRUE      BY_XS       LOGNORMAL        0.05         TRUE        1.0     #abundance
+ TRUE      BY_XS       LOGNORMAL        0.10         TRUE        1.0     #biomass
+ TRUE      BY_XS       MULTINOMIAL       50          TRUE        1.0     #size comps
 1   #number of time blocks
 #-----time block 1
 1990   #years
@@ -194,20 +194,20 @@ Fisheries  #required keyword
 #-fishery 4
 'GTF'  #groundfish trawl discard fishery
 #output info: retained catch
-#include   aggregate type   pdf type    cv/ss      weighting
-   FALSE      BY_X      LOGNORMAL     0.05        1.0     #abundance
-   FALSE      BY_X      LOGNORMAL     0.10        1.0     #biomass
-   FALSE      BY_X      MULTINOMIAL    50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+   FALSE      BY_X      LOGNORMAL     0.05           TRUE        1.0     #abundance
+   FALSE      BY_X      LOGNORMAL     0.10           TRUE        1.0     #biomass
+   FALSE      BY_X      MULTINOMIAL    50            TRUE        1.0     #size comps
 #output info: discard catch
-#include   aggregate type   pdf type    cv/ss      weighting
-  FALSE     BY_X      LOGNORMAL       0.05        1.0     #abundance
-  FALSE     BY_X      LOGNORMAL       0.10        1.0     #biomass
-  FALSE     BY_X      MULTINOMIAL      50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+  FALSE     BY_X      LOGNORMAL       0.05          TRUE        1.0     #abundance
+  FALSE     BY_X      LOGNORMAL       0.10          TRUE        1.0     #biomass
+  FALSE     BY_X      MULTINOMIAL      50           TRUE        1.0     #size comps
 #output info: total catch
-#include   aggregate type   pdf type    cv/ss      weighting
- TRUE      BY_X      LOGNORMAL        0.05        1.0     #abundance
- TRUE      BY_X      LOGNORMAL        0.10        1.0     #biomass
- TRUE      BY_X      MULTINOMIAL       50         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+ TRUE      BY_X      LOGNORMAL        0.05          TRUE        1.0     #abundance
+ TRUE      BY_X      LOGNORMAL        0.10          TRUE        1.0     #biomass
+ TRUE      BY_X      MULTINOMIAL       50           TRUE        1.0     #size comps
 1   #number of time blocks
 #-----time block 1
 1990   #years
@@ -219,10 +219,10 @@ Surveys  #required keyword
 #-survey 1
 'NMFS trawl survey'
 #output info
-#include   aggregate type   pdf type    cv/ss      weighting
-   TRUE      BY_XMS       LOGNORMAL      0.15        1.0     #abundance
-   TRUE      BY_XMS       LOGNORMAL      0.20        1.0     #biomass
-   TRUE      BY_XMS       MULTINOMIAL     25         1.0     #size comps
+#include   aggregate type   pdf type    cv/ss      addError   weighting
+   TRUE      BY_XMS       LOGNORMAL      0.15        TRUE        1.0     #abundance
+   TRUE      BY_XMS       LOGNORMAL      0.20        TRUE        1.0     #biomass
+   TRUE      BY_XMS       MULTINOMIAL     25         TRUE        1.0     #size comps
 1   #number of time blocks
 #-----time block 1
 1975:asy   #years
