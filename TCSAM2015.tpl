@@ -95,6 +95,8 @@
 //                  This standardizes data input files, R output lists, and simplifies
 //                  adding additional data types (e.g., tagging data, chela height data).
 //              2. Updated model version (modVer) to 2016.00. Will create git tag of same to track development.
+//  2016-02-29: 1. Model version now YYYY.MM.DD.
+//              2. Started to add OFL calculations
 //
 // =============================================================================
 // =============================================================================
@@ -106,7 +108,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.00"; 
+    adstring modVer = "2016.02.29"; 
     
     time_t start,finish;
     
@@ -876,7 +878,7 @@ PARAMETER_SECTION
     number initMnR;                //mean recruitment for initial size comps
     vector R_y(mnYr,mxYr);         //total number of recruits by year
     vector Rx_c(1,npcRec);         //male fraction of recruits by parameter combination
-    matrix R_yx(mnYr,mxYr,1,nSXs); //sex-specific number of recruits by year
+    matrix R_yx(mnYr,mxYr,1,nSXs); //sex-specific fraction of recruits by year
     matrix R_cz(1,npcRec,1,nZBs);  //size distribution of recruits by parameter combination
     matrix R_yz(mnYr,mxYr,1,nZBs); //size distribution of recruits by year
     3darray R_yxz(mnYr,mxYr,1,nSXs,1,nZBs);    //size distribution of recruits by year, sex
@@ -1556,7 +1558,165 @@ FUNCTION void setAllDevs(int debug, ostream& cout)
     tcsam::setDevs(devsLnC, pDevsLnC,debug,cout);
     if (debug>=dbgAll) cout<<"finished setAllDevs()"<<endl;
 
+
+//-------------------------------------------------------------------------------------
+//calculate equilibrium size distribution
+FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout)
+    RETURN_ARRAYS_INCREMENT();
+    if (debug>=dbgPopDy) cout<<"starting calcEqNatZ()"<<endl;
+
+    //the equilibrium solution
+    dvar3_array n_msz(1,nMSs,1,nSCs,1,nZBs); n_msz.initialize();
     
+    //create an identity matrix
+    dmatrix I = identity_matrix(1,nZBs);
+    
+    //--calc the state transition matrices
+    int i = IMMATURE; 
+    int m =   MATURE;
+    int n = NEW_SHELL;
+    int o = OLD_SHELL;
+    //immature new shell crab
+    dvar_matrix S2_in = wts::diag(S2_msz(i,n)); //pr(survival|size) for immature new shell crab after molting occurs
+    dvar_matrix Tr_in = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab pre-terminal molt
+    dvar_matrix Th_in = wts::diag(Th_sz(n));    //pr(molt to maturity|pre-molt size,new shell, molting)
+    dvar_matrix Ph_in = identity_matrix(1,nZBs);//pr(molt|pre-molt size, new shell) [assumed that all immature crab molt]
+    dvar_matrix S1_in = wts::diag(S1_msz(i,n)); //pr(survival|size) for immature new shell crab before molting occurs
+    //immature old shell crab [shouldn't be any of these]
+    dvar_matrix S2_io = wts::diag(S2_msz(i,o)); //pr(survival|size) for immature old shell crab after molting occurs (but they didn't molt)
+    dvar_matrix Tr_io = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab pre-terminal molt
+    dvar_matrix Th_io = wts::diag(Th_sz(o));    //pr(molt to maturity|pre-molt size,old shell, molting)
+    dvar_matrix Ph_io = identity_matrix(1,nZBs);//pr(molt|pre-molt size, old shell) [assumed all immature crab molt]
+    dvar_matrix S1_io = wts::diag(S1_msz(i,o)); //pr(survival|size) for immature old shell crab before molting occurs
+    //mature new shell crab
+    dvar_matrix Tr_mn = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab undergoing terminal molt (same as non-terminal molt)
+    dvar_matrix Tr_mo = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab undergoing terminal molt (same as non-terminal molt)
+    dvar_matrix S2_mn = wts::diag(S2_msz(m,n)); //pr(survival|size) for mature new shell crab after molting occurs
+    dvar_matrix S1_mn = wts::diag(S1_msz(m,n)); //pr(survival|size) for mature new shell crab before molting occurs (but they won't molt)
+    //mature old shell crab
+    dvar_matrix S2_mo = wts::diag(S2_msz(m,o)); //pr(survival|size) for mature old shell crab after molting occurs (but they didn't molt)
+    dvar_matrix S1_mo = wts::diag(S1_msz(m,o)); //pr(survival|size) for mature old shell crab before molting occurs (but they won't molt)
+    
+    //full state transition matrices
+    dvar_matrix lA = S2_in * Tr_in * (I-Th_in) * Ph_in * S1_in;//imm, new -> imm, new
+    dvar_matrix lB = S2_in * Tr_io * (I-Th_io) * Ph_io * S1_io;//imm, old -> imm, new
+    dvar_matrix lC = S2_io * (I-Ph_in) * S1_in;                //imm, new -> imm, old
+    dvar_matrix lD = S2_io * (I-Ph_io) * S1_io;                //imm, old -> imm, old
+    dvar_matrix lE = S2_mn * Tr_mn * Th_in * Ph_in * S1_in;    //imm, new -> mat, new (terminal molt)
+    dvar_matrix lF = S2_mn * Tr_mo * Th_io * Ph_io * S1_io;    //imm, old -> mat, new (terminal molt)
+    dvar_matrix lG = S2_mo * S1_mn;                            //mat, new -> mat, old
+    dvar_matrix lH = S2_mo * S1_mo;                            //mat, old -> mat, old
+    //--done calculating transition matrices
+    
+    //calculate inverses of matrix quantities
+    dvar_matrix iM1 = inv(I - lD);
+    dvar_matrix iM2 = inv(I - lA - lB * iM1 * lC);
+    dvar_matrix iM3 = inv(I - lH);
+    
+    //the equilibrium solution is
+    n_msz(i,n) = iM2 * R_z;                         //immature, new shell
+    n_msz(i,o) = iM1 * lC * n_msz(i,n);             //immature, old shell
+    n_msz(m,n) = lE * n_msz(i,n) + lF * n_msz(i,o); //  mature, new shell
+    n_msz(m,o) = iM3 * lG * n_msz(m,n);             //  mature, old shell
+        
+    if (debug>=dbgPopDy) cout<<"finished calcEqNatZ()"<<endl;
+    RETURN_ARRAYS_DECREMENT();
+    return(n_msz);
+
+//-------------OFL Calculations--------------
+//-------------------------------------------------------------------------------------
+//calculate equilibrium size distribution
+FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout)
+    RETURN_ARRAYS_INCREMENT();
+    if (debug>=dbgPopDy) cout<<"starting calcEqNatZ()"<<endl;
+
+    //the equilibrium solution
+    dvar3_array n_msz(1,nMSs,1,nSCs,1,nZBs); n_msz.initialize();
+    
+    //create an identity matrix
+    dmatrix I = identity_matrix(1,nZBs);
+    
+    //--calc the state transition matrices
+    int i = IMMATURE; 
+    int m =   MATURE;
+    int n = NEW_SHELL;
+    int o = OLD_SHELL;
+    //immature new shell crab
+    dvar_matrix S2_in = wts::diag(S2_msz(i,n)); //pr(survival|size) for immature new shell crab after molting occurs
+    dvar_matrix Tr_in = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab pre-terminal molt
+    dvar_matrix Th_in = wts::diag(Th_sz(n));    //pr(molt to maturity|pre-molt size,new shell, molting)
+    dvar_matrix Ph_in = identity_matrix(1,nZBs);//pr(molt|pre-molt size, new shell) [assumed that all immature crab molt]
+    dvar_matrix S1_in = wts::diag(S1_msz(i,n)); //pr(survival|size) for immature new shell crab before molting occurs
+    //immature old shell crab [shouldn't be any of these]
+    dvar_matrix S2_io = wts::diag(S2_msz(i,o)); //pr(survival|size) for immature old shell crab after molting occurs (but they didn't molt)
+    dvar_matrix Tr_io = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab pre-terminal molt
+    dvar_matrix Th_io = wts::diag(Th_sz(o));    //pr(molt to maturity|pre-molt size,old shell, molting)
+    dvar_matrix Ph_io = identity_matrix(1,nZBs);//pr(molt|pre-molt size, old shell) [assumed all immature crab molt]
+    dvar_matrix S1_io = wts::diag(S1_msz(i,o)); //pr(survival|size) for immature old shell crab before molting occurs
+    //mature new shell crab
+    dvar_matrix Tr_mn = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab undergoing terminal molt (same as non-terminal molt)
+    dvar_matrix Tr_mo = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab undergoing terminal molt (same as non-terminal molt)
+    dvar_matrix S2_mn = wts::diag(S2_msz(m,n)); //pr(survival|size) for mature new shell crab after molting occurs
+    dvar_matrix S1_mn = wts::diag(S1_msz(m,n)); //pr(survival|size) for mature new shell crab before molting occurs (but they won't molt)
+    //mature old shell crab
+    dvar_matrix S2_mo = wts::diag(S2_msz(m,o)); //pr(survival|size) for mature old shell crab after molting occurs (but they didn't molt)
+    dvar_matrix S1_mo = wts::diag(S1_msz(m,o)); //pr(survival|size) for mature old shell crab before molting occurs (but they won't molt)
+    
+    //full state transition matrices
+    dvar_matrix lA = S2_in * Tr_in * (I-Th_in) * Ph_in * S1_in;//imm, new -> imm, new
+    dvar_matrix lB = S2_in * Tr_io * (I-Th_io) * Ph_io * S1_io;//imm, old -> imm, new
+    dvar_matrix lC = S2_io * (I-Ph_in) * S1_in;                //imm, new -> imm, old
+    dvar_matrix lD = S2_io * (I-Ph_io) * S1_io;                //imm, old -> imm, old
+    dvar_matrix lE = S2_mn * Tr_mn * Th_in * Ph_in * S1_in;    //imm, new -> mat, new (terminal molt)
+    dvar_matrix lF = S2_mn * Tr_mo * Th_io * Ph_io * S1_io;    //imm, old -> mat, new (terminal molt)
+    dvar_matrix lG = S2_mo * S1_mn;                            //mat, new -> mat, old
+    dvar_matrix lH = S2_mo * S1_mo;                            //mat, old -> mat, old
+    //--done calculating transition matrices
+    
+    //calculate inverses of matrix quantities
+    dvar_matrix iM1 = inv(I - lD);
+    dvar_matrix iM2 = inv(I - lA - lB * iM1 * lC);
+    dvar_matrix iM3 = inv(I - lH);
+    
+    //the equilibrium solution is
+    n_msz(i,n) = iM2 * R_z;                         //immature, new shell
+    n_msz(i,o) = iM1 * lC * n_msz(i,n);             //immature, old shell
+    n_msz(m,n) = lE * n_msz(i,n) + lF * n_msz(i,o); //  mature, new shell
+    n_msz(m,o) = iM3 * lG * n_msz(m,n);             //  mature, old shell
+        
+    if (debug>=dbgPopDy) cout<<"finished calcEqNatZ()"<<endl;
+    RETURN_ARRAYS_DECREMENT();
+    return(n_msz);
+
+//-------------------------------------------------------------------------------------
+FUNCTION void calcSpBPR100(int debug, ostream& cout)
+    dvar3_array S1_msz(1,nMSs,1,nSCs,1,nZBs);       //survival until molting/mating
+    dvar_matrix Th_sz(1,nSCs,1,nZBs);               //pr(molt to maturity|pre-molt size, molt)
+    dvar3_array T_szz(1,nSCs,1,nZBs,1,nZBs);        //growth matrices (indep. of molt to maturity)
+    dvar3_array S2_msz(1,nMSs,1,nSCs,1,nZBs);       //survival after molting/mating
+
+    dvar4_array n_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs); //equilibrium size distribution
+    dvar_vector R_z(1,nZBs);
+    for (int x=1;x<=nSXs;x++){
+        R_z = R_yx(mxYr,x)*R_yz(mxYr);//initial mean recruitment by size
+        for (int s=1;s<=nSCs;s++){
+            Th_sz(s) = prMat_yxz(mnYr,x); //pr(molt to maturity|pre-molt size, molt)
+            for (int z=1;z<=nZBs;z++) T_szz(s,z) = prGr_yxszz(mnYr,x,s,z);//growth matrices
+            for (int m=1;m<=nMSs;m++){ 
+                S1_msz(m,s) = exp(-M_yxmsz(mxYr,x,m,s)*dtM(mxYr));      //survival until molting/growth/mating
+                S2_msz(m,s) = exp(-M_yxmsz(mxYr,x,m,s)*(1.0-dtM(mxYr)));//survival after molting/growth/mating
+            }//m
+        }//s
+        n_xmsz(x) = calcEqNatZ(R_z, S1_msz, Th_sz, T_szz, S2_msz, debug, cout);
+    }
+    spBPR100_x.initialize();
+    spBPR100_x = calcSpB(n_xmsz,mxYr,debug,cout);
+        
+//-------------------------------------------------------------------------------------
+FUNCTION void findFXX(int debug, ostream& cout)
+
+
+//-------------END OFL Calculations----------   
 //-------------------------------------------------------------------------------------
 FUNCTION void runPopDyMod(int debug, ostream& cout)
     if (debug>=dbgPopDy) cout<<"starting runPopDyMod()"<<endl;
@@ -1632,70 +1792,6 @@ FUNCTION void calcInitNatZ(int debug,ostream& cout)
     }
     
     if (debug>=dbgPopDy) cout<<"finished calcInitNatZ()"<<endl;
-
-//-------------------------------------------------------------------------------------
-//calculate equilibrium size distribution
-FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout)
-    RETURN_ARRAYS_INCREMENT();
-    if (debug>=dbgPopDy) cout<<"starting calcEqNatZ()"<<endl;
-
-    //the equilibrium solution
-    dvar3_array n_msz(1,nMSs,1,nSCs,1,nZBs); n_msz.initialize();
-    
-    //create an identity matrix
-    dmatrix I = identity_matrix(1,nZBs);
-    
-    //--calc the state transition matrices
-    int i = IMMATURE; 
-    int m =   MATURE;
-    int n = NEW_SHELL;
-    int o = OLD_SHELL;
-    //immature new shell crab
-    dvar_matrix S2_in = wts::diag(S2_msz(i,n)); //pr(survival|size) for immature new shell crab after molting occurs
-    dvar_matrix Tr_in = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab pre-terminal molt
-    dvar_matrix Th_in = wts::diag(Th_sz(n));    //pr(molt to maturity|pre-molt size,new shell, molting)
-    dvar_matrix Ph_in = identity_matrix(1,nZBs);//pr(molt|pre-molt size, new shell) [assumed that all immature crab molt]
-    dvar_matrix S1_in = wts::diag(S1_msz(i,n)); //pr(survival|size) for immature new shell crab before molting occurs
-    //immature old shell crab [shouldn't be any of these]
-    dvar_matrix S2_io = wts::diag(S2_msz(i,o)); //pr(survival|size) for immature old shell crab after molting occurs (but they didn't molt)
-    dvar_matrix Tr_io = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab pre-terminal molt
-    dvar_matrix Th_io = wts::diag(Th_sz(o));    //pr(molt to maturity|pre-molt size,old shell, molting)
-    dvar_matrix Ph_io = identity_matrix(1,nZBs);//pr(molt|pre-molt size, old shell) [assumed all immature crab molt]
-    dvar_matrix S1_io = wts::diag(S1_msz(i,o)); //pr(survival|size) for immature old shell crab before molting occurs
-    //mature new shell crab
-    dvar_matrix Tr_mn = T_szz(n);               //pr(Z_post|Z_pre, molt) for immature new shell crab undergoing terminal molt (same as non-terminal molt)
-    dvar_matrix Tr_mo = T_szz(o);               //pr(Z_post|Z_pre, molt) for immature old shell crab undergoing terminal molt (same as non-terminal molt)
-    dvar_matrix S2_mn = wts::diag(S2_msz(m,n)); //pr(survival|size) for mature new shell crab after molting occurs
-    dvar_matrix S1_mn = wts::diag(S1_msz(m,n)); //pr(survival|size) for mature new shell crab before molting occurs (but they won't molt)
-    //mature old shell crab
-    dvar_matrix S2_mo = wts::diag(S2_msz(m,o)); //pr(survival|size) for mature old shell crab after molting occurs (but they didn't molt)
-    dvar_matrix S1_mo = wts::diag(S1_msz(m,o)); //pr(survival|size) for mature old shell crab before molting occurs (but they won't molt)
-    
-    //full state transition matrices
-    dvar_matrix lA = S2_in * Tr_in * (I-Th_in) * Ph_in * S1_in;//imm, new -> imm, new
-    dvar_matrix lB = S2_in * Tr_io * (I-Th_io) * Ph_io * S1_io;//imm, old -> imm, new
-    dvar_matrix lC = S2_io * (I-Ph_in) * S1_in;                //imm, new -> imm, old
-    dvar_matrix lD = S2_io * (I-Ph_io) * S1_io;                //imm, old -> imm, old
-    dvar_matrix lE = S2_mn * Tr_mn * Th_in * Ph_in * S1_in;    //imm, new -> mat, new (terminal molt)
-    dvar_matrix lF = S2_mn * Tr_mo * Th_io * Ph_io * S1_io;    //imm, old -> mat, new (terminal molt)
-    dvar_matrix lG = S2_mo * S1_mn;                            //mat, new -> mat, old
-    dvar_matrix lH = S2_mo * S1_mo;                            //mat, old -> mat, old
-    //--done calculating transition matrices
-    
-    //calculate inverses of matrix quantities
-    dvar_matrix iM1 = inv(I - lD);
-    dvar_matrix iM2 = inv(I - lA - lB * iM1 * lC);
-    dvar_matrix iM3 = inv(I - lH);
-    
-    //the equilibrium solution is
-    n_msz(i,n) = iM2 * R_z;                         //immature, new shell
-    n_msz(i,o) = iM1 * lC * n_msz(i,n);             //immature, old shell
-    n_msz(m,n) = lE * n_msz(i,n) + lF * n_msz(i,o); //  mature, new shell
-    n_msz(m,o) = iM3 * lG * n_msz(m,n);             //  mature, old shell
-        
-    if (debug>=dbgPopDy) cout<<"finished calcEqNatZ()"<<endl;
-    RETURN_ARRAYS_DECREMENT();
-    return(n_msz);
 
 //-------------------------------------------------------------------------------------
 //calculate surveys.
