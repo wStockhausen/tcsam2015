@@ -18,7 +18,7 @@
     #include "ModelParameterFunctions.hpp"
     #include "ModelData.hpp"
     #include "SummaryFunctions.hpp"
-
+    #include "OFLCalcs.hpp"
 
 #endif	/* TCSAM_HPP */
 

@@ -213,6 +213,7 @@ class model_data : public ad_comm{
   int npcFsh;
   int npcSrv;
   imatrix idxDevsLnC_fy;
+  imatrix hasF_fy;
   ~model_data();
   model_data(int argc,char * argv[]);
   friend class model_parameters;
@@ -304,7 +305,7 @@ private:
   param_number prior_function_value;
   param_number likelihood_function_value;
   objective_function_value objFun;
-  param_matrix spb_yx;
+  param_matrix spB_yx;
   param_5array n_yxmsz;
   param_5array nmN_yxmsz;
   param_5array tmN_yxmsz;
@@ -358,6 +359,12 @@ private:
   param_vector fPenDevsS5;
   param_vector fPenDevsS6;
   param_vector fPenDevsLnC;
+  param_vector R_z;
+  param_3array S1_msz;
+  param_matrix Th_sz;
+  param_3array T_szz;
+  param_3array S2_msz;
+  param_4array n_xmsz;
   param_vector nllRecDevs;
   param_stddev_vector sdrLnR_y;
   param_stddev_matrix sdrSpB_xy;
@@ -381,10 +388,22 @@ public:
  void setInitVals(BoundedVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
  void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_vector& p, int debug, ostream& cout);
  void setAllDevs(int debug, ostream& cout);
- void runPopDyMod(int debug, ostream& cout);
- void initPopDyMod(int debug, ostream& cout);
- void calcInitNatZ(int debug,ostream& cout);
+ void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout);
  dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout);
+ void calcOFL(int yr, int debug, ostream& cout);
+ d3_array calcEqNatZF100(double R, int yr, int x, int debug, ostream& cout);
+ double calcMMB(d3_array& n_msz, int debug, ostream& cout);
+ d3_array calcEqNatZ(dvector& R_z,d3_array& S1_msz, dmatrix& Th_sz, d3_array& T_szz, d3_array& S2_msz, int debug, ostream& cout);
+ double findFXX(int yr, double XX, double mmbpr100, 
+                        d5_array& avgCapF_fxmsz, d5_array& avgRFcn_fxmsz, dvector& avgHM_f,
+                        int debug, ostream& cout);
+ double calcEqMMBatF(double dirF, double dtF, double dtM, 
+                           dvector& R_z, d3_array& M_msz, dmatrix& Th_sz, d3_array& T_szz, 
+                           d5_array& capF_fxmsz, d5_array retFcn_fxmsz, dvector& hm_f,
+                           int debug, ostream& cout);
+ double calcFofl(double currMMB, double Bmsy, double Fmsy, int debug, ostream& cout);
+ void initPopDyMod(int debug, ostream& cout);
+ void runPopDyMod(int debug, ostream& cout);
  void doSurveys(int y,int debug,ostream& cout);
  void runPopDyModOneYear(int yr, int debug, ostream& cout);
  dvar_vector calcSpB(dvar4_array& n0_xmsz, int y, int debug, ostream& cout);
