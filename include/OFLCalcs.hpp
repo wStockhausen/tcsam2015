@@ -8,7 +8,60 @@
 #ifndef OFLCALCS_HPP
 #define	OFLCALCS_HPP
 
-class Catch_Calculator {
+/**
+ * Class to facilitate population dynamics calculations for one sex.
+ */
+class PopDyInfo {
+    public:
+        static int debug;
+        static ostream& cout;
+        int nMSs;//number of maturity states
+        int nSCs;//number of shell conditions
+        int nZBs;//number of size bins
+        
+    public:
+        dvector  R_z;      //recruitment size distribution
+        dmatrix  w_mz;     //weight-at-size
+        d3_array M_msz;    //natural mortality
+        dmatrix  Th_sz;    //pr(molt to maturity|pre-molt size, molt)
+        d3_array T_szz;    //growth matrices (indep. of molt to maturity)
+        
+    public:
+        PopDyInfo(int npZBs);
+        ~PopDyInfo(){}
+        /**
+         * Calculate single-sex mature biomass, given population abundance.
+         * 
+         * @param n_msz - single-sex population abundance
+         * 
+         * @return mature biomass (units??)
+         */
+        double calcMatureBiomass(d3_array& n_msz);
+        /**
+         * Calculate total single-sex biomass, given population abundance.
+         * 
+         * @param n_msz - single-sex population abundance
+         * 
+         * @return total biomass (units??)
+         */
+        double calcTotalBiomass(d3_array& n_msz);
+        /**
+         * Calculate single-sex survival probabilities, given natural mortality rates,
+         * over a given period of time (dt)
+         * 
+         * @param dt - period of time (in years)
+         * 
+         * @return d3_array S_msz
+         */
+        d3_array calcSurvival(double dt);
+        d3_array applyNM(double dt, d3_array& n_msz);
+        d3_array applyMG(d3_array& n_msz);
+};//PopDyInfo
+
+/**
+ * Class to facilitate fishery catch calculations for one sex.
+ */
+class CatchInfo {
     public:
         static int debug;
         static ostream& cout;
@@ -29,8 +82,8 @@ class Catch_Calculator {
         d4_array dm_fmsz;//discard mortality (abundance)
         
     public:
-        Catch_Calculator(int npZBs, int npFsh);
-        ~Catch_Calculator(){}
+        CatchInfo(int npZBs, int npFsh);
+        ~CatchInfo(){}
         /**
          * Calculate maximum fishing capture rate for target fishery (f=1)
          * 
@@ -52,7 +105,7 @@ class Catch_Calculator {
          * @return np_msz - post-fisheries population size (d3_array)
          * 
          */
-        d3_array calcCatch(double dirF, d3_array& n_msz);
+        d3_array applyFM(double dirF, d3_array& n_msz);
         /**
          * Calculates probabilities of surviving fisheries, given directed 
          * fishing capture rate 'dirF'.
@@ -82,7 +135,7 @@ class Catch_Calculator {
          * @param pHM_f - dvector of handling mortality rates
          */
         void setHandlingMortality(dvector& pHM_f);
-};
+};//CatchInfo
 
 class Tier3_Calculator {
     public:
@@ -94,15 +147,10 @@ class Tier3_Calculator {
         int nFsh;   //number of fisheries
         double dtF; //time to fisheries
         double dtM; //time to molting/growth
-        dvector  R_z;      //recruitment size distribution
-        dmatrix  w_mz;     //weight-at-size
-        d3_array M_msz;    //natural mortality
-        dmatrix  Th_sz;    //pr(molt to maturity|pre-molt size, molt)
-        d3_array T_szz;    //growth matrices (indep. of molt to maturity)
-        d4_array capF_fmsz;//fishery capture rates
-        d4_array retF_fmsz;//retention function
-        dvector  hm_f;     //discard mortality
         
+    public:
+        PopDyInfo* pPI;//pointer to PopDyInfo object for males
+        CatchInfo* pCI;//pointer to CatchInfo object for males
     public:
         double XX;
         double avR;
@@ -112,7 +160,7 @@ class Tier3_Calculator {
         
     public:
         Tier3_Calculator(int npZBs, int npFsh);
-        ~Tier3_Calculator(){}
+        ~Tier3_Calculator(){delete pPI; delete pCI;}
         double calcB100(double R);
         double calcBmsy(double R);
         double calcFmsy(double R);
@@ -122,8 +170,7 @@ class Tier3_Calculator {
                             dmatrix& Th_sz, d3_array& T_szz, d3_array& S2_msz);
         d3_array calcEqNatZF0(double R);
         d3_array calcEqNatZFM(double R, double dirF);
-        double calcEqMMBatF(double R, double dirF);
-        double calcMMB(d3_array& n_msz);
+        double   calcEqMMBatF(double R, double dirF);
 };
 
 /**
@@ -139,20 +186,17 @@ class PopProjector{
         int nFsh;   //number of fisheries
         double dtF; //time to fisheries
         double dtM; //time to molting/growth
-        dmatrix  w_mz;     //weight-at-size
-        d3_array M_msz;    //natural mortality
-        dmatrix  Th_sz;    //pr(molt to maturity|pre-molt size, molt)
-        d3_array T_szz;    //growth matrices (indep. of molt to maturity)
-        d4_array capF_fmsz;//fishery capture rates
-        d4_array retF_fmsz;//retention function
-        dvector  hm_f;     //discard mortality
         
     public:
         double spB;       //mature biomass at time of mating
     
     public:
+        PopDyInfo* pPI;//pointer to single sex PopDyInfo object
+        CatchInfo* pCI;//pointer to single sex CatchInfo object
+    
+    public:
         PopProjector(int npZBs, int npFsh);
-        ~PopProjector(){}
+        ~PopProjector(){delete pPI; delete pCI;}
         /**
          * Project sex-specific population abundance forward one year,
          * based on sex-specific population abundance on July 1.
@@ -169,13 +213,13 @@ class PopProjector{
          */
         d3_array project(double dirF, d3_array& n_msz);
         /**
-         * Calculate projected fishery catches based on sex-specific population
+         * Calculate mature biomass based on single-sex population
          * abundance on July 1.
          * 
          * @param dirF - multiplier on fishing mortality rate in directed fishery
          * @param n_msz - initial abundance
          * 
-         * @return fishery catch (units??)
+         * @return mature biomass (units??)
          */
         double calcMatureBiomass(double dirF, d3_array& n_msz);
         /**
@@ -190,10 +234,6 @@ class PopProjector{
         /**
          * Project sex-specific population abundance forward through 
          * pulse fisheries.
-         * Also calculates:
-         *      ct_msz - total fishing mortality (abundance)
-         *      rm_fmsz - retained mortality, by fishery
-         *      dm_fmsz - discard mortality, by fishery
          * 
          * @param n_msz - initial abundance
          * @param dirF - multiplier on fishing mortality rate in directed fishery
@@ -208,12 +248,6 @@ class PopProjector{
          * @return - final abundance after molting/growth
          */
         d3_array applyMG(d3_array& n_msz);
-        /**
-         * Calculate TOTAL biomass from population abundance
-         * @param n_msz
-         * @return biomass (units??)
-         */
-        double calcBiomass(d3_array& n_msz);
 };
 
 class OFL_Calculator{
@@ -230,6 +264,7 @@ class OFL_Calculator{
         int tier;
         double alpha; 
         double beta;
+        dmatrix ofl_fx;
         
     public:
         Tier3_Calculator* pT3C;//pointer to a Tier3_Calculator
