@@ -7,6 +7,150 @@
 using namespace tcsam;
 
 ////////////////////////////////////////////////////////////////////////////////
+//Catch_Calculator
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * Constructor.
+ * 
+ * @param npZBs - number of size bins
+ * @param npFsh - number of fisheries
+ */
+Catch_Calculator::Catch_Calculator(int npZBs, int npFsh){
+    nZBs = npZBs;
+    nFsh = npFsh;
+    
+    nMSs = tcsam::nMSs;
+    nSCs = tcsam::nSCs;
+    
+    maxF = 1.0;//default scale
+    ct_msz.allocate(1,nMSs,1,nSCs,1,nZBs);
+    rm_fmsz.allocate(1,nFsh,1,nMSs,1,nSCs,1,nZBs);
+    dm_fmsz.allocate(1,nFsh,1,nMSs,1,nSCs,1,nZBs);
+}
+
+/**
+ * Find max fishing mortality rate for target fishery (f=1)
+ * 
+ * Modifies: maxF
+ * 
+ * @return max fishing mortality rate
+ */
+double Catch_Calculator::findMaxTargetCaptureRate(void){
+    maxF = wts::max(capF_fmsz(1));
+    return maxF;
+}
+
+/**
+ * Calculate catch abundance (ct_msz, rm_fmsz, dm_fmsz) and post-fisheries
+ * abundance based on target fishing mortality rate 'dirF' and initial population 
+ * abundance n_msz.
+ * 
+ * Modifies: ct_msz, rm_fmsz, dm_fmsz
+ * 
+ * @param dirF - directed fishery fishing mortality rate
+ * @param n_msz - pre-fisheries population size
+ * 
+ * @return np_msz - post-fisheries population size
+ * 
+ */
+d3_array Catch_Calculator::calcCatch(double dirF, d3_array& n_msz){
+    if (debug) cout<<"starting Catch_Calculator::calcCatch(double dirF, d3_array n_msz)"<<endl;
+    double ratF = dirF/maxF;//target fishery (f=1) scaling ratio
+    dvector totFM(1,nZBs);
+    d3_array np_msz(1,nMSs,1,nSCs,1,nZBs);
+    np_msz.initialize();
+    for (int s=1;s<=nSCs;s++){
+        for (int m=1;m<=nMSs;m++){ 
+            totFM.initialize();
+            totFM += elem_prod(ratF*capF_fmsz(1,m,s),
+                               retF_fmsz(1,m,s) + hm_f(1)*(1.0-retF_fmsz(1,m,s)));
+            for (int f=2;f<=nFsh;f++)
+                totFM += elem_prod(capF_fmsz(f,m,s),
+                                   retF_fmsz(f,m,s) + hm_f(f)*(1.0-retF_fmsz(f,m,s)));
+            np_msz(m,s) = elem_prod(exp(-totFM),n_msz(m,s));//survival after all fisheries
+            ct_msz(m,s) = n_msz(m,s)-np_msz(m,s);           //total catch, all fisheries
+            for (int f=1;f<=nFsh;f++){
+                rm_fmsz(f,m,s) = elem_prod(elem_div(elem_prod(capF_fmsz(f,m,s),retF_fmsz(f,m,s)),totFM),
+                                              ct_msz(m,s));//retained catch mortality
+                dm_fmsz(f,m,s) = elem_prod(elem_div(elem_prod(capF_fmsz(f,m,s),hm_f(f)*(1.0-retF_fmsz(f,m,s))),totFM),
+                                              ct_msz(m,s));//discard catch mortality
+            }//f
+        }//m
+    }//s
+    if (debug) cout<<"finished Catch_Calculator::calcCatch(double dirF, d3_array n_msz)"<<endl;
+    return np_msz;
+}
+
+/**
+ * Calculates probabilities of surviving fisheries, given directed 
+ * fishing capture rate 'dirF'.
+ * 
+ * @param dirF - capture rate for target fishery (f=1)
+ * 
+ * @return d3_array of survival probabilities S_msz.
+ */
+d3_array Catch_Calculator::calcSurvival(double dirF){
+    double ratF = dirF/maxF;//target fishery (f=1) scaling ratio
+    dvector totFM(1,nZBs);
+    d3_array S_msz(1,nMSs,1,nSCs,1,nZBs);
+    S_msz.initialize();
+    for (int s=1;s<=nSCs;s++){
+        for (int m=1;m<=nMSs;m++){ 
+            totFM.initialize();
+            totFM += elem_prod(ratF*capF_fmsz(1,m,s),
+                              retF_fmsz(1,m,s) + hm_f(1)*(1.0-retF_fmsz(1,m,s)));
+            for (int f=2;f<=nFsh;f++)
+                totFM += elem_prod(dirF*capF_fmsz(f,m,s),
+                                  retF_fmsz(f,m,s) + hm_f(f)*(1.0-retF_fmsz(f,m,s)));
+            S_msz(m,s) = exp(-totFM);                //survival of fisheries
+        }//m
+    }//s
+    return S_msz;
+}
+/**
+ * Set sex-specific fishery capture rates.
+ * 
+ * @param x - sex to select
+ * @param capF_fxmsz - input capture rates
+ */
+void Catch_Calculator::setCaptureRates(int x, d5_array& capF_fxmsz){
+    capF_fmsz.allocate(1,nFsh,1,nMSs,1,nSCs,1,nZBs);
+    capF_fmsz.initialize();
+    for (int f=1;f<=nFsh;f++){
+        for (int m=1;m<=nMSs;m++){
+            capF_fmsz(f,m) = capF_fxmsz(f,x,m);
+        }//m
+    }//f
+}
+
+/**
+ * Set sex-specific retention functions.
+ * 
+ * @param x - sex to select
+ * @param retF_fxmsz - input retention functions
+ */
+void Catch_Calculator::setRetentionFcns(int x, d5_array& retF_fxmsz){
+    retF_fmsz.allocate(1,nFsh,1,nMSs,1,nSCs,1,nZBs);
+    retF_fmsz.initialize();
+    for (int f=1;f<=nFsh;f++){
+        for (int m=1;m<=nMSs;m++){
+            retF_fmsz(f,m) = retF_fxmsz(f,x,m);
+        }//m
+    }//f
+}
+
+/**
+ * Set handling mortality rates, by fishery.
+ * 
+ * @param pHM_f - dvector of handling mortality rates
+ */
+void Catch_Calculator::setHandlingMortality(dvector& pHM_f){
+    hm_f.allocate(1,nFsh);
+    hm_f.initialize();
+    hm_f = pHM_f;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //OFL_Calculator
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -110,7 +254,7 @@ double OFL_Calculator::calcFofl(double Bmsy, double Fmsy, d3_array& n_msz){
     if (debug) cout<<"starting double OFL_Calculator::calcFofl(double R)"<<endl;
     //start with guess for Fofl based on currMMB
     //TODO: need to set directed fishery F to Fmsy in pPrjM
-    double currMMB = pPrjM->calcMatBio(n_msz);
+    double currMMB = pPrjM->calcMatureBiomass(Fmsy,n_msz);
     double Fofl = calcHCR(currMMB,Bmsy,Fmsy);
     //now iterate until Fofl yields currMMB
     double Foflp = 0.0;
@@ -119,7 +263,7 @@ double OFL_Calculator::calcFofl(double Bmsy, double Fmsy, d3_array& n_msz){
     while (sfabs(delF)>criF){
         //calculate currMMB based on Fofl
         //TODO: need to set directed fishery F to Fofl in pPrjM
-        currMMB = pPrjM->calcMatBio(n_msz);
+        currMMB = pPrjM->calcMatureBiomass(Fofl,n_msz);
         //update Fofl based on currMMB
         Foflp = Fofl;
         Fofl  = calcHCR(currMMB,Bmsy,Fmsy);
@@ -130,8 +274,10 @@ double OFL_Calculator::calcFofl(double Bmsy, double Fmsy, d3_array& n_msz){
     return Fofl;
 }
 
-double OFL_Calculator::calcOFL(double Fofl, d3_array& n_msz){
+double OFL_Calculator::calcOFL(double Fofl, d4_array& n_xmsz){
+    pPrjM->calcCatch(Fofl,n_xmsz(  MALE));
     
+    pPrjF->calcCatch(Fofl,n_xmsz(FEMALE));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,11 +287,14 @@ double OFL_Calculator::calcOFL(double Fofl, d3_array& n_msz){
  * Constructor.
  * 
  * @param npZBs - number of size bins
+ * @param npFsh - number of fisheries
  */
-Tier3_Calculator::Tier3_Calculator(int npZBs){
+Tier3_Calculator::Tier3_Calculator(int npZBs, int npFsh){
+    nZBs = npZBs;
+    nFsh = npFsh;
+    
     nMSs = tcsam::nMSs;
     nSCs = tcsam::nSCs;
-    nZBs = npZBs;
     
     //set other constants
     XX = 0.35;//SPR rate for MSY calculations
@@ -245,7 +394,7 @@ d3_array Tier3_Calculator::calcEqNatZF0(double R){
     return n_msz;
 }
 
-d3_array Tier3_Calculator::calcEqNatZFM(double R){
+d3_array Tier3_Calculator::calcEqNatZFM(double R, double dirF){
     if (debug) cout<<"starting d3_array Tier3_Calculator::calcEqNatZFM(double R)"<<endl;
     dvector totF(1,nZBs); //total F-at-size
     d3_array S1_msz(1,nMSs,1,nSCs,1,nZBs);//survival until molting/mating
@@ -258,8 +407,10 @@ d3_array Tier3_Calculator::calcEqNatZFM(double R){
             for (int m=1;m<=nMSs;m++){ 
                 S1_msz(m,s)  = exp(-M_msz(m,s)*dtF);          //survival until fisheries
                 totF.initialize();
-                for (int f=1;f<=nFsh;f++)
-                    totF += elem_prod(capF_fmsz(f,m,s),
+                totF += elem_prod(dirF*capF_fmsz(1,m,s),
+                                  retF_fmsz(1,m,s) + hm_f(1)*(1.0-retF_fmsz(1,m,s)));
+                for (int f=2;f<=nFsh;f++)
+                    totF += elem_prod(dirF*capF_fmsz(f,m,s),
                                       retF_fmsz(f,m,s) + hm_f(f)*(1.0-retF_fmsz(f,m,s)));
                 S1_msz(m,s) = elem_prod(S1_msz(m,s),exp(-totF));                //survival of fisheries
                 S1_msz(m,s) = elem_prod(S1_msz(m,s),exp(-M_msz(m,s)*(dtM-dtF)));//survival from fisheries to molting/growth/mating
@@ -272,8 +423,10 @@ d3_array Tier3_Calculator::calcEqNatZFM(double R){
             for (int m=1;m<=nMSs;m++){ 
                 S1_msz(m,s)  = exp(-M_msz(m,s)*dtM);          //survival until molting/growth/mating
                 totF.initialize();
-                for (int f=1;f<=nFsh;f++)
-                    totF += elem_prod(capF_fmsz(f,m,s),
+                totF += elem_prod(dirF*capF_fmsz(1,m,s),
+                                  retF_fmsz(1,m,s) + hm_f(1)*(1.0-retF_fmsz(1,m,s)));
+                for (int f=2;f<=nFsh;f++)
+                    totF += elem_prod(dirF*capF_fmsz(f,m,s),
                                       retF_fmsz(f,m,s) + hm_f(f)*(1.0-retF_fmsz(f,m,s)));
                 S2_msz(m,s) = exp(-M_msz(m,s)*(dtF-dtM));                       //survival from molting/growth/mating until fisheries
                 S2_msz(m,s) = elem_prod(S2_msz(m,s),exp(-totF));                //survival of fisheries
@@ -371,25 +524,8 @@ double Tier3_Calculator::calcBmsy(double R){
  */
 double Tier3_Calculator::calcEqMMBatF(double R, double dirF){
     if (debug) cout<<"starting Tier3_Calculator::calcEqMMBatF(double R, double dirF)"<<endl;
-    //normalize directed fishery F's to max of dirF
-    double maxF = wts::max(capF_fmsz(1));
-    double ratF = dirF/maxF;
-    for (int m=1;m<=nMSs;m++){
-        for (int s=1;s<=nSCs;s++){
-            capF_fmsz(1,m,s) *= ratF;
-        }
-    }
-    
     //calculate equilibrium size distribution
-    d3_array n_msz = calcEqNatZFM(R);
-    
-    //restore original F for directed fishery
-    double ratB = maxF/dirF;
-    for (int m=1;m<=nMSs;m++){
-        for (int s=1;s<=nSCs;s++){
-            capF_fmsz(1,m,s) *= ratB;
-        }
-    }
+    d3_array n_msz = calcEqNatZFM(R,dirF);
     
     //calculate mmb
     double mmb = calcMMB(n_msz);
@@ -412,12 +548,18 @@ PopProjector::PopProjector(int npZBs){
 
 /**
  * Project sex-specific component of population ahead one year, WITHOUT recruitment.
+ * Also calculates:
+ *      spB - spawning biomass at mating time
+ *      ct_msz - total fishing mortality (abundance)
+ *      rm_fmsz - retained mortality, by fishery
+ *      dm_fmsz - discard mortality, by fishery
  * 
  * @param n_msz - initial numbers-at-maturity state/shell condition/size
+ * @param dirF - multiplier on fishing mortality rate in directed fishery
  * 
  * @return final numbers-at-maturity state/shell condition/size, WITHOUT recruitment
  */
-d3_array PopProjector::project(d3_array& n_msz){
+d3_array PopProjector::project(double dirF, d3_array& n_msz){
     if (debug) cout<<"starting PopProjector::project()"<<endl;
     d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
     d3_array n2_msz(1,nMSs,1,nSCs,1,nZBs);
@@ -426,38 +568,38 @@ d3_array PopProjector::project(d3_array& n_msz){
     d3_array n5_msz(1,nMSs,1,nSCs,1,nZBs);
     if (dtF<=dtM){ //fisheries occur BEFORE molting/growth/maturity 
         //apply natural mortality BEFORE fisheries
-        n1_msz = applyNM(dtF,n_msz);
+        n1_msz = applyNM(dtF, n_msz);
         //apply fisheries
-        n2_msz = applyFM(n1_msz);
+        n2_msz = applyFM(dirF, n1_msz);
         //apply natural mortality after fisheries but before molting/growth
         if (dtF==dtM){
             n3_msz = n2_msz;
         } else {
-            n3_msz = applyNM(dtM-dtF,n2_msz);
+            n3_msz = applyNM(dtM-dtF, n2_msz);
         }        
         //apply molting/growth
         n4_msz = applyMG(n3_msz);
         //apply natural mortality AFTER molting/growth
-        n5_msz = applyNM(1.0-dtM,n4_msz);
+        n5_msz = applyNM(1.0-dtM, n4_msz);
         
         //calculate spawning biomass from pre-molting/growth abundance
         n3_msz(tcsam::IMMATURE) = 0.0;//need to set immature abundance to 0
         spB = calcBiomass(n3_msz);
     } else { //fisheries occur AFTER molting/growth/maturity 
         //apply natural mortality BEFORE molting/growth
-        n1_msz = applyNM(dtM,n_msz);        
+        n1_msz = applyNM(dtM, n_msz);        
         //apply molting/growth
         n2_msz = applyMG(n1_msz);
         //apply natural mortality after molting/growth but before fisheries
         if (dtF==dtM){
             n3_msz = n2_msz;
         } else {
-            n3_msz = applyNM(dtF-dtM,n2_msz);
+            n3_msz = applyNM(dtF-dtM, n2_msz);
         }
         //apply fisheries
-        n4_msz = applyFM(n3_msz);
+        n4_msz = applyFM(dirF, n3_msz);
         //apply natural mortality AFTER fisheries
-        n5_msz = applyNM(1.0-dtF,n4_msz);
+        n5_msz = applyNM(1.0-dtF, n4_msz);
         
         //calculate spawning biomass from pre-molting/growth abundance
         n1_msz(tcsam::IMMATURE) = 0.0;//need to set immature abundance to 0
@@ -475,14 +617,14 @@ d3_array PopProjector::project(d3_array& n_msz){
  * 
  * @return MMB-at-mating
  */
-double PopProjector::calcMatBio(d3_array& n_msz){
+double PopProjector::calcMatureBiomass(double dirF, d3_array& n_msz){
     if (debug) cout<<"starting PopProjector::project()"<<endl;
     d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
     if (dtF<=dtM){ //fisheries occur BEFORE molting/growth/maturity 
         //apply natural mortality BEFORE fisheries
         n1_msz = applyNM(dtF,n_msz);
         //apply fisheries
-        d3_array n2_msz = applyFM(n1_msz);
+        d3_array n2_msz = applyFM(dirF, n1_msz);
         //apply natural mortality after fisheries but before molting/growth
         d3_array n3_msz;
         if (dtF==dtM){
@@ -522,7 +664,18 @@ d3_array PopProjector::applyNM(double dt, d3_array& n_msz){
 }
 
 /** Apply fishing mortality to population */
-d3_array PopProjector::applyFM(d3_array& n_msz){
+/**
+ * 
+ * Also calculates:
+ *      spB - spawning biomass at mating time
+ *      ct_msz - total fishing mortality (abundance)
+ *      rm_fmsz - retained mortality, by fishery
+ *      dm_fmsz - discard mortality, by fishery
+ * @param dirF
+ * @param n_msz
+ * @return 
+ */
+d3_array PopProjector::applyFM(double dirF, d3_array& n_msz){
     if (debug) cout<<"starting PopProjector::applyFM()"<<endl;
     d3_array np_msz(1,nMSs,1,nSCs,1,nZBs);
     dvector totFM(1,nZBs);
@@ -530,7 +683,9 @@ d3_array PopProjector::applyFM(d3_array& n_msz){
     for (int s=1;s<=nSCs;s++){
         for (int m=1;m<=nMSs;m++){ 
             totFM.initialize();
-            for (int f=1;f<=nFsh;f++)
+            totFM += elem_prod(dirF*capF_fmsz(1,m,s),
+                               retF_fmsz(1,m,s) + hm_f(1)*(1.0-retF_fmsz(1,m,s)));
+            for (int f=2;f<=nFsh;f++)
                 totFM += elem_prod(capF_fmsz(f,m,s),
                                    retF_fmsz(f,m,s) + hm_f(f)*(1.0-retF_fmsz(f,m,s)));
             np_msz(m,s) = elem_prod(exp(-totFM),n_msz(m,s));//survival after all fisheries
