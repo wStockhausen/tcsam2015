@@ -198,8 +198,8 @@ class model_data : public ad_comm{
   ivector phsLnDQXM;
   dvector lbLnDQXM;
   dvector ubLnDQXM;
-  dvector dtF;
-  dvector dtM;
+  dvector dtF_y;
+  dvector dtM_y;
   ivector optsFcAvg;
   dmatrix eff_fy;
   dvector avgEff;
@@ -390,18 +390,7 @@ public:
  void setAllDevs(int debug, ostream& cout);
  void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout);
  dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout);
- void calcOFL(int yr, int debug, ostream& cout);
- d3_array calcEqNatZF100(double R, int yr, int x, int debug, ostream& cout);
- double calcMMB(d3_array& n_msz, int debug, ostream& cout);
- d3_array calcEqNatZ(dvector& R_z,d3_array& S1_msz, dmatrix& Th_sz, d3_array& T_szz, d3_array& S2_msz, int debug, ostream& cout);
- double findFXX(int yr, double XX, double mmbpr100, 
-                        d5_array& avgCapF_fxmsz, d5_array& avgRFcn_fxmsz, dvector& avgHM_f,
-                        int debug, ostream& cout);
- double calcEqMMBatF(double dirF, double dtF, double dtM, 
-                           dvector& R_z, d3_array& M_msz, dmatrix& Th_sz, d3_array& T_szz, 
-                           d5_array& capF_fxmsz, d5_array retFcn_fxmsz, dvector& hm_f,
-                           int debug, ostream& cout);
- double calcFofl(double currMMB, double Bmsy, double Fmsy, int debug, ostream& cout);
+ double calcOFL(int yr, int debug, ostream& cout);
  void initPopDyMod(int debug, ostream& cout);
  void runPopDyMod(int debug, ostream& cout);
  void doSurveys(int y,int debug,ostream& cout);

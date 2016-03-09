@@ -744,10 +744,10 @@ DATA_SECTION
     !!tcsam::setParameterInfo(ptrMPI->ptrSrv->pLnDQXM,npLnDQXM,lbLnDQXM,ubLnDQXM,phsLnDQXM,rpt::echo);
 
     //other data
-    vector dtF(mnYr,mxYr);//timing of midpoint of fishing season (by year)
-    !!dtF = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
-    vector dtM(mnYr,mxYr);//timing of mating (by year))
-    !!dtM = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
+    vector dtF_y(mnYr,mxYr);//timing of midpoint of fishing season (by year)
+    !!dtF_y = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
+    vector dtM_y(mnYr,mxYr);//timing of mating (by year))
+    !!dtM_y = ptrMDS->ptrBio->fshTiming_y(mnYr,mxYr);
 
     //model options
     ivector optsFcAvg(1,nFsh);//option flags for fishery capture rate averaging
@@ -1063,7 +1063,7 @@ PRELIMINARY_CALCS_SECTION
         cout<<"Test OFL calculations"<<endl;
         ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
         echoOFL<<"----Testing calcOFL()"<<endl;
-        calcOFL(100,echoOFL);
+        calcOFL(mxYr,100,echoOFL);
         echoOFL.close();
         std::exit(-1);
 
@@ -1593,8 +1593,8 @@ FUNCTION void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout)
             Th_sz(s) = prMat_yxz(yr,x); //pr(molt to maturity|pre-molt size, molt)
             for (int z=1;z<=nZBs;z++) T_szz(s,z) = prGr_yxszz(yr,x,s,z);//growth matrices
             for (int m=1;m<=nMSs;m++){ 
-                S1_msz(m,s) = exp(-M_yxmsz(yr,x,m,s)*dtM(yr));      //survival until molting/growth/mating
-                S2_msz(m,s) = exp(-M_yxmsz(yr,x,m,s)*(1.0-dtM(yr)));//survival after molting/growth/mating
+                S1_msz(m,s) = exp(-M_yxmsz(yr,x,m,s)*dtM_y(yr));      //survival until molting/growth/mating
+                S2_msz(m,s) = exp(-M_yxmsz(yr,x,m,s)*(1.0-dtM_y(yr)));//survival after molting/growth/mating
             }//m
         }//s
         n_xmsz(x) = calcEqNatZ(R_z, S1_msz, Th_sz, T_szz, S2_msz, debug, cout);
@@ -1667,9 +1667,28 @@ FUNCTION dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matri
     return(n_msz);
 
 //-------------OFL Calculations--------------
-FUNCTION void calcOFL(int yr, int debug, ostream& cout)
-    if (debug>=dbgOFL) cout<<"starting calcOFL1"<<endl;
-    //1. Determine fishery conditions for next year based on averages for recent years
+FUNCTION double calcOFL(int yr, int debug, ostream& cout)
+    if (debug>=dbgOFL) cout<<"starting calcOFL(yr,debug,cout)"<<endl;
+    //1. Determine population rates for next year, using yr
+    double dtF = dtF_y(yr);
+    double dtM = dtM_y(yr);
+    
+    PopDyInfo* pPIM = new PopDyInfo(nZBs);//  males info
+//    &(pPIM->cout) = &cout;
+    pPIM->R_z   = value(R_z);
+    pPIM->w_mz  = ptrMDS->ptrBio->wAtZ_xmz(MALE);
+    pPIM->M_msz = value(M_yxmsz(yr,MALE));
+    pPIM->T_szz = value(prGr_yxszz(yr,MALE));
+    for (int s=1;s<=nSCs;s++) pPIM->Th_sz(s) = value(prMat_yxz(yr,MALE));
+    
+    PopDyInfo* pPIF = new PopDyInfo(nZBs);//females info
+    pPIF->R_z   = value(R_z);
+    pPIF->w_mz  = ptrMDS->ptrBio->wAtZ_xmz(FEMALE);
+    pPIF->M_msz = value(M_yxmsz(yr,FEMALE));
+    pPIF->T_szz = value(prGr_yxszz(yr,FEMALE));
+    for (int s=1;s<=nSCs;s++) pPIF->Th_sz(s) = value(prMat_yxz(yr,FEMALE));
+    
+    //2. Determine fishery conditions for next year based on averages for recent years
         int oflAvgPeriodYrs = 5;
         //assumption here is that ALL fisheries EXCEPT the first are bycatch fisheries
         //a. Calculate average handling mortality, retention curves and capture rates
@@ -1708,50 +1727,57 @@ FUNCTION void calcOFL(int yr, int debug, ostream& cout)
                 }
             }
         }
-
-        //b. scale avgCapF_fxmsz and avgRFcn_fxmsz for directed fishery (f=1) to max of 1 for males
-        double maxCapF = wts::max(avgCapF_fxmsz(1,MALE));
-        avgCapF_fxmsz(1) /= maxCapF;
-        double maxRFcn = wts::max(avgRFcn_fxmsz(1,MALE));
-        avgRFcn_fxmsz(1) /= maxRFcn;
-        cout<<"maxCapF = "<<maxCapF<<endl;
         cout<<"avgCapF_fxmsz(1,MALE,MATURE,NEW_SHELL) = "<<avgCapF_fxmsz(1,MALE,MATURE,NEW_SHELL)<<endl;
-        cout<<"maxRFcn = "<<maxRFcn<<endl;
         cout<<"avgRFcn_fxmsz(1,MALE,MATURE,NEW_SHELL) = "<<avgRFcn_fxmsz(1,MALE,MATURE,NEW_SHELL)<<endl;
-    //1. Determine TIER LEVEL
-        //Tier Level = 3
-    //2. Determine Fmsy and Bmsy
-        //For Tier 3 Stock 
-        //Fmsy=F35% and Bmsy=B35%=0.35*B100 and B is MMB
-        //Because BXX = mmbXX = <R>*mmbprXX, 
-            //where <R> is average recruitment over some period
-        //So Bmsy=B35%=0.35*B100=0.35*mmb100 is equivalent to mmbpr35%=0.35*mmbpr100
-            //where mmbpr is mmb per recruit
-        //a. determine unfished mmbpr
-        d3_array n_msz  = calcEqNatZF100(1.0,yr,MALE,debug,cout);//non-differentiable version
-        double mmbpr100 = calcMMB(n_msz,debug,cout);    //non-differentiable version
-        if (debug>=dbgOFL) cout<<"mmbpr100 = "<<mmbpr100<<endl;
-        //b. determine average recruitment and Bmsy for XX 
-        double XX = 0.35;
-        double avgRec = value(mean(elem_prod(R_y(1982,mxYr),column(R_yx,MALE)(1982,mxYr))));
-        double Bmsy = XX*mmbpr100*avgRec;
-        //c. Fmsy = FXX for directed fisheries that yields XX*mmbpr100
-        double Fmsy = findFXX(yr,XX,mmbpr100,avgCapF_fxmsz,avgRet_fxmsz,avgHM_f,debug,cout);
-    //3. Determine Fofl based on projected "current" MMB and Harvest Control Rule
-        double currB = value(spB_yx(yr,MALE));//initial guess at projected "current" MMB
-        double dB = std::numeric_limits<double>::infinity();
-        double Fofl;
-        while (sfabs(dB)>0.1){
-            Fofl = calcFofl(currB,Bmsy,Fmsy,debug,cout);
-            currBp = currB;//last estimate
-            currB  = calcCurrB(Fofl,n_yxmsz(mxYr+1),debug,cout);
-            dB = 2.0*(currB-currBp)/(currB+currBp);
-        }
-    //4. calculate OFL
-        d4_array n_xmsz = value(n_yxmsz(yr+1));
-        double OFL = calcOFL(yr,n_xmsz,Fofl,avgCapF_fxmsz,avgRet_fxmsz,avgHM_f,debug,cout);
+        
+        CatchInfo* pCIM = new CatchInfo(nZBs,nFsh);//male catch info
+        pCIM->setCaptureRates(MALE, avgCapF_fxmsz);
+        pCIM->setRetentionFcns(MALE, avgRFcn_fxmsz);
+        pCIM->setHandlingMortality(avgHM_f);
+        double maxCapF = pCIM->findMaxTargetCaptureRate();
+        
+        CatchInfo* pCIF = new CatchInfo(nZBs,nFsh);//female catch info
+        pCIF->setCaptureRates(FEMALE, avgCapF_fxmsz);
+        pCIF->setRetentionFcns(FEMALE, avgRFcn_fxmsz);
+        pCIF->setHandlingMortality(avgHM_f);
+        pCIF->maxF = maxCapF;//need to set this for females
+        
+    //3. Determine TIER LEVEL
+        int tier = 3;
+        
+    //4. Determine mean recruitment
+        dvector avgRec_x(1,nSXs);
+        for (int x=1;x<=nSXs;x++) 
+            avgRec_x(x)= value(mean(elem_prod(R_y(1982,mxYr),column(R_yx,x)(1982,mxYr))));
+        
+    //5. Determine Fmsy and Bmsy
+        Tier3_Calculator* pT3C = new Tier3_Calculator(nZBs,nFsh);
+        pT3C->dtF = dtF;
+        pT3C->dtM = dtM;
+        pT3C->pPI = pPIM;//male pop dy info
+        pT3C->pCI = pCIM;//male catch info
+        
+        double B100 = pT3C->calcB100(avgRec_x(MALE));
+        double Bmsy = pT3C->calcBmsy(avgRec_x(MALE));
+        double Fmsy = pT3C->calcB100(avgRec_x(MALE));
+        
+        //population projector for males
+        PopProjector* pPPM = new PopProjector(nZBs,nFsh);
+        pPPM->dtF = dtF;
+        pPPM->dtM = dtM;
+        pPPM->pPI = pPIM;//male pop dy info
+        pPPM->pCI = pCIM;//male catch info
+        
+        //population projector for females
+        PopProjector* pPPF = new PopProjector(nZBs,nFsh);
+        pPPF->dtF = dtF;
+        pPPF->dtM = dtM;
+        pPPF->pPI = pPIF;//male pop dy info
+        pPPF->pCI = pCIF;//male catch info
+        
     
-    if (debug>=dbgOFL) cout<<"finished calcOFL1"<<endl;
+        double OFL = 0.0;
+    if (debug>=dbgOFL) cout<<"finished calcOFL(yr,debug,cout)"<<endl;
     return(OFL);
         
 //-------------END OFL Calculations----------   
@@ -1836,49 +1862,49 @@ FUNCTION void runPopDyModOneYear(int yr, int debug, ostream& cout)
     dvar4_array n4_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
     dvar4_array n5_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
     
-    if (dtF(yr)<=dtM(yr)){//fishery occurs BEFORE molting/growth/maturity
+    if (dtF_y(yr)<=dtM_y(yr)){//fishery occurs BEFORE molting/growth/maturity
         if (debug>=dbgPopDy) cout<<"Fishery occurs BEFORE molting/growth/maturity"<<endl;
         //apply natural mortality before fisheries
-        n1_xmsz = applyNatMort(n_yxmsz(yr),yr,dtF(yr),debug,cout);
+        n1_xmsz = applyNatMort(n_yxmsz(yr),yr,dtF_y(yr),debug,cout);
         //conduct fisheries
         n2_xmsz = applyFshMort(n1_xmsz,yr,debug,cout);
         //apply natural mortality from fisheries to molting/growth/maturity
-        if (dtF(yr)==dtM(yr)) {
+        if (dtF_y(yr)==dtM_y(yr)) {
             n3_xmsz = n2_xmsz;
         } else {
-            n3_xmsz = applyNatMort(n2_xmsz,yr,dtM(yr)-dtF(yr),debug,cout);
+            n3_xmsz = applyNatMort(n2_xmsz,yr,dtM_y(yr)-dtF_y(yr),debug,cout);
         }
         //calc mature (spawning) biomass at time of mating (TODO: does this make sense??)
         spB_yx(yr) = calcSpB(n3_xmsz,yr,debug,cout);
         //apply molting, growth and maturation
         n4_xmsz = applyMGM(n3_xmsz,yr,debug,cout);
         //apply natural mortality to end of year
-        if (dtM(yr)==1.0) {
+        if (dtM_y(yr)==1.0) {
             n5_xmsz = n4_xmsz;
         } else {
-            n5_xmsz = applyNatMort(n4_xmsz,yr,1.0-dtM(yr),debug,cout);
+            n5_xmsz = applyNatMort(n4_xmsz,yr,1.0-dtM_y(yr),debug,cout);
         }
     } else {              //fishery occurs AFTER molting/growth/maturity
         if (debug>=dbgPopDy) cout<<"Fishery occurs AFTER molting/growth/maturity"<<endl;
         //apply natural mortality before molting/growth/maturity
-        n1_xmsz = applyNatMort(n_yxmsz(yr),yr,dtM(yr),debug,cout);
+        n1_xmsz = applyNatMort(n_yxmsz(yr),yr,dtM_y(yr),debug,cout);
         //calc mature (spawning) biomass at time of mating (TODO: does this make sense??)
         spB_yx(yr) = calcSpB(n1_xmsz,yr,debug,cout);
         //apply molting, growth and maturation
         n2_xmsz = applyMGM(n1_xmsz,yr,debug,cout);
         //apply natural mortality from molting/growth/maturity to fisheries
-        if (dtM(yr)==dtF(yr)) {
+        if (dtM_y(yr)==dtF_y(yr)) {
             n3_xmsz = n2_xmsz;
         } else {
-            n3_xmsz = applyNatMort(n2_xmsz,yr,dtF(yr)-dtM(yr),debug,cout);
+            n3_xmsz = applyNatMort(n2_xmsz,yr,dtF_y(yr)-dtM_y(yr),debug,cout);
         }
         //conduct fisheries
         n4_xmsz = applyFshMort(n3_xmsz,yr,debug,cout);
         //apply natural mortality to end of year
-        if (dtF(yr)==1.0) {
+        if (dtF_y(yr)==1.0) {
             n5_xmsz = n4_xmsz;
         } else {
-            n5_xmsz = applyNatMort(n4_xmsz,yr,1.0-dtF(yr),debug,cout);
+            n5_xmsz = applyNatMort(n4_xmsz,yr,1.0-dtF_y(yr),debug,cout);
         }
     }
     
