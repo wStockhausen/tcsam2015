@@ -1123,7 +1123,9 @@ void model_parameters::preliminary_calculations(void)
         ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
         echoOFL<<"----Testing calcOFL()"<<endl;
         calcOFL(mxYr,100,echoOFL);
+        echoOFL<<"----Finished testing calcOFL()!"<<endl;
         echoOFL.close();
+        cout<<"Finished testing OFL calculations!"<<endl;
         std::exit(-1);
         if (fitSimData){
             cout<<"creating sim data to fit in model"<<endl;
@@ -1652,20 +1654,29 @@ dvar3_array model_parameters::calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, d
 
 double model_parameters::calcOFL(int yr, int debug, ostream& cout)
 {
-    if (debug>=dbgOFL) cout<<"starting calcOFL(yr,debug,cout)"<<endl;
+    if (debug>=dbgOFL) {
+        cout<<endl<<endl<<"#------------------------"<<endl;
+        cout<<"starting calcOFL(yr,debug,cout)"<<endl;
+    }
+    //get initial population for "upcoming" year, yr
+    d4_array n_xmsz = wts::value(n_yxmsz(yr));
+    
+    //NOW set yr back one year to get population rates, etc.
+    yr = yr - 1;
+    
     //1. Determine population rates for next year, using yr
     double dtF = dtF_y(yr);
     double dtM = dtM_y(yr);
     
     PopDyInfo* pPIM = new PopDyInfo(nZBs);//  males info
-    pPIM->R_z   = value(R_z);
+    pPIM->R_z   = value(R_yz(yr));
     pPIM->w_mz  = ptrMDS->ptrBio->wAtZ_xmz(MALE);
     pPIM->M_msz = value(M_yxmsz(yr,MALE));
     pPIM->T_szz = value(prGr_yxszz(yr,MALE));
     for (int s=1;s<=nSCs;s++) pPIM->Th_sz(s) = value(prMat_yxz(yr,MALE));
     
     PopDyInfo* pPIF = new PopDyInfo(nZBs);//females info
-    pPIF->R_z   = value(R_z);
+    pPIF->R_z   = value(R_yz(yr));
     pPIF->w_mz  = ptrMDS->ptrBio->wAtZ_xmz(FEMALE);
     pPIF->M_msz = value(M_yxmsz(yr,FEMALE));
     pPIF->T_szz = value(prGr_yxszz(yr,FEMALE));
@@ -1716,7 +1727,8 @@ double model_parameters::calcOFL(int yr, int debug, ostream& cout)
         pCIM->setCaptureRates(MALE, avgCapF_fxmsz);
         pCIM->setRetentionFcns(MALE, avgRFcn_fxmsz);
         pCIM->setHandlingMortality(avgHM_f);
-        double maxCapF = pCIM->findMaxTargetCaptureRate();
+        double maxCapF = pCIM->findMaxTargetCaptureRate(cout);
+        if (debug>=dbgOFL) cout<<"maxCapF = "<<maxCapF<<endl;
         
         CatchInfo* pCIF = new CatchInfo(nZBs,nFsh);//female catch info
         pCIF->setCaptureRates(FEMALE, avgCapF_fxmsz);
@@ -1731,6 +1743,12 @@ double model_parameters::calcOFL(int yr, int debug, ostream& cout)
         dvector avgRec_x(1,nSXs);
         for (int x=1;x<=nSXs;x++) 
             avgRec_x(x)= value(mean(elem_prod(R_y(1982,mxYr),column(R_yx,x)(1982,mxYr))));
+        if (debug>=dbgOFL) {
+            cout<<"exp(mnLnR) = "<<exp(pLnR(1))<<endl;
+            cout<<"R_y(1982,mxYr) = "<<R_y(1982,mxYr)<<endl;
+            cout<<"R_yx((1982:mxYr,MALE) = "<<column(R_yx,MALE)(1982,mxYr)<<endl;
+            cout<<"Average recruitment = "<<avgRec_x<<endl;
+        }
         
     //5. Determine Fmsy and Bmsy
         Tier3_Calculator* pT3C = new Tier3_Calculator(nZBs,nFsh);
@@ -1739,10 +1757,28 @@ double model_parameters::calcOFL(int yr, int debug, ostream& cout)
         pT3C->pPI = pPIM;//male pop dy info
         pT3C->pCI = pCIM;//male catch info
         
-        double B100 = pT3C->calcB100(avgRec_x(MALE));
-        double Bmsy = pT3C->calcBmsy(avgRec_x(MALE));
-        double Fmsy = pT3C->calcB100(avgRec_x(MALE));
+        double B100 = pT3C->calcB100(avgRec_x(MALE),cout);
+        double Bmsy = pT3C->calcBmsy(avgRec_x(MALE),cout);
+        double Fmsy = pT3C->calcFmsy(avgRec_x(MALE),cout);
         
+        if (debug>=dbgOFL){
+            d3_array tmp0_msz = pT3C->calcEqNatZF0(avgRec_x(MALE),cout);
+            double tmpMMB0 = pT3C->pPI->calcMatureBiomass(tmp0_msz,cout);
+            d3_array tmp1_msz = pT3C->calcEqNatZFM(avgRec_x(MALE),Fmsy,cout);
+            double tmpMMB = pT3C->pPI->calcMatureBiomass(tmp1_msz,cout);
+            cout<<"B100 = "<<B100<<endl;
+            cout<<"Bmsy = "<<Bmsy<<endl;
+            cout<<"Fmsy = "<<Fmsy<<endl<<endl<<endl;
+            cout<<"Unfished equilibrium size distribution:"<<endl;
+            wts::print(tmp0_msz,cout,2);
+            cout<<"MMB100 = "<<tmpMMB0<<endl;
+            cout<<"Fmsy equilibrium size distribution:"<<endl;
+            wts::print(tmp1_msz,cout,2);
+            cout<<"MMBmsy = "<<tmpMMB<<endl;
+            cout<<"------------------------------------------"<<endl<<endl;
+        }
+        
+    //6. Determine Fofl and OFL    
         //population projector for males
         PopProjector* pPPM = new PopProjector(nZBs,nFsh);
         pPPM->dtF = dtF;
@@ -1754,12 +1790,35 @@ double model_parameters::calcOFL(int yr, int debug, ostream& cout)
         PopProjector* pPPF = new PopProjector(nZBs,nFsh);
         pPPF->dtF = dtF;
         pPPF->dtM = dtM;
-        pPPF->pPI = pPIF;//male pop dy info
-        pPPF->pCI = pCIF;//male catch info
+        pPPF->pPI = pPIF;//female pop dy info
+        pPPF->pCI = pCIF;//female catch info
         
-    
-        double OFL = 0.0;
-    if (debug>=dbgOFL) cout<<"finished calcOFL(yr,debug,cout)"<<endl;
+        //OFL calculator
+        OFL_Calculator* pOC = new OFL_Calculator(nFsh);
+        pOC->pT3C = pT3C;
+        pOC->pPrjM = pPPM;
+        pOC->pPrjF = pPPF;
+        
+        //calculate Fofl
+        double Fofl = pOC->calcFofl(Bmsy,Fmsy,n_xmsz(MALE),cout);
+        if (debug>=dbgOFL) cout<<"Fofl = "<<Fofl<<endl;
+        //calculate OFL
+        double OFL = pOC->calcOFL(Fofl,n_xmsz,cout);
+        if (debug>=dbgOFL) {
+            cout<<"OFL = "<<OFL<<endl;
+            cout<<"retained catch:"<<tb<<pOC->ofl_fx(0,MALE)<<endl;
+            for (int f=1;f<=nFsh;f++){
+                cout<<"fishery "<<f<<":"<<tb<<pOC->ofl_fx(f,MALE)<<tb<<pOC->ofl_fx(f,FEMALE)<<endl;
+            }
+        }
+        //calculate projected ("current") MMB
+        double prjMMB = pOC->calcPrjMMB(Fofl,n_xmsz(MALE),cout);
+        if (debug>=dbgOFL) cout<<"prjMMB = "<<prjMMB<<endl;
+        
+    if (debug>=dbgOFL) {
+        cout<<"finished calcOFL(yr,debug,cout)"<<endl;
+        cout<<"#------------------------"<<endl<<endl<<endl;
+    }
     return(OFL);
         
 }
@@ -2173,7 +2232,11 @@ void model_parameters::calcMaturity(int debug, ostream& cout)
         }
         prMat_cz(pc) = 1.0;//default is 1
         prMat_cz(pc)(vmn,vmx) = 1.0/(1.0+exp(-lgtPrMat));
-            
+        if (debug>dbgCalcProcs){
+            cout<<"pc = "<<pc<<". mn = "<<vmn<<", mx = "<<vmx<<endl;
+            cout<<"prMat = "<<prMat_cz(pc)<<endl;
+        }
+        
         imatrix idxs = ptrMI->getModelIndices(pc);
         if (debug>dbgCalcProcs) cout<<"maturity indices"<<endl<<idxs<<endl;
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){

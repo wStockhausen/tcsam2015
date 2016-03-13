@@ -9,6 +9,8 @@ using namespace tcsam;
 ////////////////////////////////////////////////////////////////////////////////
 //PopDyInfo
 ////////////////////////////////////////////////////////////////////////////////
+/**flag to print debug info*/
+int PopDyInfo::debug = 0;
 /**
  * Constructor.
  * 
@@ -34,11 +36,11 @@ PopDyInfo::PopDyInfo(int npZBs){
  * 
  * @return mature biomass (units??)
  */
-double PopDyInfo::calcMatureBiomass(d3_array& n_msz){
-    if (debug) cout<<"starting double PopDyInfo::calcMMB()"<<endl;
+double PopDyInfo::calcMatureBiomass(d3_array& n_msz, ostream& cout){
+    if (debug) cout<<"starting double PopDyInfo::calcMMB(n_msz)"<<endl;
     double mmb = 0.0; 
     for (int s=1;s<=nSCs;s++) mmb += n_msz(MATURE,s)*w_mz(MATURE);//dot product here
-    if (debug) cout<<"finished double PopDyInfo::calcMMB()"<<endl;
+    if (debug) cout<<"finished double PopDyInfo::calcMMB(n_msz)"<<endl;
     return mmb;
 }
 
@@ -49,7 +51,7 @@ double PopDyInfo::calcMatureBiomass(d3_array& n_msz){
  * 
  * @return total biomass (units??)
  */
-double PopDyInfo::calcTotalBiomass(d3_array& n_msz){
+double PopDyInfo::calcTotalBiomass(d3_array& n_msz, ostream& cout){
     if (debug) cout<<"starting PopDyInfo::calcBiomass()"<<endl;
     double bio = 0.0;
     for (int s=1;s<=nSCs;s++){
@@ -69,7 +71,7 @@ double PopDyInfo::calcTotalBiomass(d3_array& n_msz){
  * 
  * @return d3_array S_msz
  */
-d3_array PopDyInfo::calcSurvival(double dt){
+d3_array PopDyInfo::calcSurvival(double dt, ostream& cout){
     if (debug) cout<<"starting PopDyInfo::calcSurvival(dt)"<<endl;
     d3_array S_msz(1,nMSs,1,nSCs,1,nZBs);
     for (int s=1;s<=nSCs;s++){
@@ -89,7 +91,7 @@ d3_array PopDyInfo::calcSurvival(double dt){
  * 
  * @return d3_array - final population abundance
  */
-d3_array PopDyInfo::applyNM(double dt, d3_array& n_msz){
+d3_array PopDyInfo::applyNM(double dt, d3_array& n_msz, ostream& cout){
     if (debug) cout<<"starting PopDyInfo::applyNM(dt,n_msz)"<<endl;
     d3_array np_msz(1,nMSs,1,nSCs,1,nZBs);
     for (int s=1;s<=nSCs;s++){
@@ -107,7 +109,7 @@ d3_array PopDyInfo::applyNM(double dt, d3_array& n_msz){
  * @param n_msz
  * @return 
  */
-d3_array PopDyInfo::applyMG(d3_array& n_msz){
+d3_array PopDyInfo::applyMG(d3_array& n_msz, ostream& cout){
     if (debug) cout<<"starting PopDyInfo::applyMG(n_msz)"<<endl;
     d3_array np_msz(1,nMSs,1,nSCs,1,nZBs);
     np_msz.initialize();
@@ -119,8 +121,10 @@ d3_array PopDyInfo::applyMG(d3_array& n_msz){
     return np_msz;
 }
 ////////////////////////////////////////////////////////////////////////////////
-//Catch_Calculator
+//CatchInfo
 ////////////////////////////////////////////////////////////////////////////////
+/** flag to print debug info */
+int CatchInfo::debug = 0;
 /**
  * Constructor.
  * 
@@ -147,7 +151,7 @@ CatchInfo::CatchInfo(int npZBs, int npFsh){
  * 
  * @return max fishing mortality rate
  */
-double CatchInfo::findMaxTargetCaptureRate(void){
+double CatchInfo::findMaxTargetCaptureRate(ostream& cout){
     maxF = wts::max(capF_fmsz(1));
     return maxF;
 }
@@ -165,7 +169,7 @@ double CatchInfo::findMaxTargetCaptureRate(void){
  * @return np_msz - post-fisheries population size
  * 
  */
-d3_array CatchInfo::applyFM(double dirF, d3_array& n_msz){
+d3_array CatchInfo::applyFM(double dirF, d3_array& n_msz, ostream& cout){
     if (debug) cout<<"starting Catch_Calculator::calcCatch(double dirF, d3_array n_msz)"<<endl;
     double ratF = dirF/maxF;//target fishery (f=1) scaling ratio
     dvector totFM(1,nZBs);
@@ -201,7 +205,7 @@ d3_array CatchInfo::applyFM(double dirF, d3_array& n_msz){
  * 
  * @return d3_array of survival probabilities S_msz.
  */
-d3_array CatchInfo::calcSurvival(double dirF){
+d3_array CatchInfo::calcSurvival(double dirF, ostream& cout){
     double ratF = dirF/maxF;//target fishery (f=1) scaling ratio
     dvector totFM(1,nZBs);
     d3_array S_msz(1,nMSs,1,nSCs,1,nZBs);
@@ -265,19 +269,16 @@ void CatchInfo::setHandlingMortality(dvector& pHM_f){
 ////////////////////////////////////////////////////////////////////////////////
 //OFL_Calculator
 ////////////////////////////////////////////////////////////////////////////////
+/** flag to print debug info */
+int OFL_Calculator::debug = 0;
 /**
  * Constructor.
  * 
- * @param Tier - Tier level for OFL calculations
- * @param npZBs - number of size bins
+ * @param npFsh - number of fisheries
  */
-OFL_Calculator::OFL_Calculator(int Tier, int npZBs){
+OFL_Calculator::OFL_Calculator(int npFsh){
+    nFsh = npFsh;
     nSXs = tcsam::nSXs;
-    nMSs = tcsam::nMSs;
-    nSCs = tcsam::nSCs;
-    nZBs = npZBs;
-    
-    tier = Tier;
     
     //other constants
     alpha = 0.1; 
@@ -288,18 +289,22 @@ OFL_Calculator::OFL_Calculator(int Tier, int npZBs){
 }
 
 /**
- * Calculate Bmsy, given longterm (male) recruitment.
+ * Calculate the Bmsy. For crab stocks, Bmsy is the longterm average
+ * MMB (mature male biomass) obtained when the capture rate for males 
+ * in the directed fishery is Fmsy.
+ *  
+ * @param tier - stock Tier level for status determination and OFL setting
+ * @param R - longterm (average) MALE-only recruitment
+ * @param cout - output stream for debug info
  * 
- * @param R - longterm (male) recruitment (units??)
- * 
- * @return value for Bmsy (units??)
+ * @return Bmsy
  */
-double OFL_Calculator::calcBmsy(double R){
-    if (debug) cout<<"starting double OFL_Calculator::calcBmsy(double R)"<<endl;
+double OFL_Calculator::calcBmsy(int tier, double R, ostream& cout){
+    if (debug) cout<<"starting double OFL_Calculator::calcBmsy(tier, R)"<<endl;
     double Bmsy = 0.0;
     switch (tier){
         case 3: {
-            Bmsy = pT3C->calcBmsy(R);
+            Bmsy = pT3C->calcBmsy(R,cout);
             break;
         }
         default:
@@ -313,18 +318,21 @@ double OFL_Calculator::calcBmsy(double R){
 }
 
 /**
- * Calculate Fmsy, given longterm (male) recruitment.
+ * Calculate Fmsy, the directed fishery male capture rate, based on the 
+ * stock Tier level and the longterm male-only recruitment level (R). 
  * 
- * @param R - longterm (male) recruitment (units??)
+ * @param tier - stock Tier level for status determination and OFL setting
+ * @param R - longterm (average) MALE-only recruitment
+ * @param cout - output stream for debug info
  * 
- * @return value for Fmsy
+ * @return the F that yields MSY
  */
-double OFL_Calculator::calcFmsy(double R){
+double OFL_Calculator::calcFmsy(int tier, double R, ostream& cout){
     if (debug) cout<<"starting double OFL_Calculator::calcFmsy(double R)"<<endl;
     double Fmsy = 0.0;
     switch (tier){
         case 3: {
-            Fmsy = pT3C->calcFmsy(R);
+            Fmsy = pT3C->calcFmsy(R,cout);
             break;
         }
         default:
@@ -338,15 +346,16 @@ double OFL_Calculator::calcFmsy(double R){
 }
 
 /**
- * Use the harvest control rule to calculate an Fofl based on "current" MMB and Bmsy.
+ * Calculate Fofl using Harvest Control Rule (HCR).
  * 
- * @param currMMB - "current" (projected to Feb. 15) MMB
- * @param Bmsy - Bmsy (based on Tier)
- * @param Fmsy - Fmsy (based on Tier)
+ * @param currMMB - "current" MMB used to determine B/Bmsy
+ * @param Bmsy - Bmsy
+ * @param Fmsy - Fmsy
+ * @param cout - output stream for debug info
  * 
- * @return Fofl rate using harvest control rule 
+ * @return Fofl derived from HCR
  */
-double OFL_Calculator::calcHCR(double currMMB, double Bmsy, double Fmsy){
+double OFL_Calculator::calcHCR(double currMMB, double Bmsy, double Fmsy, ostream& cout){
     if (debug) cout<<"starting OFL_Calculator::calcHCR(double currMMB, double Bmsy, double Fmsy)"<<endl;
     double Fofl = 0.0;
     double ratio  = currMMB/Bmsy;
@@ -360,74 +369,113 @@ double OFL_Calculator::calcHCR(double currMMB, double Bmsy, double Fmsy){
 }
 
 /**
- * Calculate Fofl, given longterm (male) recruitment.
+ * Calculate Fofl using the Harvest Control Rule (HCR), based on Bmsy,
+ * Fmsy, and the initial (July 1) male abundance n_msz. This is an 
+ * iterative process because Fofl is given by the HCR based on the
+ * projected MMB, which itself depends on what the target fishery capture
+ * rate (F) was.
  * 
- * @param R - longterm (male) recruitment (units??)
+ * @param Bmsy - equilibrium MMB when population fished at Fmsy
+ * @param Fmsy - directed fishery capture rate yielding MSY
+ * @param n_msz - initial (July 1) male abundance
+ * @param cout - output stream for debug info
  * 
- * @return value for Fofl
+ * @return Fofl
  */
-double OFL_Calculator::calcFofl(double Bmsy, double Fmsy, d3_array& n_msz){
-    if (debug) cout<<"starting double OFL_Calculator::calcFofl(double R)"<<endl;
+double OFL_Calculator::calcFofl(double Bmsy, double Fmsy, d3_array& n_msz, ostream& cout){
+    if (debug) {
+        cout<<"starting double OFL_Calculator::calcFofl(Bmsy, Fmsy,n_msz)"<<endl;
+        cout<<"Bmsy = "<<Bmsy<<"; Fmsy = "<<Fmsy<<endl;
+        cout<<"n_msz = "<<endl;
+        for (int m=1;m<=nMSs;m++) {cout<<"m = "<<m<<endl; cout<<n_msz(m)<<endl;}
+    }
     //start with guess for Fofl based on currMMB
-    //TODO: need to set directed fishery F to Fmsy in pPrjM
-    double currMMB = pPrjM->calcMatureBiomass(Fmsy,n_msz);
-    double Fofl = calcHCR(currMMB,Bmsy,Fmsy);
+    double currMMB = pPrjM->projectMatureBiomass(Fmsy,n_msz,cout);
+    if (debug) cout<<"init currMMB = "<<currMMB<<"; B/Bmsy = "<<currMMB/Bmsy<<endl;
+    double Fofl = calcHCR(currMMB,Bmsy,Fmsy,cout);
+    if (debug) cout<<"init Fofl = "<<Fofl<<endl;
     //now iterate until Fofl yields currMMB
     double Foflp = 0.0;
     double criF = 0.001;
     double delF = std::numeric_limits<double>::infinity();
     while (sfabs(delF)>criF){
         //calculate currMMB based on Fofl
-        //TODO: need to set directed fishery F to Fofl in pPrjM
-        currMMB = pPrjM->calcMatureBiomass(Fofl,n_msz);
+        currMMB = pPrjM->projectMatureBiomass(Fofl,n_msz,cout);
+        if (debug) cout<<"--updated currMMB = "<<currMMB<<"; B/Bmsy = "<<currMMB/Bmsy<<endl;
         //update Fofl based on currMMB
         Foflp = Fofl;
-        Fofl  = calcHCR(currMMB,Bmsy,Fmsy);
+        Fofl  = calcHCR(currMMB,Bmsy,Fmsy,cout);
         //check convergence
         delF = Fofl - Foflp;
+        if (debug) cout<<"--updated Fofl = "<<Fofl<<"; delF = "<<delF<<endl;
     }
-    if (debug) cout<<"finished double OFL_Calculator::calcFofl(double R)"<<endl;
+    if (debug) cout<<"finished double OFL_Calculator::calcFofl(Bmsy, Fmsy,n_msz)"<<endl;
     return Fofl;
 }
 
 /**
- * Calculate the OFL. 
+ * Calculate the total OFL (retained+discard mortality) taken
+ * when fishing on population starting with initial abundance (July 1)
+ * n_xmsz at directed fishery capture rate of Fofl.
  * 
- * @param Fofl - directed fishery Fofl
- * @param n_xmsz - population abundance on July 1
+ * Note: catch (biomass) by fishery and sex is available in ofl_fx:
+ *      ofl_fx(0,MALE) - retained catch (biomass) in directed fishery
+ *      ofl_fx(f,x) - discard mortality (biomass) for fishery f, sex x
  * 
- * @return total OFL, including retained catch and discard catch mortality (biomass)
+ * @param Fofl - directed fishery capture rate
+ * @param n_xmsz - initial population abundance
+ * @param cout - output stream for debug info
  * 
- * Note: access ofl_fx for fishery/sex-specific values. f=0 is retained catch.
+ * @return total OFL (biomass)
  */
-double OFL_Calculator::calcOFL(double Fofl, d4_array& n_xmsz){
+double OFL_Calculator::calcOFL(double Fofl, d4_array& n_xmsz, ostream& cout){
+    if (debug) cout<<"starting double OFL_Calculator::calcOFL(Fofl,n_xmsz)"<<endl;
     
     ofl_fx.initialize();
     //calc catch of males
-    pPrjM->project(Fofl,n_xmsz(  MALE));
+    pPrjM->project(Fofl,n_xmsz(  MALE),cout);
     //retained catch biomass (directed fishery only)
-    ofl_fx(0,  MALE) = pPrjM->pPI->calcTotalBiomass(pPrjM->pCI->rm_fmsz(1));
+    ofl_fx(0,  MALE) = pPrjM->pPI->calcTotalBiomass(pPrjM->pCI->rm_fmsz(1),cout);
     //discard mortality biomass
     for (int f=1;f<=nFsh;f++){
-        ofl_fx(f,  MALE) = pPrjM->pPI->calcTotalBiomass(pPrjM->pCI->dm_fmsz(f));
+        ofl_fx(f,  MALE) = pPrjM->pPI->calcTotalBiomass(pPrjM->pCI->dm_fmsz(f),cout);
     }
+    prjMMB = pPrjM->matBio;
     
     //calc catch of females
-    pPrjF->project(Fofl,n_xmsz(FEMALE));
+    pPrjF->project(Fofl,n_xmsz(FEMALE),cout);
     //retained catch biomass (directed fishery only)
-    ofl_fx(0,FEMALE) = pPrjF->pPI->calcTotalBiomass(pPrjF->pCI->rm_fmsz(1));
+    ofl_fx(0,FEMALE) = pPrjF->pPI->calcTotalBiomass(pPrjF->pCI->rm_fmsz(1),cout);
     //discard mortality biomass
     for (int f=1;f<=nFsh;f++){
-        ofl_fx(f,FEMALE) = pPrjM->pPI->calcTotalBiomass(pPrjM->pCI->dm_fmsz(f));
+        ofl_fx(f,FEMALE) = pPrjM->pPI->calcTotalBiomass(pPrjM->pCI->dm_fmsz(f),cout);
     }
     
     double ofl = sum(ofl_fx);
+    if (debug) cout<<"finished double OFL_Calculator::calcOFL(Fofl,n_xmsz)"<<endl;
     return ofl;
+}
+/**
+ * Calculate the (projected) MMB when fished at Fofl.
+ * 
+ * @param Fofl - target fishery capture rate
+ * @param n_msz - initial (July 1) population
+ * @param cout - output stream for debug info
+ * 
+ * @return - the (projected) MMB
+ */
+double OFL_Calculator::calcPrjMMB(double Fofl, d3_array& n_msz, ostream& cout){
+    if (debug) cout<<"starting double OFL_Calculator::calcPrjMMB(Fofl,n_msz)"<<endl;
+    double mmb = pPrjM->projectMatureBiomass(Fofl,n_msz,cout);
+    if (debug) cout<<"finished double OFL_Calculator::calcPrjMMB(Fofl,n_msz)"<<endl;
+    return mmb;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //Tier3_Calculator
 ////////////////////////////////////////////////////////////////////////////////
+/** flag to print debug info */
+int Tier3_Calculator::debug = 0;
 /**
  * Constructor.
  * 
@@ -445,11 +493,21 @@ Tier3_Calculator::Tier3_Calculator(int npZBs, int npFsh){
     XX = 0.35;//SPR rate for MSY calculations
 }
 
-//-------------------------------------------------------------------------------------
-//calculate sex-specific equilibrium size distribution
-//non-differentiable version
+/**
+ * Calculate equilibrium (longterm) population abundance on July 1.
+ * 
+ * @param R_z - longterm recruitment at size
+ * @param S1_msz - survival prior to molting/growth
+ * @param Th_sz - pr(molt-to-maturity|size) for immature crab
+ * @param T_szz - growth transition matrix for molting crab
+ * @param S2_msz - survival following molting/growth
+ * @param cout - output stream for debug info
+ * 
+ * @return equlibrium (longterm) population abundance on July 1 (as d3_array)
+ */
 d3_array Tier3_Calculator::calcEqNatZ(dvector& R_z, d3_array& S1_msz, 
-                                      dmatrix& Th_sz, d3_array& T_szz, d3_array& S2_msz){
+                                      dmatrix& Th_sz, d3_array& T_szz, 
+                                      d3_array& S2_msz, ostream& cout){
     if (debug) cout<<"starting d3_array calcEqNatZ(...)"<<endl;
 
     //the equilibrium solution
@@ -501,6 +559,7 @@ d3_array Tier3_Calculator::calcEqNatZ(dvector& R_z, d3_array& S1_msz,
     dmatrix iM3 = inv(I - lH);
     
     //the equilibrium solution is
+    n_msz.initialize();
     n_msz(i,n) = iM2 * R_z;                         //immature, new shell
     n_msz(i,o) = iM1 * lC * n_msz(i,n);             //immature, old shell
     n_msz(m,n) = lE * n_msz(i,n) + lF * n_msz(i,o); //  mature, new shell
@@ -510,67 +569,88 @@ d3_array Tier3_Calculator::calcEqNatZ(dvector& R_z, d3_array& S1_msz,
     return n_msz;
 }
 
-d3_array Tier3_Calculator::calcEqNatZF0(double R){
+/**
+ * Calculate equilibrium unfished abundance on July 1 when 
+ * longterm (average) male recruitment is R.
+ * 
+ * @param R - longterm (average) male recruitment
+ * @param cout - output stream for debug info
+ * 
+ * @return equilibrium (male) population abundance on July 1
+ */
+d3_array Tier3_Calculator::calcEqNatZF0(double R, ostream& cout){
     if (debug) cout<<"starting d3_array calcEqNatZF0(double R)"<<endl;
 
     d3_array S1_msz(1,nMSs,1,nSCs,1,nZBs);
     d3_array S2_msz(1,nMSs,1,nSCs,1,nZBs);
     d3_array n_msz(1,nMSs,1,nSCs,1,nZBs);  //equilibrium size distribution
     
-    S1_msz = pPI->calcSurvival(dtM);
-    S2_msz = pPI->calcSurvival(1.0-dtM);
+    S1_msz = pPI->calcSurvival(dtM,cout);
+    S2_msz = pPI->calcSurvival(1.0-dtM,cout);
     
     dvector R_zp = R*pPI->R_z;
     
-    n_msz = calcEqNatZ(R_zp, S1_msz, pPI->Th_sz, pPI->T_szz, S2_msz);
+    n_msz = calcEqNatZ(R_zp, S1_msz, pPI->Th_sz, pPI->T_szz, S2_msz,cout);
     
     if (debug) cout<<"finished d3_array Tier3_Calculator::calcEqNatZF0(double R)"<<endl;
     return n_msz;
 }
 
-d3_array Tier3_Calculator::calcEqNatZFM(double R, double dirF){
+/**
+ * Calculate equilibrium abundance on July 1 when dirF is the 
+ * directed fishery capture rate and the longterm (average) 
+ * male recruitment is R.
+ * 
+ * @param R - longterm (average) male recruitment
+ * @param dirF - directed fishery capture rate
+ * @param cout - output stream for debug info
+ * 
+ * @return equilibrium (male) population abundance on July 1
+ */
+d3_array Tier3_Calculator::calcEqNatZFM(double R, double dirF, ostream& cout){
     if (debug) cout<<"starting d3_array Tier3_Calculator::calcEqNatZFM(double R)"<<endl;
     d3_array S1_msz(1,nMSs,1,nSCs,1,nZBs);//survival until molting/mating
     d3_array S2_msz(1,nMSs,1,nSCs,1,nZBs);//survival after molting/mating
-    d3_array n_msz(1,nMSs,1,nSCs,1,nZBs); //equilibrium size distribution
+    d3_array n_msz(1,nMSs,1,nSCs,1,nZBs); //equilibrium size distribution on July 1
     
     if (dtF<=dtM){
         //fisheries occur BEFORE molting/growth/maturity 
-        d3_array S1a_msz = pPI->calcSurvival(dtF);
-        d3_array S1F_msz = pCI->calcSurvival(dirF);
-        d3_array S1b_msz = pPI->calcSurvival(dtM-dtF);
-        S1_msz = elem_prod(S1b_msz,elem_prod(S1F_msz,S1a_msz));
-        S2_msz = pPI->calcSurvival(1.0-dtM);
+        d3_array S1a_msz = pPI->calcSurvival(dtF,cout);     //survival prior to fisheries
+        d3_array S1F_msz = pCI->calcSurvival(dirF,cout);    //survival of fisheries
+        d3_array S1b_msz = pPI->calcSurvival(dtM-dtF,cout); //survival after fisheries, before mating
+        S1_msz = elem_prod(S1b_msz,elem_prod(S1F_msz,S1a_msz));//total survival before mating
+        S2_msz = pPI->calcSurvival(1.0-dtM,cout);//survival after mating/molting/growth
     } else {
         //fisheries occur AFTER molting/growth/maturity 
-        S1_msz = pPI->calcSurvival(dtM);
-        d3_array S2a_msz = pPI->calcSurvival(dtF-dtM);
-        d3_array S2F_msz = pCI->calcSurvival(dirF);
-        d3_array S2b_msz = pPI->calcSurvival(1.0-dtF);
-        S2_msz = elem_prod(S2b_msz,elem_prod(S2F_msz,S2a_msz));
+        S1_msz = pPI->calcSurvival(dtM,cout);                   //survival before mating/molting/growth
+        d3_array S2a_msz = pPI->calcSurvival(dtF-dtM,cout);     //survival afterMGM, before fisheries
+        d3_array S2F_msz = pCI->calcSurvival(dirF,cout);        //survival of fisheries
+        d3_array S2b_msz = pPI->calcSurvival(1.0-dtF,cout);     //survival after fisheries, to year end
+        S2_msz = elem_prod(S2b_msz,elem_prod(S2F_msz,S2a_msz)); //total survival after MGM to year end
     }
     dvector R_zp = R*pPI->R_z;
-    n_msz = calcEqNatZ(R_zp, S1_msz, pPI->Th_sz, pPI->T_szz, S2_msz);
+    n_msz = calcEqNatZ(R_zp, S1_msz, pPI->Th_sz, pPI->T_szz, S2_msz, cout);
     
     if (debug) cout<<"finished Ter3_Calculator::calcEqNatZFM(double R)"<<endl;
     return n_msz; 
 }
 
 /**
- * Calculate Fmsy for a Tier 3 stock.
- * For Tier 3 stocks, Fmsy = F35% is the directed fishing capture/mortality rate
- * that results in an equilibrium population size that yields Bmsy. For Tier 3 stocks,
- * Bmsy = 0.35*B100, where B100 is unfished MMB (mature male biomass at time of mating).
- * NOTE: By setting XX to some number other than
+ * Calculate directed fishery capture rate, Fmsy, that results in 
+ * equilibrium (longterm) MMB = Bmsy. For a Tier 3 stock, Fmsy and 
+ * Bmsy are given by SPR-based proxies F35% nd B35%, where F35% is
+ * the directed fishery capture rate that results in equilibrium
+ * MMB = B35% = 0.35*MMB.
  * 
- * @param R - recruitment level for calculations
+ * @param R - longterm (average) recruitment (male-only)
+ * @param cout - output stream for debug info
  * 
- * @return value for Fmsy = F35%.
+ * @return Fmsy
  */
-double Tier3_Calculator::calcFmsy(double R){
+double Tier3_Calculator::calcFmsy(double R, ostream& cout){
     if (debug) cout<<"starting Tier3_Calculator::calcFmsy(double R)"<<endl;
     //calculate unfished mmb
-    double mmb100 = calcB100(R);
+    double mmb100 = calcB100(R,cout);
     
     //From initial guess for FXX, iterate to improve FXX    
     double dF   = 0.0001;//"delta" F for derivative calculation
@@ -579,9 +659,9 @@ double Tier3_Calculator::calcFmsy(double R){
     double mmbp, mmb, mmbm, dMMBdF, XXp;
     int i=0;
     while ((i<20)&&(sfabs(dFXX)>0.00001)){
-        mmbp = calcEqMMBatF(R,FXX+dF);
-        mmb  = calcEqMMBatF(R,FXX);
-        mmbm = calcEqMMBatF(R,FXX-dF);
+        mmbp = calcEqMMBatF(R,FXX+dF,cout);
+        mmb  = calcEqMMBatF(R,FXX,cout);
+        mmbm = calcEqMMBatF(R,FXX-dF,cout);
         dMMBdF = 0.5*(mmbp-mmbm)/dF;//derivative of mmb wrto F
         XXp   = mmb/mmb100;           //ratio of mmb for current FXX relative to unfished 
         dFXX  = (XX*mmb100 - mmb)/dMMBdF;
@@ -599,34 +679,41 @@ double Tier3_Calculator::calcFmsy(double R){
 }
 
 /**
- * Calculate B100, which is MMB for an unfished stock.
+ * Calculate B100, which is equilibrium mature male biomass (MMB)
+ * for an unfished stock.
  * 
- * @param R - longterm (male) recruitment (units??)
+ * @param R - longterm (average) recruitment (male-only, millions)
+ * @param cout - output stream for debug info
  * 
- * @return value for B100 (units??)
+ * @return MMB for unfished population (1000's t)
  */
-double Tier3_Calculator::calcB100(double R){
+double Tier3_Calculator::calcB100(double R, ostream& cout){
     if (debug) cout<<"finished d3_array calcB100(double R)"<<endl;
-    //calculate unfished size distribution
-    d3_array n_msz = calcEqNatZF0(R);
+    //calculate July 1 unfished size distribution
+    d3_array n_msz = calcEqNatZF0(R,cout);
     
-    //calculate mature biomass
-    double B100 = pPI->calcMatureBiomass(n_msz);
+    //advance to mating in unfished population
+    d3_array nm_msz = pPI->applyNM(dtM,n_msz,cout);
+    
+    //calculate mature biomass at time of mating
+    double B100 = pPI->calcMatureBiomass(nm_msz,cout);
     if (debug) cout<<"finished double Tier3_Calculator::calcB100(double R)"<<endl;
     return B100;
 }
 
 /**
- * Calculate Bmsy, given longterm (male) recruitment.
- * For tier 3 stocks, Bmsy = 0.35*B100 where B100 is MMB for an unfished stock.
+ * Calculate equilibrium spawning biomass (as MMB) when directed fishery
+ * is fished at longterm capture rate Fmsy. For a Tier 3 stock, 
+ * Bmsy = B35% = 0.35*B100.
  * 
- * @param R - longterm (male) recruitment (units??)
+ * @param R - longterm (average) recruitment (male-only, millions)
+ * @param cout - output stream for debug info
  * 
- * @return value for Bmsy (units??)
+ * @return equilibrium MMB for population fished at Fmsy (1000's t)
  */
-double Tier3_Calculator::calcBmsy(double R){
+double Tier3_Calculator::calcBmsy(double R, ostream& cout){
     if (debug) cout<<"finished d3_array calcBmsy(double R)"<<endl;
-    double Bmsy = XX*calcB100(R);
+    double Bmsy = XX*calcB100(R,cout);
     if (debug) cout<<"finished double Tier3_Calculator::calcBmsy(double R)"<<endl;
     return Bmsy;
 }
@@ -640,19 +727,55 @@ double Tier3_Calculator::calcBmsy(double R){
  * 
  * @return equilibrium MMB 
  */
-double Tier3_Calculator::calcEqMMBatF(double R, double dirF){
+double Tier3_Calculator::calcEqMMBatF(double R, double dirF, ostream& cout){
     if (debug) cout<<"starting Tier3_Calculator::calcEqMMBatF(double R, double dirF)"<<endl;
-    //calculate equilibrium size distribution
-    d3_array n_msz = calcEqNatZFM(R,dirF);
+    //calculate equilibrium size distribution on July 1
+    d3_array n_msz = calcEqNatZFM(R,dirF,cout);
     
-    //calculate mmb (mature male biomass)
-    double mmb = pPI->calcMatureBiomass(n_msz);
+    //equilibrium MMB
+    double mmb = 0;//dummy value    
+    //advance to population to time of mating
+    if (dtF<=dtM){ //fisheries occur BEFORE molting/growth/maturity 
+        d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
+        d3_array n2_msz(1,nMSs,1,nSCs,1,nZBs);
+        d3_array n3_msz(1,nMSs,1,nSCs,1,nZBs);
+        if (debug) cout<<"dtF<=dtM"<<endl;
+        //apply natural mortality BEFORE fisheries
+        n1_msz = pPI->applyNM(dtF,n_msz, cout);
+        if (debug) {cout<<"n1_msz ="<<endl; wts::print(n1_msz,cout,1);}
+        //apply fisheries
+        n2_msz = pCI->applyFM(dirF, n1_msz, cout);
+        if (debug) {cout<<"n2_msz ="<<endl; wts::print(n2_msz,cout,1);}
+        //apply natural mortality after fisheries but before molting/growth
+        if (dtF==dtM){
+            if (debug) cout<<"dtF=dtM"<<endl;
+            n3_msz = n2_msz;
+        } else {
+            if (debug) cout<<"dtF<dtM"<<endl;
+            n3_msz = pPI->applyNM(dtM-dtF,n2_msz,cout);
+        }
+        if (debug) {cout<<"n3_msz ="<<endl; wts::print(n3_msz,cout,1);}
+        
+        //calculate mature biomass at mating
+        mmb = pPI->calcMatureBiomass(n3_msz,cout);
+    } else { //fisheries occur AFTER molting/growth/maturity 
+        d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
+        if (debug) cout<<"dtF>dtM"<<endl;
+        //apply natural mortality BEFORE molting/growth
+        n1_msz = pPI->applyNM(dtM,n_msz,cout);
+        if (debug) {cout<<"n1_msz ="<<endl; wts::print(n1_msz,cout,1);}
+        
+        //calculate mature biomass at mating
+        mmb = pPI->calcMatureBiomass(n1_msz,cout);
+    }
     if (debug) cout<<"finished Tier3_Calculator::calcEqMMBatF(double R, double dirF)"<<endl;
     return mmb;
 }
 ////////////////////////////////////////////////////////////////////////////////
 //PopProjector
 ////////////////////////////////////////////////////////////////////////////////
+/** flag to print debug info */
+int PopProjector::debug = 0;
 /**
  * Constructor
  * 
@@ -668,17 +791,18 @@ PopProjector::PopProjector(int npZBs, int npFsh){
  * Project sex-specific component of population ahead one year, WITHOUT recruitment.
  * Also calculates:
  *      spB - spawning biomass at mating time
- *      ct_msz - total fishing mortality (abundance)
- *      rm_fmsz - retained mortality, by fishery
- *      dm_fmsz - discard mortality, by fishery
+ *      pCI elements:
+ *          ct_msz - total fishing mortality (abundance)
+ *          rm_fmsz - retained mortality, by fishery
+ *          dm_fmsz - discard mortality, by fishery
  * 
  * @param n_msz - initial numbers-at-maturity state/shell condition/size
  * @param dirF - multiplier on fishing mortality rate in directed fishery
  * 
  * @return final numbers-at-maturity state/shell condition/size, WITHOUT recruitment
  */
-d3_array PopProjector::project(double dirF, d3_array& n_msz){
-    if (debug) cout<<"starting PopProjector::project()"<<endl;
+d3_array PopProjector::project(double dirF, d3_array& n_msz, ostream& cout){
+    if (debug) cout<<"starting PopProjector::project(dirF, n_msz)"<<endl;
     d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
     d3_array n2_msz(1,nMSs,1,nSCs,1,nZBs);
     d3_array n3_msz(1,nMSs,1,nSCs,1,nZBs);
@@ -686,43 +810,43 @@ d3_array PopProjector::project(double dirF, d3_array& n_msz){
     d3_array n5_msz(1,nMSs,1,nSCs,1,nZBs);
     if (dtF<=dtM){ //fisheries occur BEFORE molting/growth/maturity 
         //apply natural mortality BEFORE fisheries
-        n1_msz = pPI->applyNM(dtF, n_msz);
+        n1_msz = pPI->applyNM(dtF, n_msz,cout);
         //apply fisheries
-        n2_msz = pCI->applyFM(dirF, n1_msz);
+        n2_msz = pCI->applyFM(dirF, n1_msz,cout);
         //apply natural mortality after fisheries but before molting/growth
         if (dtF==dtM){
             n3_msz = n2_msz;
         } else {
-            n3_msz = pPI->applyNM(dtM-dtF, n2_msz);
+            n3_msz = pPI->applyNM(dtM-dtF, n2_msz,cout);
         }        
         //apply molting/growth
-        n4_msz = pPI->applyMG(n3_msz);
+        n4_msz = pPI->applyMG(n3_msz,cout);
         //apply natural mortality AFTER molting/growth
-        n5_msz = pPI->applyNM(1.0-dtM, n4_msz);
+        n5_msz = pPI->applyNM(1.0-dtM, n4_msz,cout);
         
         //calculate spawning biomass from pre-molting/growth abundance
-        spB = pPI->calcMatureBiomass(n3_msz);
+        matBio = pPI->calcMatureBiomass(n3_msz,cout);
     } else { //fisheries occur AFTER molting/growth/maturity 
         //apply natural mortality BEFORE molting/growth
-        n1_msz = pPI->applyNM(dtM, n_msz);        
+        n1_msz = pPI->applyNM(dtM, n_msz,cout);        
         //apply molting/growth
-        n2_msz = pPI->applyMG(n1_msz);
+        n2_msz = pPI->applyMG(n1_msz,cout);
         //apply natural mortality after molting/growth but before fisheries
         if (dtF==dtM){
             n3_msz = n2_msz;
         } else {
-            n3_msz = pPI->applyNM(dtF-dtM, n2_msz);
+            n3_msz = pPI->applyNM(dtF-dtM, n2_msz,cout);
         }
         //apply fisheries
-        n4_msz = pCI->applyFM(dirF, n3_msz);
+        n4_msz = pCI->applyFM(dirF, n3_msz,cout);
         //apply natural mortality AFTER fisheries
-        n5_msz = pPI->applyNM(1.0-dtF, n4_msz);
+        n5_msz = pPI->applyNM(1.0-dtF, n4_msz,cout);
         
         //calculate spawning biomass from pre-molting/growth abundance
-        spB = pPI->calcMatureBiomass(n1_msz);
+        matBio = pPI->calcMatureBiomass(n1_msz,cout);
     }
     
-    if (debug) cout<<"finished PopProjector::project()"<<endl;   
+    if (debug) cout<<"finished PopProjector::project(dirF, n_msz)"<<endl;   
     return n5_msz;
 }
 
@@ -733,32 +857,46 @@ d3_array PopProjector::project(double dirF, d3_array& n_msz){
  * 
  * @return MMB-at-mating
  */
-double PopProjector::calcMatureBiomass(double dirF, d3_array& n_msz){
-    if (debug) cout<<"starting PopProjector::calcMatureBiomass(dirF, n_msz)"<<endl;
-    d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
+double PopProjector::projectMatureBiomass(double dirF, d3_array& n_msz, ostream& cout){
+    if (debug) cout<<"starting PopProjector::projectMatureBiomass(dirF, n_msz)"<<endl;
+    if (debug) cout<<"dtF = "<<dtF<<"; dtM = "<<dtM<<endl;
     if (dtF<=dtM){ //fisheries occur BEFORE molting/growth/maturity 
+        if (debug) cout<<"dtF<=dtM"<<endl;
+        d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
+        d3_array n2_msz(1,nMSs,1,nSCs,1,nZBs);
+        d3_array n3_msz(1,nMSs,1,nSCs,1,nZBs);
         //apply natural mortality BEFORE fisheries
-        n1_msz = pPI->applyNM(dtF,n_msz);
+        n1_msz = pPI->applyNM(dtF,n_msz, cout);
+        if (debug) {cout<<"n1_msz ="<<endl; wts::print(n1_msz,cout,1);}
         //apply fisheries
-        d3_array n2_msz = pCI->applyFM(dirF, n1_msz);
+        n2_msz = pCI->applyFM(dirF, n1_msz, cout);
+        if (debug) {cout<<"n2_msz ="<<endl; wts::print(n2_msz,cout,1);}
         //apply natural mortality after fisheries but before molting/growth
-        d3_array n3_msz;
         if (dtF==dtM){
+            if (debug) cout<<"dtF=dtM"<<endl;
             n3_msz = n2_msz;
         } else {
-            n3_msz = pPI->applyNM(dtM-dtF,n2_msz);
+            if (debug) cout<<"dtF<dtM"<<endl;
+            n3_msz = pPI->applyNM(dtM-dtF,n2_msz,cout);
         }
+        if (debug) {cout<<"n3_msz ="<<endl; wts::print(n3_msz,cout,1);}
         
         //calculate mature biomass at mating
-        spB = pPI->calcMatureBiomass(n3_msz);
+        matBio = pPI->calcMatureBiomass(n3_msz,cout);
     } else { //fisheries occur AFTER molting/growth/maturity 
+        if (debug) cout<<"dtF>dtM"<<endl;
+        d3_array n1_msz(1,nMSs,1,nSCs,1,nZBs);
         //apply natural mortality BEFORE molting/growth
-        n1_msz = pPI->applyNM(dtM,n_msz);
+        n1_msz = pPI->applyNM(dtM,n_msz,cout);
+        if (debug) {cout<<"n1_msz ="<<endl; wts::print(n1_msz,cout,1);}
         
         //calculate mature biomass at mating
-        spB = pPI->calcMatureBiomass(n1_msz);
+        matBio = pPI->calcMatureBiomass(n1_msz,cout);
     }
     
-    if (debug) cout<<"finished PopProjector::calcMatureBiomass(dirF, n_msz)"<<endl;   
-    return spB;
+    if (debug) {
+        cout<<"matBio = "<<matBio<<endl;
+        cout<<"finished PopProjector::projectMatureBiomass(dirF, n_msz)"<<endl;   
+    }
+    return matBio;
 }
