@@ -2,9 +2,14 @@ Makefile
 /build/
 /dist/
 /docs/
+TCSAM2015.cpp
+TCSAM2015.htp
 /nbproject/
 /nbproject/private/
 /test/input.RetrospectiveTest/
 /test/run.RetrospectiveTest/
 /test/run.Tanner2013/
 /test/run.fitSimDataTest/
+/test/input.PriorsTest/
+/test/input.Tanner2013/
+/test/input.Tanner2014/
