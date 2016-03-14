@@ -1,3 +1,4 @@
+#include <limits>
 #include <admodel.h>
 #include <wtsADMB.hpp>
 #include "ModelConstants.hpp"
