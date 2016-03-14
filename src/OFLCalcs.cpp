@@ -1,5 +1,5 @@
 #include <admodel.h>
-#include "wtsADMB.hpp"
+#include <wtsADMB.hpp>
 #include "ModelConstants.hpp"
 #include "ModelConfiguration.hpp"
 #include "OFLCalcs.hpp"

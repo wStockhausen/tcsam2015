@@ -1067,7 +1067,7 @@ PRELIMINARY_CALCS_SECTION
         echoOFL<<"----Finished testing calcOFL()!"<<endl;
         echoOFL.close();
         cout<<"Finished testing OFL calculations!"<<endl;
-        std::exit(-1);
+        exit(-1);
 
         if (fitSimData){
             cout<<"creating sim data to fit in model"<<endl;
