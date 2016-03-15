@@ -67,11 +67,11 @@
     int showActiveParams = 0;    
     int debugRunModel    = 0;    
     int debugObjFun      = 0;
+    int debugOFL         = 0;
     
     int debugMCMC = 0;
     
     //note: consider using std::bitset to implement debug functionality
-    int dbgOFL = 0;
     int dbgCalcProcs = 10;
     int dbgObjFun = 20;
     int dbgNLLs   = 25;
@@ -156,6 +156,13 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-opModMode"))>-1) {
         opModMode=1;
         rpt::echo<<"#operating model mode turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
+    //debugOFL
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugOFL"))>-1) {
+        debugOFL=1;
+        rpt::echo<<"#debugModelConfig turned ON"<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
@@ -1121,13 +1128,15 @@ void model_parameters::preliminary_calculations(void)
             }
         }
         
-        cout<<"Test OFL calculations"<<endl;
-        ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
-        echoOFL<<"----Testing calcOFL()"<<endl;
-        calcOFL(mxYr,100,echoOFL);//updates ptrOFL
-        echoOFL<<"----Finished testing calcOFL()!"<<endl;
-        echoOFL.close();
-        cout<<"Finished testing OFL calculations!"<<endl;
+        if (debugOFL){
+            cout<<"Test OFL calculations"<<endl;
+            ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
+            echoOFL<<"----Testing calcOFL()"<<endl;
+            calcOFL(mxYr,debugOFL,echoOFL);//updates ptrOFL
+            echoOFL<<"----Finished testing calcOFL()!"<<endl;
+            echoOFL.close();
+            cout<<"Finished testing OFL calculations!"<<endl;
+        }
         if (fitSimData){
             cout<<"creating sim data to fit in model"<<endl;
             rpt::echo<<"creating sim data to fit in model"<<endl;
@@ -1657,7 +1666,7 @@ dvar3_array model_parameters::calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, d
 
 void model_parameters::calcOFL(int yr, int debug, ostream& cout)
 {
-    if (debug>=dbgOFL) {
+    if (debug) {
         cout<<endl<<endl<<"#------------------------"<<endl;
         cout<<"starting calcOFL(yr,debug,cout)"<<endl;
     }
@@ -1700,7 +1709,7 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
             }
             avgHM_f(f) /= 1.0*ny;
         }
-        if (debug>=dbgOFL) cout<<"avgHm_f = "<<avgHM_f<<endl;
+        if (debug) cout<<"avgHm_f = "<<avgHM_f<<endl;
         d5_array avgRFcn_fxmsz(1,nFsh,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//averaged retention function
         d5_array avgCapF_fxmsz(1,nFsh,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//averaged capture mortality
         avgRFcn_fxmsz.initialize();
@@ -1731,7 +1740,7 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
         pCIM->setRetentionFcns(MALE, avgRFcn_fxmsz);
         pCIM->setHandlingMortality(avgHM_f);
         double maxCapF = pCIM->findMaxTargetCaptureRate(cout);
-        if (debug>=dbgOFL) cout<<"maxCapF = "<<maxCapF<<endl;
+        if (debug) cout<<"maxCapF = "<<maxCapF<<endl;
         
         CatchInfo* pCIF = new CatchInfo(nZBs,nFsh);//female catch info
         pCIF->setCaptureRates(FEMALE, avgCapF_fxmsz);
@@ -1746,7 +1755,7 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
         dvector avgRec_x(1,nSXs);
         for (int x=1;x<=nSXs;x++) 
             avgRec_x(x)= value(mean(elem_prod(R_y(1982,mxYr),column(R_yx,x)(1982,mxYr))));
-        if (debug>=dbgOFL) {
+        if (debug) {
             cout<<"exp(mnLnR) = "<<exp(pLnR(1))<<endl;
             cout<<"R_y(1982,mxYr) = "<<R_y(1982,mxYr)<<endl;
             cout<<"R_yx((1982:mxYr,MALE) = "<<column(R_yx,MALE)(1982,mxYr)<<endl;
@@ -1764,7 +1773,7 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
         double Bmsy = pT3C->calcBmsy(avgRec_x(MALE),cout);
         double Fmsy = pT3C->calcFmsy(avgRec_x(MALE),cout);
         
-        if (debug>=dbgOFL){
+        if (debug){
             d3_array tmp0_msz = pT3C->calcEqNatZF0(avgRec_x(MALE),cout);
             double tmpMMB0 = pT3C->pPI->calcMatureBiomass(tmp0_msz,cout);
             d3_array tmp1_msz = pT3C->calcEqNatZFM(avgRec_x(MALE),Fmsy,cout);
@@ -1804,10 +1813,10 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
         
         //calculate Fofl
         double Fofl = pOC->calcFofl(Bmsy,Fmsy,n_xmsz(MALE),cout);
-        if (debug>=dbgOFL) cout<<"Fofl = "<<Fofl<<endl;
+        if (debug) cout<<"Fofl = "<<Fofl<<endl;
         //calculate OFL
         double OFL = pOC->calcOFL(Fofl,n_xmsz,cout);
-        if (debug>=dbgOFL) {
+        if (debug) {
             cout<<"OFL = "<<OFL<<endl;
             cout<<"retained catch:"<<tb<<pOC->ofl_fx(0,MALE)<<endl;
             for (int f=1;f<=nFsh;f++){
@@ -1816,7 +1825,7 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
         }
         //calculate projected ("current") MMB
         double prjMMB = pOC->calcPrjMMB(Fofl,n_xmsz(MALE),cout);
-        if (debug>=dbgOFL) cout<<"prjMMB = "<<prjMMB<<endl;
+        if (debug) cout<<"prjMMB = "<<prjMMB<<endl;
         
     //encapsulate results
     ptrOFL->B100 = B100;
@@ -1826,7 +1835,7 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
     ptrOFL->OFL  = OFL;
     ptrOFL->prjB = prjMMB;
     
-    if (debug>=dbgOFL) {
+    if (debug) {
         cout<<"finished calcOFL(yr,debug,cout)"<<endl;
         cout<<"#------------------------"<<endl<<endl<<endl;
     }
