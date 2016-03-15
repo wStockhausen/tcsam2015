@@ -1732,8 +1732,10 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
                 }
             }
         }
-        cout<<"avgCapF_fxmsz(1,MALE,MATURE,NEW_SHELL) = "<<avgCapF_fxmsz(1,MALE,MATURE,NEW_SHELL)<<endl;
-        cout<<"avgRFcn_fxmsz(1,MALE,MATURE,NEW_SHELL) = "<<avgRFcn_fxmsz(1,MALE,MATURE,NEW_SHELL)<<endl;
+        if (debug){
+            cout<<"avgCapF_fxmsz(1,MALE,MATURE,NEW_SHELL) = "<<avgCapF_fxmsz(1,MALE,MATURE,NEW_SHELL)<<endl;
+            cout<<"avgRFcn_fxmsz(1,MALE,MATURE,NEW_SHELL) = "<<avgRFcn_fxmsz(1,MALE,MATURE,NEW_SHELL)<<endl;
+        }
         
         CatchInfo* pCIM = new CatchInfo(nZBs,nFsh);//male catch info
         pCIM->setCaptureRates(MALE, avgCapF_fxmsz);
