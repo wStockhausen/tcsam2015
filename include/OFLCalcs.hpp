@@ -489,5 +489,45 @@ class OFL_Calculator{
         double calcHCR(double prjMMB, double Bmsy, double Fmsy, ostream& cout);
 };
 
+/**
+ * Convenience class encapsulating OFL results for one model (MCMC) instance
+ */
+class OFLResults {
+    public:
+        double OFL;     //total OFL (1000's t)
+        //dmatrix OFL_fx; //fishery mortality components to OFL (f=0 is retained catch, f>0 is total catch mortality)
+        double Fofl;    //F on directed fishery for males resulting in the OFL
+        double prjB;    //projected MMB for coming year when current population fished at Fofl.
+        double Fmsy;    //equilibrium F on directed fishery for males resulting in MSY
+        double Bmsy;    //equilibrium MMB when fished at Fmsy 
+        double B100;    //equilibrium MMB for unfished population
+        
+    public:
+        OFLResults(){}
+        ~OFLResults(){}
+        
+    public:
+        /**
+         * Write csv header for OFL results to output stream
+         *  
+         * @param os - output stream to write to
+         */
+        void writeHeaderToCSV(ostream& os);
+        /**
+         * Write values in csv format to output stream
+         * 
+         * @param os - output stream to write to
+         */
+        void writeToCSV(ostream& os);
+        /**
+         * Write values as R list to output stream
+         * 
+         * @param os - output stream to write to
+         * @param name - name for R list
+         * @param debug - flag to print debugging info
+         */
+        void writeToR(ostream& os, adstring name, int debug);
+};
+
 #endif	/* OFLCALCS_HPP */
 

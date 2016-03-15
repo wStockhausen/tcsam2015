@@ -4,7 +4,7 @@
     #include <admodel.h>
     #include "TCSAM.hpp"
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.02.29"; 
+    adstring modVer = "2016.03.15"; 
     
     time_t start,finish;
     
@@ -14,7 +14,8 @@
     ModelOptions*        ptrMOs;//ptr to model options object
     ModelDatasets*       ptrMDS;//ptr to model datasets object
     ModelDatasets*       ptrSimMDS;//ptr to simulated model datasets object
-    
+    OFLResults*          ptrOFL;   //pointer to OFL results object for MCMC calculations
+        
     //dimensions for R output
     adstring yDms;
     adstring xDms;
@@ -688,6 +689,7 @@ zbDms = ptrMC->dimZBsToR;//size bin midpoints
 zpDms = ptrMC->dimZPsToR;//size bin midpoints (alternative)
 zcDms = ptrMC->dimZCsToR;//size bin cuptoints
   hasF_fy.allocate(1,nFsh,mnYr,mxYr);
+ptrOFL = new OFLResults();
     rpt::echo<<"#finished DATA_SECTION"<<endl;
     cout<<"#finished DATA_SECTION"<<endl;
 }
@@ -1122,11 +1124,10 @@ void model_parameters::preliminary_calculations(void)
         cout<<"Test OFL calculations"<<endl;
         ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
         echoOFL<<"----Testing calcOFL()"<<endl;
-        calcOFL(mxYr,100,echoOFL);
+        calcOFL(mxYr,100,echoOFL);//updates ptrOFL
         echoOFL<<"----Finished testing calcOFL()!"<<endl;
         echoOFL.close();
         cout<<"Finished testing OFL calculations!"<<endl;
-        exit(-1);
         if (fitSimData){
             cout<<"creating sim data to fit in model"<<endl;
             rpt::echo<<"creating sim data to fit in model"<<endl;
@@ -1186,6 +1187,7 @@ void model_parameters::userfunction(void)
     
     if (mceval_phase()){
         updateMPI(0, cout);
+        calcOFL(mxYr,0,cout);//update ptrOFL
         writeMCMCtoR(mcmc);
     }
 }
@@ -1327,7 +1329,8 @@ void model_parameters::writeMCMCtoR(ofstream& mcmc)
         //write other quantities
         mcmc<<"R_y="; wts::writeToR(mcmc,value(R_y)); mcmc<<cc<<endl;
         ivector bnds = wts::getBounds(spB_yx);
-        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spB_yx)),xDms,yDms); //mcmc<<cc<<endl;
+        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spB_yx)),xDms,yDms); mcmc<<cc<<endl;
+        ptrOFL->writeToR(mcmc,"oflResults",0);//mcm<<cc<<endl;
         
     mcmc<<")"<<cc<<endl;
     mcmc.close();
@@ -1652,7 +1655,7 @@ dvar3_array model_parameters::calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, d
     return(n_msz);
 }
 
-double model_parameters::calcOFL(int yr, int debug, ostream& cout)
+void model_parameters::calcOFL(int yr, int debug, ostream& cout)
 {
     if (debug>=dbgOFL) {
         cout<<endl<<endl<<"#------------------------"<<endl;
@@ -1815,11 +1818,18 @@ double model_parameters::calcOFL(int yr, int debug, ostream& cout)
         double prjMMB = pOC->calcPrjMMB(Fofl,n_xmsz(MALE),cout);
         if (debug>=dbgOFL) cout<<"prjMMB = "<<prjMMB<<endl;
         
+    //encapsulate results
+    ptrOFL->B100 = B100;
+    ptrOFL->Bmsy = Bmsy;
+    ptrOFL->Fmsy = Fmsy;
+    ptrOFL->Fofl = Fofl;
+    ptrOFL->OFL  = OFL;
+    ptrOFL->prjB = prjMMB;
+    
     if (debug>=dbgOFL) {
         cout<<"finished calcOFL(yr,debug,cout)"<<endl;
         cout<<"#------------------------"<<endl<<endl<<endl;
     }
-    return(OFL);
         
 }
 
@@ -4221,8 +4231,11 @@ void model_parameters::ReportToR(ostream& os, int debug, ostream& cout)
         
         //simulated model data
         createSimData(debug, cout, 0, ptrSimMDS);//deterministic
-        ptrSimMDS->writeToR(os,"sim.data",0); 
-        os<<endl;
+        ptrSimMDS->writeToR(os,"sim.data",0); os<<","<<endl;
+        
+        //do OFL calculations
+        calcOFL(mxYr,0,cout);//updates ptrOFL
+        ptrOFL->writeToR(os,"oflResults",0);
     os<<")"<<endl;
     if (debug) cout<<"Finished ReportToR(...)"<<endl;
 }

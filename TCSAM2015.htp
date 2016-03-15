@@ -390,7 +390,7 @@ public:
  void setAllDevs(int debug, ostream& cout);
  void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout);
  dvar3_array calcEqNatZ(dvar_vector& R_z,dvar3_array& S1_msz, dvar_matrix& Th_sz, dvar3_array& T_szz, dvar3_array& S2_msz, int debug, ostream& cout);
- double calcOFL(int yr, int debug, ostream& cout);
+ void calcOFL(int yr, int debug, ostream& cout);
  void initPopDyMod(int debug, ostream& cout);
  void runPopDyMod(int debug, ostream& cout);
  void doSurveys(int y,int debug,ostream& cout);

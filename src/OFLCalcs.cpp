@@ -901,3 +901,35 @@ double PopProjector::projectMatureBiomass(double dirF, d3_array& n_msz, ostream&
     }
     return matBio;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+//OFLResults
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * Write csv header for OFL results to output stream.
+ *  
+ * @param os - output stream to write to
+ */
+void OFLResults::writeHeaderToCSV(ostream& os){
+    os<<"OFL,Fofl,prjB,Fmsy,Bmsy,B100";
+}
+
+/**
+ * Write values to output stream in csv format
+ * 
+ * @param cout - output stream to write to
+ */
+void OFLResults::writeToCSV(ostream& os){
+    os<<OFL<<tb<<Fofl<<tb<<prjB<<tb<<Fmsy<<tb<<Bmsy<<tb<<B100;
+}
+/**
+ * Write values as R list to file
+ * 
+ * @param os - output stream to write to
+ */
+void OFLResults::writeToR(ostream& os, adstring name, int debug){
+    os<<name<<"=list(OFL="<<OFL<<cc<<"Fofl="<<Fofl<<cc<<"prjB="<<prjB;
+    os<<cc<<"Fmsy="<<Fmsy<<cc<<"Bmsy="<<Bmsy<<cc<<"B100="<<B100;
+    //os<<cc<<"OFL_fx="; wts::writeToR(os,OFL_fx); 
+    os<<")";
+}
