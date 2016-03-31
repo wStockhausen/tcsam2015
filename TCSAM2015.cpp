@@ -51,6 +51,8 @@
     int iSimDataSeed = 0;
     random_number_generator rngSimData(-1);//random number generator for data simulation
     
+    int doOFL = 0;///<flag (0/1) to do OFL calculations
+    
     //debug flags
     int debugModelConfig     = 0;
     int debugModelDatasets   = 0;
@@ -159,10 +161,17 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
+    //calcOFL
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-calcOFL"))>-1) {
+        doOFL=1;
+        rpt::echo<<"#OFL calculations turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
     //debugOFL
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugOFL"))>-1) {
         debugOFL=1;
-        rpt::echo<<"#debugModelConfig turned ON"<<endl;
+        rpt::echo<<"#debugOFL turned ON"<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
@@ -1128,7 +1137,7 @@ void model_parameters::preliminary_calculations(void)
             }
         }
         
-        if (debugOFL){
+        if (doOFL&&debugOFL){
             cout<<"Test OFL calculations"<<endl;
             ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
             echoOFL<<"----Testing calcOFL()"<<endl;
@@ -1196,7 +1205,7 @@ void model_parameters::userfunction(void)
     
     if (mceval_phase()){
         updateMPI(0, cout);
-        calcOFL(mxYr,0,cout);//update ptrOFL
+        if (doOFL) calcOFL(mxYr,0,cout);//update ptrOFL
         writeMCMCtoR(mcmc);
     }
 }
@@ -1338,8 +1347,11 @@ void model_parameters::writeMCMCtoR(ofstream& mcmc)
         //write other quantities
         mcmc<<"R_y="; wts::writeToR(mcmc,value(R_y)); mcmc<<cc<<endl;
         ivector bnds = wts::getBounds(spB_yx);
-        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spB_yx)),xDms,yDms); mcmc<<cc<<endl;
-        ptrOFL->writeToR(mcmc,"oflResults",0);//mcm<<cc<<endl;
+        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spB_yx)),xDms,yDms); 
+        if (doOFL){
+            mcmc<<cc<<endl;
+            ptrOFL->writeToR(mcmc,"oflResults",0);//mcm<<cc<<endl;
+        }
         
     mcmc<<")"<<cc<<endl;
     mcmc.close();
@@ -4241,11 +4253,14 @@ void model_parameters::ReportToR(ostream& os, int debug, ostream& cout)
         
         //simulated model data
         createSimData(debug, cout, 0, ptrSimMDS);//deterministic
-        ptrSimMDS->writeToR(os,"sim.data",0); os<<","<<endl;
+        ptrSimMDS->writeToR(os,"sim.data",0); 
         
         //do OFL calculations
-        calcOFL(mxYr,debug,cout);//updates ptrOFL
-        ptrOFL->writeToR(os,"oflResults",0);
+        if (doOFL){
+            os<<","<<endl;
+            calcOFL(mxYr,debug,cout);//updates ptrOFL
+            ptrOFL->writeToR(os,"oflResults",0);
+        }
     os<<")"<<endl;
     if (debug) cout<<"Finished ReportToR(...)"<<endl;
 }

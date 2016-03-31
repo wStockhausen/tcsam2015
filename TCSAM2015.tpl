@@ -102,8 +102,12 @@
 //              3. added debugOFL as command line flag
 //  2016-03-30: 1. added csv output file of ALL parameters in last phase Report section
 //              2. updated version number. 
-//  2016-03-31: 1. added pLnDMM as NM offset for immature crab
+//  2016-03-31: 1. Revised NM calc.s so pLnM represents natural mortality rates
+//                  on immature male crab (was mature male crab, previously). pLnDMM
+//                  and pLnDMXM now reprsent corresponding offsets for mature, not
+//                  immature, crab.
 //              2. updated version number. 
+//              3. added command line flag (-calcOFL) to enable OFL calculations
 //
 // =============================================================================
 // =============================================================================
@@ -162,7 +166,8 @@ GLOBALS_SECTION
     int iSimDataSeed = 0;
     random_number_generator rngSimData(-1);//random number generator for data simulation
     
-
+    int doOFL = 0;///<flag (0/1) to do OFL calculations
+    
     //debug flags
     int debugModelConfig     = 0;
     int debugModelDatasets   = 0;
@@ -270,10 +275,17 @@ DATA_SECTION
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
+    //calcOFL
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-calcOFL"))>-1) {
+        doOFL=1;
+        rpt::echo<<"#OFL calculations turned ON"<<endl;
+        rpt::echo<<"#-------------------------------------------"<<endl;
+        flg = 1;
+    }
     //debugOFL
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-debugOFL"))>-1) {
         debugOFL=1;
-        rpt::echo<<"#debugModelConfig turned ON"<<endl;
+        rpt::echo<<"#debugOFL turned ON"<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
@@ -1078,7 +1090,7 @@ PRELIMINARY_CALCS_SECTION
             }
         }
         
-        if (debugOFL){
+        if (doOFL&&debugOFL){
             cout<<"Test OFL calculations"<<endl;
             ofstream echoOFL; echoOFL.open("calcOFL.txt", ios::trunc);
             echoOFL<<"----Testing calcOFL()"<<endl;
@@ -1152,7 +1164,7 @@ PROCEDURE_SECTION
     
     if (mceval_phase()){
         updateMPI(0, cout);
-        calcOFL(mxYr,0,cout);//update ptrOFL
+        if (doOFL) calcOFL(mxYr,0,cout);//update ptrOFL
         writeMCMCtoR(mcmc);
     }
 
@@ -1295,8 +1307,11 @@ FUNCTION void writeMCMCtoR(ofstream& mcmc)
         //write other quantities
         mcmc<<"R_y="; wts::writeToR(mcmc,value(R_y)); mcmc<<cc<<endl;
         ivector bnds = wts::getBounds(spB_yx);
-        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spB_yx)),xDms,yDms); mcmc<<cc<<endl;
-        ptrOFL->writeToR(mcmc,"oflResults",0);//mcm<<cc<<endl;
+        mcmc<<"MB_xy="; wts::writeToR(mcmc,trans(value(spB_yx)),xDms,yDms); 
+        if (doOFL){
+            mcmc<<cc<<endl;
+            ptrOFL->writeToR(mcmc,"oflResults",0);//mcm<<cc<<endl;
+        }
         
     mcmc<<")"<<cc<<endl;
     mcmc.close();
@@ -4345,11 +4360,14 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
         
         //simulated model data
         createSimData(debug, cout, 0, ptrSimMDS);//deterministic
-        ptrSimMDS->writeToR(os,"sim.data",0); os<<","<<endl;
+        ptrSimMDS->writeToR(os,"sim.data",0); 
         
         //do OFL calculations
-        calcOFL(mxYr,debug,cout);//updates ptrOFL
-        ptrOFL->writeToR(os,"oflResults",0);
+        if (doOFL){
+            os<<","<<endl;
+            calcOFL(mxYr,debug,cout);//updates ptrOFL
+            ptrOFL->writeToR(os,"oflResults",0);
+        }
 
     os<<")"<<endl;
     if (debug) cout<<"Finished ReportToR(...)"<<endl;
