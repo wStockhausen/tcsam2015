@@ -4,7 +4,7 @@
     #include <admodel.h>
     #include "TCSAM.hpp"
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.03.15"; 
+    adstring modVer = "2016.03.31"; 
     
     time_t start,finish;
     
@@ -1758,7 +1758,6 @@ void model_parameters::calcOFL(int yr, int debug, ostream& cout)
         for (int x=1;x<=nSXs;x++) 
             avgRec_x(x)= value(mean(elem_prod(R_y(1982,mxYr),column(R_yx,x)(1982,mxYr))));
         if (debug) {
-            cout<<"exp(mnLnR) = "<<exp(pLnR(1))<<endl;
             cout<<"R_y(1982,mxYr) = "<<R_y(1982,mxYr)<<endl;
             cout<<"R_yx((1982:mxYr,MALE) = "<<column(R_yx,MALE)(1982,mxYr)<<endl;
             cout<<"Average recruitment = "<<avgRec_x<<endl;
@@ -2183,17 +2182,17 @@ void model_parameters::calcNatMort(int debug, ostream& cout)
         lnM.initialize();
         ivector pids = ptrNM->getPCIDs(pc);
         int k=ptrNM->nIVs+1;//1st parameter variable column
-        //add in base (ln-scale) natural mortality (mature males)
+        //add in base (ln-scale) natural mortality (immature males)
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnM(pids[k]);}   k++;
         //add in main temporal offsets
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnDMT(pids[k]);} k++;
+        //add in mature offsets
+        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,MATURE) += pLnDMM(pids[k]);} k++;
         if (FEMALE<=nSXs){
             //add in female offset
             if (pids[k]) {lnM(FEMALE) += pLnDMX(pids[k]);}                      k++;
-            //add in immature offsets
-            if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,IMMATURE) += pLnDMM(pids[k]);} k++;
-            //add in offset immature females for stanza
-            if (pids[k]) {lnM(FEMALE,IMMATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
+            //add in offset mature females for stanza
+            if (pids[k]) {lnM(FEMALE,MATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
         }
         
         //convert from ln-scale to arithmetic scale
@@ -4245,7 +4244,7 @@ void model_parameters::ReportToR(ostream& os, int debug, ostream& cout)
         ptrSimMDS->writeToR(os,"sim.data",0); os<<","<<endl;
         
         //do OFL calculations
-        calcOFL(mxYr,0,cout);//updates ptrOFL
+        calcOFL(mxYr,debug,cout);//updates ptrOFL
         ptrOFL->writeToR(os,"oflResults",0);
     os<<")"<<endl;
     if (debug) cout<<"Finished ReportToR(...)"<<endl;
@@ -4325,9 +4324,13 @@ void model_parameters::report(const dvector& gradients)
         //write report as R file
         ReportToR(report,1,rpt::echo);
         //write parameter values to csv
-        ofstream os("TCSAM2015.final_params.active.csv", ios::trunc);
-        writeParameters(os,0,1);
-        os.close();
+        ofstream os1("TCSAM2015.final_params.active.csv", ios::trunc);
+        writeParameters(os1,0,1);
+        os1.close();
+        //write parameter values to csv
+        ofstream os2("TCSAM2015.final_params.all.csv", ios::trunc);
+        writeParameters(os2,0,0);
+        os2.close();
     }
     
 }

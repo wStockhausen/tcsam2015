@@ -100,6 +100,10 @@
 //  2016-03-15: 1. Model version incremented.
 //              2. OFL calculations now operational
 //              3. added debugOFL as command line flag
+//  2016-03-30: 1. added csv output file of ALL parameters in last phase Report section
+//              2. updated version number. 
+//  2016-03-31: 1. added pLnDMM as NM offset for immature crab
+//              2. updated version number. 
 //
 // =============================================================================
 // =============================================================================
@@ -111,7 +115,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.03.15"; 
+    adstring modVer = "2016.03.31"; 
     
     time_t start,finish;
     
@@ -831,11 +835,11 @@ PARAMETER_SECTION
     matrix devsLnR(1,npDevsLnR,mniDevsLnR,mxiDevsLnR+1);
    
     //natural mortality parameters
-    init_bounded_number_vector pLnM(1,npLnM,lbLnM,ubLnM,phsLnM);               //base
+    init_bounded_number_vector pLnM(1,npLnM,lbLnM,ubLnM,phsLnM);               //base (immature males)
     init_bounded_number_vector pLnDMT(1,npLnDMT,lbLnDMT,ubLnDMT,phsLnDMT);     //main temporal offsets
     init_bounded_number_vector pLnDMX(1,npLnDMX,lbLnDMX,ubLnDMX,phsLnDMX);     //female offsets
-    init_bounded_number_vector pLnDMM(1,npLnDMM,lbLnDMM,ubLnDMM,phsLnDMM);     //immature offsets
-    init_bounded_number_vector pLnDMXM(1,npLnDMXM,lbLnDMXM,ubLnDMXM,phsLnDMXM);//female-immature offsets
+    init_bounded_number_vector pLnDMM(1,npLnDMM,lbLnDMM,ubLnDMM,phsLnDMM);     //mature offsets
+    init_bounded_number_vector pLnDMXM(1,npLnDMXM,lbLnDMXM,ubLnDMXM,phsLnDMXM);//female-mature offsets
     
     //growth parameters
     init_bounded_number_vector pLnGrA(1,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA); //ln-scale mean growth coefficient "a"
@@ -1780,7 +1784,6 @@ FUNCTION void calcOFL(int yr, int debug, ostream& cout)
         for (int x=1;x<=nSXs;x++) 
             avgRec_x(x)= value(mean(elem_prod(R_y(1982,mxYr),column(R_yx,x)(1982,mxYr))));
         if (debug) {
-            cout<<"exp(mnLnR) = "<<exp(pLnR(1))<<endl;
             cout<<"R_y(1982,mxYr) = "<<R_y(1982,mxYr)<<endl;
             cout<<"R_yx((1982:mxYr,MALE) = "<<column(R_yx,MALE)(1982,mxYr)<<endl;
             cout<<"Average recruitment = "<<avgRec_x<<endl;
@@ -2217,17 +2220,17 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
         lnM.initialize();
         ivector pids = ptrNM->getPCIDs(pc);
         int k=ptrNM->nIVs+1;//1st parameter variable column
-        //add in base (ln-scale) natural mortality (mature males)
+        //add in base (ln-scale) natural mortality (immature males)
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnM(pids[k]);}   k++;
         //add in main temporal offsets
         if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnDMT(pids[k]);} k++;
+        //add in mature offsets
+        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,MATURE) += pLnDMM(pids[k]);} k++;
         if (FEMALE<=nSXs){
             //add in female offset
             if (pids[k]) {lnM(FEMALE) += pLnDMX(pids[k]);}                      k++;
-            //add in immature offsets
-            if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,IMMATURE) += pLnDMM(pids[k]);} k++;
-            //add in offset immature females for stanza
-            if (pids[k]) {lnM(FEMALE,IMMATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
+            //add in offset mature females for stanza
+            if (pids[k]) {lnM(FEMALE,MATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
         }
         
         //convert from ln-scale to arithmetic scale
@@ -4345,7 +4348,7 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
         ptrSimMDS->writeToR(os,"sim.data",0); os<<","<<endl;
         
         //do OFL calculations
-        calcOFL(mxYr,0,cout);//updates ptrOFL
+        calcOFL(mxYr,debug,cout);//updates ptrOFL
         ptrOFL->writeToR(os,"oflResults",0);
 
     os<<")"<<endl;
@@ -4419,9 +4422,13 @@ REPORT_SECTION
         //write report as R file
         ReportToR(report,1,rpt::echo);
         //write parameter values to csv
-        ofstream os("TCSAM2015.final_params.active.csv", ios::trunc);
-        writeParameters(os,0,1);
-        os.close();
+        ofstream os1("TCSAM2015.final_params.active.csv", ios::trunc);
+        writeParameters(os1,0,1);
+        os1.close();
+        //write parameter values to csv
+        ofstream os2("TCSAM2015.final_params.all.csv", ios::trunc);
+        writeParameters(os2,0,0);
+        os2.close();
     }
     
 // =============================================================================

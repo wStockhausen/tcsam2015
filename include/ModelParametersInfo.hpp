@@ -126,22 +126,51 @@ class RecruitmentInfo: public ParameterGroupInfo {
 *----------------------------------------------------------------------------*/
 class NaturalMortalityInfo : public ParameterGroupInfo {
     public:
+        /* flag to print debugging info (if >0)*/
         static int debug;
     protected:
+        /* parameter group name */
         static adstring NAME;//"natural_mortality"
     public:
-        double zRef;//reference size for size-specific mortality
+        /* reference size for size-specific mortality */
+        double zRef;
+        /* info for base (immature male) natural mortality rates */
         BoundedNumberVectorInfo* pLnM;
+        /* info for ln-scale temporal offset */
         BoundedNumberVectorInfo* pLnDMT;
+        /* info for ln-scale female offset */
         BoundedNumberVectorInfo* pLnDMX;
+        /* info for ln-scale mature offset */
         BoundedNumberVectorInfo* pLnDMM;
+        /* info for ln-scale mature female offset */
         BoundedNumberVectorInfo* pLnDMXM;
         
+        /**
+         * Class constructor.
+         */
         NaturalMortalityInfo();
+        /**
+         * Class destructor
+         */
         ~NaturalMortalityInfo();
         
+        /**
+         * Read from text file input stream.
+         * 
+         * @param is - input stream
+         */
         void read(cifstream & is);
+        /**
+         * Write to output stream in ADMB format
+         * @param os - output stream
+         */
         void write(std::ostream & os);
+        /**
+         * Write component info to output stream as
+         * R-format list.
+         * 
+         * @param os - output stream
+         */
         void writeToR(std::ostream & os);
 };
 
