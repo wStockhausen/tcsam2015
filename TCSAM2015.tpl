@@ -113,6 +113,7 @@
 //                  TCSAM2015.params.XXX.init.csv and TCSAM2015.params.XXX.final.csv,
 //                  where XXX = 'active' and 'all'.
 //              2. Added write to 'jitterInfo.csv' if jittering.
+//              3. Changed command line option "-seed" to "-iSeed"(similar to 2013 ver))
 //
 // =============================================================================
 // =============================================================================
@@ -166,8 +167,8 @@ GLOBALS_SECTION
     int fitSimData = 0;//flag to fit model to simulated data calculated in the PRELIMINARY_CALCs section
     
     int yRetro = 0; //number of years to decrement for retrospective model run
-    int iSeed =  0;//default random number generator seed
-    random_number_generator rng(-1);//random number generator
+    int iSeed = -1; //default random number generator seed
+    random_number_generator rng(iSeed);//random number generator
     int iSimDataSeed = 0;
     random_number_generator rngSimData(-1);//random number generator for data simulation
     
@@ -350,24 +351,18 @@ DATA_SECTION
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
-    //seed
-    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-seed"))>-1) {
-        if (on+1<argc) {
-            iSeed=atoi(ad_comm::argv[on+1]);
-        } else {
-            cout<<"-------------------------------------------"<<endl;
-            cout<<"Enter random number seed for jittering/resampling: ";
-            cin>>iSeed;
-        }
-        rng.reinitialize(iSeed);
-        rpt::echo<<"#Random number seed set to "<<iSeed<<endl;
-        rpt::echo<<"#-------------------------------------------"<<endl;
-        flg = 1;
-    }
     //jitter
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-jitter"))>-1) {
         jitter=1;
+        iSeed=(long)start;
+        if ((on=option_match(ad_comm::argc,ad_comm::argv,"-iSeed"))>-1) {
+            if (on+1<argc) {
+                iSeed=atoi(ad_comm::argv[on+1]);
+            }
+        } 
+        rng.reinitialize(iSeed);
         rpt::echo<<"#Jittering for initial parameter values turned ON "<<endl;
+        rpt::echo<<iSeed<<"  #iSeed"<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }

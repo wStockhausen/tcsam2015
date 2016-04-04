@@ -46,8 +46,8 @@
     int fitSimData = 0;//flag to fit model to simulated data calculated in the PRELIMINARY_CALCs section
     
     int yRetro = 0; //number of years to decrement for retrospective model run
-    int iSeed =  0;//default random number generator seed
-    random_number_generator rng(-1);//random number generator
+    int iSeed = -1; //default random number generator seed
+    random_number_generator rng(iSeed);//random number generator
     int iSimDataSeed = 0;
     random_number_generator rngSimData(-1);//random number generator for data simulation
     
@@ -231,24 +231,18 @@ model_data::model_data(int argc,char * argv[]) : ad_comm(argc,argv)
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
-    //seed
-    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-seed"))>-1) {
-        if (on+1<argc) {
-            iSeed=atoi(ad_comm::argv[on+1]);
-        } else {
-            cout<<"-------------------------------------------"<<endl;
-            cout<<"Enter random number seed for jittering/resampling: ";
-            cin>>iSeed;
-        }
-        rng.reinitialize(iSeed);
-        rpt::echo<<"#Random number seed set to "<<iSeed<<endl;
-        rpt::echo<<"#-------------------------------------------"<<endl;
-        flg = 1;
-    }
     //jitter
     if ((on=option_match(ad_comm::argc,ad_comm::argv,"-jitter"))>-1) {
         jitter=1;
+        iSeed=(long)start;
+        if ((on=option_match(ad_comm::argc,ad_comm::argv,"-iSeed"))>-1) {
+            if (on+1<argc) {
+                iSeed=atoi(ad_comm::argv[on+1]);
+            }
+        } 
+        rng.reinitialize(iSeed);
         rpt::echo<<"#Jittering for initial parameter values turned ON "<<endl;
+        rpt::echo<<iSeed<<"  #iSeed"<<endl;
         rpt::echo<<"#-------------------------------------------"<<endl;
         flg = 1;
     }
@@ -4355,6 +4349,11 @@ void model_parameters::report(const dvector& gradients)
         ofstream os2("TCSAM2015.params.active.final.csv", ios::trunc);
         writeParameters(os2,0,1);
         os2.close();
+    if (option_match(ad_comm::argc,ad_comm::argv,"-jitter")>-1) {
+        ofstream fs("jitterInfo.csv");
+        fs<<"seed"<<cc<<"objfun"<<endl;
+        fs<<iSeed<<cc<<objFun<<endl;
+    }
     }
     
 }
@@ -4375,11 +4374,6 @@ void model_parameters::final_calcs()
         mcmc.open((char*)(fnMCMC),ofstream::out|ofstream::app);
         mcmc<<"NULL)"<<endl;
         mcmc.close();
-    }
-    if (option_match(ad_comm::argc,ad_comm::argv,"-jitter")>-1) {
-        ofstream fs("jitterInfo.csv");
-        fs<<"seed"<<cc<<"objfun"<<endl;
-        fs<<iSeed<<cc<<objFun<<endl;
     }
     
     long hour,minute,second;
