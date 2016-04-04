@@ -1074,6 +1074,15 @@ void model_parameters::preliminary_calculations(void)
     {cout<<"writing parameters info to R"<<endl;
      ofstream echo1; echo1.open("ModelParametersInfo.R", ios::trunc);
      ptrMPI->writeToR(echo1);
+     echo1.close();
+     
+    //write initial parameter values to csv
+    ofstream os1("TCSAM2015.params.all.init.csv", ios::trunc);
+    writeParameters(os1,0,0);//all parameters
+    os1.close();
+    ofstream os2("TCSAM2015.params.active.init.csv", ios::trunc);
+    writeParameters(os2,0,1);//only parameters that will be active (i.e., phase>0)
+    os2.close();
     }
     
     //calculate average effort for fisheries over specified time periods
@@ -4339,12 +4348,12 @@ void model_parameters::report(const dvector& gradients)
         //write report as R file
         ReportToR(report,1,rpt::echo);
         //write parameter values to csv
-        ofstream os1("TCSAM2015.final_params.active.csv", ios::trunc);
-        writeParameters(os1,0,1);
+        ofstream os1("TCSAM2015.params.all.final.csv", ios::trunc);
+        writeParameters(os1,0,0);
         os1.close();
         //write parameter values to csv
-        ofstream os2("TCSAM2015.final_params.all.csv", ios::trunc);
-        writeParameters(os2,0,0);
+        ofstream os2("TCSAM2015.params.active.final.csv", ios::trunc);
+        writeParameters(os2,0,1);
         os2.close();
     }
     
@@ -4366,6 +4375,11 @@ void model_parameters::final_calcs()
         mcmc.open((char*)(fnMCMC),ofstream::out|ofstream::app);
         mcmc<<"NULL)"<<endl;
         mcmc.close();
+    }
+    if (option_match(ad_comm::argc,ad_comm::argv,"-jitter")>-1) {
+        ofstream fs("jitterInfo.csv");
+        fs<<"seed"<<cc<<"objfun"<<endl;
+        fs<<iSeed<<cc<<objFun<<endl;
     }
     
     long hour,minute,second;

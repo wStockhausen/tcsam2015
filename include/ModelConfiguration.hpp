@@ -123,10 +123,14 @@
         double cvFDevsPen;              //penalty for F-devs
         int phsDecrFDevsPen;            //phase to start decreasing fpenCV
         int phsZeroFDevsPen;            //phase at which to turn off penalties on F-devs
-        double wgtLastDevsPen;          //penalty for last dev in each devs vector
-        int phsLastDevsPen;             //phase to start the penalty on the last devs
-        double wgtSmthLgtPrMat;      //penalty on maturity ogive smoothness
-        double wgtNonDecLgtPrMat;    //penalty on maturity ogive non-decreasing
+        /* penalty for last dev in each devs vector */
+        double wgtLastDevsPen;          
+        /* phase to start the penalty on the last devs */
+        int phsLastDevsPen;             
+        /* penalty on maturity ogive smoothness */
+        double wgtSmthLgtPrMat;      
+        /* penalty on maturity non-decreasing maturity parameters */
+        double wgtNonDecLgtPrMat;    
 
     public:
         ModelOptions(ModelConfiguration& mc);

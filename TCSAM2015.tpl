@@ -108,6 +108,11 @@
 //                  immature, crab.
 //              2. updated version number. 
 //              3. added command line flag (-calcOFL) to enable OFL calculations
+//              4. now writing initial parameter values to csv file (TCSAM2015.init_params.csv)
+//  2016-04-04: 1. writing 2 sets of initial, final parameter values to csv files as
+//                  TCSAM2015.params.XXX.init.csv and TCSAM2015.params.XXX.final.csv,
+//                  where XXX = 'active' and 'all'.
+//              2. Added write to 'jitterInfo.csv' if jittering.
 //
 // =============================================================================
 // =============================================================================
@@ -1022,6 +1027,15 @@ PRELIMINARY_CALCS_SECTION
     {cout<<"writing parameters info to R"<<endl;
      ofstream echo1; echo1.open("ModelParametersInfo.R", ios::trunc);
      ptrMPI->writeToR(echo1);
+     echo1.close();
+     
+    //write initial parameter values to csv
+    ofstream os1("TCSAM2015.params.all.init.csv", ios::trunc);
+    writeParameters(os1,0,0);//all parameters
+    os1.close();
+    ofstream os2("TCSAM2015.params.active.init.csv", ios::trunc);
+    writeParameters(os2,0,1);//only parameters that will be active (i.e., phase>0)
+    os2.close();
     }
     
     //calculate average effort for fisheries over specified time periods
@@ -4440,13 +4454,19 @@ REPORT_SECTION
         //write report as R file
         ReportToR(report,1,rpt::echo);
         //write parameter values to csv
-        ofstream os1("TCSAM2015.final_params.active.csv", ios::trunc);
-        writeParameters(os1,0,1);
+        ofstream os1("TCSAM2015.params.all.final.csv", ios::trunc);
+        writeParameters(os1,0,0);
         os1.close();
         //write parameter values to csv
-        ofstream os2("TCSAM2015.final_params.all.csv", ios::trunc);
-        writeParameters(os2,0,0);
+        ofstream os2("TCSAM2015.params.active.final.csv", ios::trunc);
+        writeParameters(os2,0,1);
         os2.close();
+
+    if (option_match(ad_comm::argc,ad_comm::argv,"-jitter")>-1) {
+        ofstream fs("jitterInfo.csv");
+        fs<<"seed"<<cc<<"objfun"<<endl;
+        fs<<iSeed<<cc<<objFun<<endl;
+    }
     }
     
 // =============================================================================
@@ -4468,7 +4488,6 @@ FINAL_SECTION
         mcmc<<"NULL)"<<endl;
         mcmc.close();
     }
-
     
     long hour,minute,second;
     double elapsed_time;
