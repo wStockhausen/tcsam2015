@@ -114,6 +114,9 @@
 //                  where XXX = 'active' and 'all'.
 //              2. Added write to 'jitterInfo.csv' if jittering.
 //              3. Changed command line option "-seed" to "-iSeed"(similar to 2013 ver))
+//  2016-04-05: 1. Changed exp() to mfexp().
+//              2. Incremented version to 2016.04.05.
+//              3. Increased convergence criteria strictness in phases 5+
 //
 // =============================================================================
 // =============================================================================
@@ -125,7 +128,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.03.31"; 
+    adstring modVer = "2016.04.05"; 
     
     time_t start,finish;
     
@@ -1624,7 +1627,7 @@ FUNCTION void setAllDevs(int debug, ostream& cout)
 
 
 //-------------------------------------------------------------------------------------
-//calculate equilibrium size distribution for unexploited population
+//calculate equilibrium size distribution for unmfexploited population
 FUNCTION void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout)
     if (debug>=dbgPopDy) cout<<"starting dvar calcEqNatZF100()"<<endl;
 
@@ -1640,8 +1643,8 @@ FUNCTION void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout)
             Th_sz(s) = prMat_yxz(yr,x); //pr(molt to maturity|pre-molt size, molt)
             for (int z=1;z<=nZBs;z++) T_szz(s,z) = prGr_yxszz(yr,x,s,z);//growth matrices
             for (int m=1;m<=nMSs;m++){ 
-                S1_msz(m,s) = exp(-M_yxmsz(yr,x,m,s)*dtM_y(yr));      //survival until molting/growth/mating
-                S2_msz(m,s) = exp(-M_yxmsz(yr,x,m,s)*(1.0-dtM_y(yr)));//survival after molting/growth/mating
+                S1_msz(m,s) = mfexp(-M_yxmsz(yr,x,m,s)*dtM_y(yr));      //survival until molting/growth/mating
+                S2_msz(m,s) = mfexp(-M_yxmsz(yr,x,m,s)*(1.0-dtM_y(yr)));//survival after molting/growth/mating
             }//m
         }//s
         n_xmsz(x) = calcEqNatZ(R_z, S1_msz, Th_sz, T_szz, S2_msz, debug, cout);
@@ -2052,7 +2055,7 @@ FUNCTION dvar4_array applyNatMort(dvar4_array& n0_xmsz, int y, double dt, int de
     for (int x=1;x<=nSXs;x++){
         for (int m=1;m<=nMSs;m++){
             for (int s=1;s<=nSCs;s++){
-                n1_xmsz(x,m,s) = elem_prod(exp(-M_yxmsz(y,x,m,s)*dt),n0_xmsz(x,m,s));//survivors
+                n1_xmsz(x,m,s) = elem_prod(mfexp(-M_yxmsz(y,x,m,s)*dt),n0_xmsz(x,m,s));//survivors
                 nmN_yxmsz(y,x,m,s) += n0_xmsz(x,m,s)-n1_xmsz(x,m,s); //natural mortality
                 tmN_yxmsz(y,x,m,s) += n0_xmsz(x,m,s)-n1_xmsz(x,m,s); //natural mortality
             }
@@ -2076,7 +2079,7 @@ FUNCTION dvar4_array applyFshMort(dvar4_array& n0_xmsz, int y, int debug, ostrea
             for (int s=1;s<=nSCs;s++){
                 tmF_yxmsz(y,x,m,s) = 0.0;//total fishing mortality rate
                 for (int f=1;f<=nFsh;f++) tmF_yxmsz(y,x,m,s) += rmF_fyxmsz(f,y,x,m,s)+dmF_fyxmsz(f,y,x,m,s);
-                n1_xmsz(x,m,s) = elem_prod(exp(-tmF_yxmsz(y,x,m,s)),n0_xmsz(x,m,s));//numbers surviving all fisheries
+                n1_xmsz(x,m,s) = elem_prod(mfexp(-tmF_yxmsz(y,x,m,s)),n0_xmsz(x,m,s));//numbers surviving all fisheries
                 tm_z = n0_xmsz(x,m,s)-n1_xmsz(x,m,s);  //numbers killed by all fisheries
                 tmN_yxmsz(y,x,m,s) += tm_z;            //add in numbers killed by all fisheries to total killed
                 
@@ -2159,8 +2162,8 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
         dvariable varLnR;//ln-scale variance in recruitment
         dvar_vector dvsLnR;
         ivector idxDevsLnR;
-        varLnR = log(1.0+exp(2.0*lnRCV));//ln-scale variance
-        mnR    = exp(mnLnR+varLnR/2.0);  //mean recruitment
+        varLnR = log(1.0+mfexp(2.0*lnRCV));//ln-scale variance
+        mnR    = mfexp(mnLnR+varLnR/2.0);  //mean recruitment
         if (useDevs) {
             dvsLnR     = devsLnR(useDevs);
             idxDevsLnR = idxsDevsLnR(useDevs);
@@ -2171,8 +2174,8 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
             }
         }
         
-        Rx_c(pc) = 1.0/(1.0+exp(-lgtRX));
-        R_cz(pc) = elem_prod(pow(dzs,exp(lnRa-lnRb)-1.0),exp(-dzs/exp(lnRb)));
+        Rx_c(pc) = 1.0/(1.0+mfexp(-lgtRX));
+        R_cz(pc) = elem_prod(pow(dzs,mfexp(lnRa-lnRb)-1.0),mfexp(-dzs/mfexp(lnRb)));
         R_cz(pc) /= sum(R_cz(pc));//normalize to sum to 1
 
         imatrix idxs = ptrRI->getModelIndices(pc);
@@ -2182,7 +2185,7 @@ FUNCTION void calcRecruitment(int debug, ostream& cout)
             if ((mnYr<=y)&&(y<=mxYr)){
                 if (debug>dbgCalcProcs+10) cout<<"y,i = "<<y<<tb<<idxDevsLnR(y)<<endl;
                 if (useDevs){
-                    R_y(y) = exp(mnLnR+dvsLnR[idxDevsLnR[y]]);
+                    R_y(y) = mfexp(mnLnR+dvsLnR[idxDevsLnR[y]]);
                 } else {
                     R_y(y) = mnR;
                 }
@@ -2258,7 +2261,7 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
         }
         
         //convert from ln-scale to arithmetic scale
-        M_cxm(pc) = exp(lnM);
+        M_cxm(pc) = mfexp(lnM);
         if (debug>dbgCalcProcs){
             cout<<"pc: "<<pc<<tb<<"lnM:"<<endl<<lnM<<endl;
             cout<<"pc: "<<pc<<tb<<"M_xm:"<<endl<<M_cxm(pc)<<endl;
@@ -2314,7 +2317,7 @@ FUNCTION void calcMaturity(int debug, ostream& cout)
         }
 
         prMat_cz(pc) = 1.0;//default is 1
-        prMat_cz(pc)(vmn,vmx) = 1.0/(1.0+exp(-lgtPrMat));
+        prMat_cz(pc)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrMat));
         if (debug>dbgCalcProcs){
             cout<<"pc = "<<pc<<". mn = "<<vmn<<", mx = "<<vmx<<endl;
             cout<<"prMat = "<<prMat_cz(pc)<<endl;
@@ -2366,16 +2369,16 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
     for (int pc=1;pc<=ptrGrI->nPCs;pc++){
         ivector pids = ptrGrI->getPCIDs(pc);
         int k=ptrGrI->nIVs+1;//1st parameter column
-        grA = exp(pLnGrA(pids[k])); k++; //"a" coefficient for mean growth
-        grB = exp(pLnGrB(pids[k])); k++; //"b" coefficient for mean growth
-        grBeta = exp(pLnGrBeta(pids[k])); k++; //shape factor for gamma function growth transition
+        grA = mfexp(pLnGrA(pids[k])); k++; //"a" coefficient for mean growth
+        grB = mfexp(pLnGrB(pids[k])); k++; //"b" coefficient for mean growth
+        grBeta = mfexp(pLnGrBeta(pids[k])); k++; //shape factor for gamma function growth transition
         if (debug>dbgCalcProcs){
             cout<<"pc: "<<pc<<tb<<"grA:"<<tb<<grA<<". grB:"<<tb<<grB<<". grBeta:"<<grBeta<<endl;
         }
         
         //compute growth transition matrix for this pc
         prGr_zz.initialize();
-        dvar_vector mnZ = exp(grA)*pow(zBs,grB);//mean size after growth from zBs
+        dvar_vector mnZ = mfexp(grA)*pow(zBs,grB);//mean size after growth from zBs
         mnGrZ_cz(pc) = mnZ;
         if (optsGrowth==0) {
             //old style (TCSAM2013)
@@ -2383,7 +2386,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
             for (int z=1;z<nZBs;z++){//pre-molt growth bin
                 dvar_vector dZs =  zBs(z,nZBs) - zBs(z);//realized growth increments (note non-neg. growth only)
                 if (debug) cout<<"dZs: "<<dZs.indexmin()<<":"<<dZs.indexmax()<<endl;
-                dvar_vector prs = elem_prod(pow(dZs,alZ(z)-1.0),exp(-dZs/grBeta)); //pr(dZ|z)
+                dvar_vector prs = elem_prod(pow(dZs,alZ(z)-1.0),mfexp(-dZs/grBeta)); //pr(dZ|z)
                 if (debug) cout<<"prs: "<<prs.indexmin()<<":"<<prs.indexmax()<<endl;
                 if (prs.size()>10) prs(z+10,nZBs) = 0.0;//limit growth range TODO: this assumes bin size is 5 mm
                 if (debug) cout<<prs<<endl;
@@ -2669,7 +2672,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                     }
                 }
             } else {
-                C_xm = exp(lnC);
+                C_xm = mfexp(lnC);
             }
             
             k = ptrFsh->nIVs+ptrFsh->nPVs+1;//1st extra variable column
@@ -2700,7 +2703,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                     if (useDevs) {
                         idxDevsLnC_fy(f,y) = idxDevsLnC[y];
                         dvsLnC_fy(f,y)     = dvsLnC[idxDevsLnC[y]];
-                        C_xm = exp(lnC+dvsLnC[idxDevsLnC[y]]);//recalculate C_xm w/ devs
+                        C_xm = mfexp(lnC+dvsLnC[idxDevsLnC[y]]);//recalculate C_xm w/ devs
                     }
                     for (int m=1;m<=nMSs;m++){
                         for (int s=1;s<=nSCs;s++){
@@ -2743,7 +2746,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                                 for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = cpF_fyxms(f,y,x,m,s);
                                 avgFc_fxms(f,x,m,s) = sum(cpF_fxmsy(f,x,m,s))/(mxy-mny+1); break;
                             case 2:
-                                for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = 1.0-exp(-cpF_fyxms(f,y,x,m,s));
+                                for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = 1.0-mfexp(-cpF_fyxms(f,y,x,m,s));
                                 avgFc_fxms(f,x,m,s) = sum(cpF_fxmsy(f,x,m,s))/(mxy-mny+1); break;
                             case 3:
                                 for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = mean(cpF_fyxmsz(f,y,x,m,s));
@@ -2861,7 +2864,7 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
         idSel = pids[k];//selectivity function id
         
         //convert from ln-scale to arithmetic scale
-        Q_xm = exp(lnQ);
+        Q_xm = mfexp(lnQ);
         if (debug>dbgCalcProcs){
             cout<<"pc: "<<pc<<tb<<"lnQ:"<<endl<<lnQ<<endl;
             cout<<"pc: "<<pc<<tb<<"Q_xm:"<<endl<<Q_xm<<endl;
@@ -3004,7 +3007,7 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
         }
         double effCV = std::numeric_limits<double>::infinity();
         if (penWgt>0) {
-            effCV = sqrt(exp(1.0/penWgt)-1.0);
+            effCV = sqrt(mfexp(1.0/penWgt)-1.0);
             if (debug<0) rpt::echo<<"phase: "<<current_phase()<<"; penWgt = "<<penWgt<<"; effCV = "<<effCV<<endl;
         } else {
             if (debug<0) rpt::echo<<"phase: "<<current_phase()<<"; penWgt = "<<penWgt<<"; effCV = Inf"<<endl;
@@ -4270,7 +4273,7 @@ FUNCTION void ReportToR_ModelFits(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Finished ReportToR_ModelFits(...)"<<endl;
 
 //-------------------------------------------------------------------------------------
-//Update MPI for current parameter values (mainly for export))
+//Update MPI for current parameter values (mainly for mfexport))
 FUNCTION void updateMPI(int debug, ostream& cout)
     if (debug) cout<<"Starting updateMPI(...)"<<endl;
 //    NumberVectorInfo::debug=1;
@@ -4503,7 +4506,7 @@ RUNTIME_SECTION
 //one number for each phase, if more phases then uses the last number
   maximum_function_evaluations 5000,5000,5000,5000,5000,5000,10000
 //  convergence_criteria 0.1,0.1,.01,.001,.001,.001,1e-3,1e-4
-  convergence_criteria 0.5,0.1,.01,.001,1e-3,1e-4
+  convergence_criteria 0.5,0.1,.01,.001,1e-4,1e-5,1e-6
 
 // =============================================================================
 // =============================================================================
