@@ -117,6 +117,10 @@
 //  2016-04-05: 1. Changed exp() to mfexp().
 //              2. Incremented version to 2016.04.05.
 //              3. Increased convergence criteria strictness in phases 5+.
+//  2016-04-06: 1. Added testNaNs() function to identify nan's in calculations.
+//              2. Incremented version.
+//              3. Added "0" option to skip effort averaging, even if 
+//                  effort data is available. Added avg F/Eff to R output.
 //
 // =============================================================================
 // =============================================================================
@@ -128,7 +132,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.04.05"; 
+    adstring modVer = "2016.04.06"; 
     
     time_t start,finish;
     
@@ -825,6 +829,10 @@ DATA_SECTION
     //create OFL results object
     !!ptrOFL = new OFLResults();
     
+    //counter for PROCEDURE_SECTION calls
+    int ctrProcCalls;
+    !!ctrProcCalls = 0;
+    
  LOCAL_CALCS
     rpt::echo<<"#finished DATA_SECTION"<<endl;
     cout<<"#finished DATA_SECTION"<<endl;
@@ -1123,10 +1131,11 @@ PRELIMINARY_CALCS_SECTION
             }
         }
         
-        cout<<"Testing calcObjFun()"<<endl;
+        cout<<"--Testing calcObjFun()"<<endl;
         rpt::echo<<"Testing calcObjFun()"<<endl;
         calcObjFun(-1,rpt::echo);
-        rpt::echo<<"Testing calcObjFun() again"<<endl;
+        testNaNs(value(objFun),"testing calcObjFun() in PRELIMINARY_CALCS_SECTION");
+        rpt::echo<<"--Testing calcObjFun() again"<<endl;
         calcObjFun(dbgAll,rpt::echo);
         
         {cout<<"writing model results to R"<<endl;
@@ -1159,7 +1168,7 @@ PRELIMINARY_CALCS_SECTION
 // =============================================================================
 PROCEDURE_SECTION
 
-    objFun.initialize();
+    ctrProcCalls++;//increment procedure section calls counter
 
     runPopDyMod(0,rpt::echo);
 
@@ -1613,16 +1622,26 @@ FUNCTION void setInitVals(DevsVectorVectorInfo* pI, param_init_bounded_vector_ve
 //-------------------------------------------------------------------------------------
 FUNCTION void setAllDevs(int debug, ostream& cout)
     if (debug>=dbgAll) cout<<"starting setAllDevs()"<<endl;
+
+    if (debug>=dbgAll) cout<<"setDevs() for pLnR"<<endl;
     tcsam::setDevs(devsLnR, pDevsLnR,debug,cout);
 
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsS1"<<endl;
     tcsam::setDevs(devsS1, pDevsS1,debug,cout);
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsS2"<<endl;
     tcsam::setDevs(devsS2, pDevsS2,debug,cout);
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsS3"<<endl;
     tcsam::setDevs(devsS3, pDevsS3,debug,cout);
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsS4"<<endl;
     tcsam::setDevs(devsS4, pDevsS4,debug,cout);
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsS5"<<endl;
     tcsam::setDevs(devsS5, pDevsS5,debug,cout);
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsS6"<<endl;
     tcsam::setDevs(devsS6, pDevsS6,debug,cout);
     
+    if (debug>=dbgAll) cout<<"setDevs() for pDevsLnC"<<endl;
     tcsam::setDevs(devsLnC, pDevsLnC,debug,cout);
+    
     if (debug>=dbgAll) cout<<"finished setAllDevs()"<<endl;
 
 
@@ -2728,6 +2747,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
     //calculate ratio of average capture rate to effort
     if (debug>dbgCalcProcs) cout<<"calculating avgRatioFc2Eff"<<endl;
     dvariable tot;
+    avgRatioFc2Eff.initialize();
     for (int f=1;f<=nFsh;f++){//model fishery objects
         int fd = mapM2DFsh(f);//index of corresponding fishery data object
         if (ptrMDS->ppFsh[fd-1]->ptrEff){
@@ -2742,6 +2762,9 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                         cpF_fxmsy(f,x,m,s).deallocate();
                         cpF_fxmsy(f,x,m,s).allocate(mny,mxy);
                         switch (optsFcAvg(f)){
+                            case 0:
+                                //won't use effort to fill in
+                                avgFc_fxms(f,x,m,s) = -1;
                             case 1:
                                 for (int y=mny;y<=mxy;y++) cpF_fxmsy(f,x,m,s,y) = cpF_fyxms(f,y,x,m,s);
                                 avgFc_fxms(f,x,m,s) = sum(cpF_fxmsy(f,x,m,s))/(mxy-mny+1); break;
@@ -2756,7 +2779,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                                 cout<<"Aborting..."<<endl;
                                 exit(-1);
                         }
-                        avgRatioFc2Eff(f,x,m,s) = avgFc_fxms(f,x,m,s)/avgEff(f);
+                        if (optsFcAvg(f)) avgRatioFc2Eff(f,x,m,s) = avgFc_fxms(f,x,m,s)/avgEff(f);
                     }
                 }
             }
@@ -2795,6 +2818,8 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                         for (int s=1;s<=nSCs;s++){
                             //fully-selected capture rate
                             switch(optsFcAvg(f)) {
+                                case 0:
+                                    break; //do nothing
                                 case 1:
                                     cpF_fyxms(f,y,x,m,s) = avgRatioFc2Eff(f,x,m,s)*eff; break;
                                 case 2:
@@ -3027,6 +3052,8 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
         if (debug<0) cout<<tb<<tb<<"NULL)"<<endl;//end of penFDevs lists
     }
     
+    if (!debug) testNaNs(value(objFun),"in calcPenalties()");
+    
     if (debug>=dbgObjFun) cout<<"Finished calcPenalties()"<<endl;
 
 //-------------------------------------------------------------------------------------
@@ -3052,6 +3079,7 @@ FUNCTION void calcDevsPenalties(int debug, ostream& cout, double penWgt, param_i
                                                           "val="<<devs(i,idx)<<cc<<"minb="<<lower<<cc<<"maxb="<<upper<<cc<<"fPenL="<<fPenLower<<cc<<"fPenU="<<fPenUpper<<"),"<<endl;
         }
     }
+    if (!debug) testNaNs(value(objFun),"in calcDevsPenalties()");
     if (debug<0) cout<<tb<<tb<<"NULL)";//end of penalties list
     
 //-------------------------------------------------------------------------------------
@@ -3111,6 +3139,9 @@ FUNCTION void calcNLLs_Recruitment(int debug, ostream& cout)
     }//pc
     if (debug<0) cout<<tb<<")";//recDevs
     if (debug<0) cout<<")";
+    
+    if (!debug) testNaNs(value(objFun),"in calcNLLs_Recruitment()");
+    
     if (debug>=dbgObjFun) cout<<"Finished calcNLLs_Recruitment"<<endl;
 
 //-------------------------------------------------------------------------------------
@@ -3118,6 +3149,8 @@ FUNCTION void calcNLLs_Recruitment(int debug, ostream& cout)
 FUNCTION void calcObjFun(int debug, ostream& cout)
     if ((debug>=dbgObjFun)||(debug<0)) cout<<"Starting calcObjFun"<<endl;
 
+    objFun.initialize();
+    
     //objective function penalties
     calcPenalties(debug,cout);
 
@@ -3131,9 +3164,28 @@ FUNCTION void calcObjFun(int debug, ostream& cout)
     calcNLLs_Fisheries(debug,cout);
     calcNLLs_Surveys(debug,cout);
     
-    if (debug<0) cout<<"total objFun = "<<objFun<<endl;
-    if ((debug>=dbgObjFun)||(debug<0)) cout<<"Finished calcObjFun"<<endl<<endl;
+    if ((debug>=dbgObjFun)||(debug<0)){
+        cout<<"proc call "<<ctrProcCalls<<endl;
+        cout<<"total objFun = "<<objFun<<endl;
+        cout<<"Finished calcObjFun"<<endl<<endl;
+    }
     
+//-------------------------------------------------------------------------------------
+FUNCTION void testNaNs(double v, adstring str) 
+    if (isnan(v)){
+        cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+        cout<<"----NaN detected: "<<str<<"---"<<endl;
+        cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+        ofstream os("NaNReport.rep");
+        os<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+        os<<"----NaN detected: "<<str<<"---"<<endl;
+        os<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+        ReportToR_Params(os,0,cout);
+        ReportToR_ModelFits(os,-1,cout);
+        os.close();
+        exit(-1);
+    }
+
 //-------------------------------------------------------------------------------------
 //Calculate norm2 NLL contribution to objective function
 FUNCTION void calcNorm2NLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
@@ -3991,6 +4043,7 @@ FUNCTION void calcNLLs_Fisheries(int debug, ostream& cout)
         if (debug<0) cout<<"NULL),"<<endl;
     }//fisheries
     if (debug<0) cout<<"NULL)"<<endl;
+    if (!debug) testNaNs(value(objFun),"in calcNLLs_Fisheries()");
     if (debug>=dbgAll) cout<<"Finished calcNLLs_Fisheries()"<<endl;
 
 //-------------------------------------------------------------------------------------
@@ -4028,6 +4081,7 @@ FUNCTION void calcNLLs_Surveys(int debug, ostream& cout)
         if (debug<0) cout<<"NULL),"<<endl;
     }//surveys loop
     if (debug<0) cout<<"NULL)"<<endl;
+    if (!debug) testNaNs(value(objFun),"in calcNLLs_Surveys()");
     if (debug>=dbgAll) cout<<"Finished calcNLLs_Surveys()"<<endl;
 
 //-------------------------------------------------------------------------------------
@@ -4103,6 +4157,8 @@ FUNCTION void calcAllPriors(int debug, ostream& cout)
     if (debug<0) cout<<tb<<")"<<endl;
     
     if (debug<0) cout<<")"<<endl;
+    
+    if (!debug) testNaNs(value(objFun),"in calcAllPriors()");
     if (debug>=dbgPriors) cout<<"Finished calcAllPriors()"<<endl;
 
 //-------------------------------------------------------------------------------------
@@ -4165,8 +4221,9 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
                 os<<"optFcAvg="<<optsFcAvg(f)<<cc;
                 os<<"avgEff="<<avgEff(f)<<cc<<endl;
                 os<<"eff_y ="; wts::writeToR(os,eff_fy(f),yDmsp); os<<cc<<endl;
-                os<<"cpF_xmsy ="; wts::writeToR(os,wts::value(cpF_fxmsy(f)), xDms,mDms,sDms,yDmsp); os<<cc<<endl;
-                os<<"avgFc_xms ="; wts::writeToR(os,    value(avgFc_fxms(f)),xDms,mDms,sDms); os<<endl;
+                os<<"avgRatioFc2Eff ="; wts::writeToR(os,     value(avgRatioFc2Eff(f)),xDms,mDms,sDms); os<<cc<<endl;
+                os<<"cpF_xmsy =";       wts::writeToR(os,wts::value(cpF_fxmsy(f)),     xDms,mDms,sDms,yDmsp); os<<cc<<endl;
+                os<<"avgFc_xms =";      wts::writeToR(os,     value(avgFc_fxms(f)),    xDms,mDms,sDms); os<<endl;
             }
             os<<")"<<cc<<endl;
         }

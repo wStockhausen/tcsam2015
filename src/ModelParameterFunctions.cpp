@@ -155,8 +155,9 @@ void setDevs(dvar_matrix& devs, param_init_bounded_vector_vector& pDevs, int deb
         mxi = pDevs(v).indexmax();
         devs(v)(mni,mxi) = pDevs(v);
         devs(v,mxi+1) = -sum(devs(v)(mni,mxi));
+        if (debug>=(tcsam::dbgAll+1)) cout<<v<<":  "<<devs(v)<<endl;
     }
-    if (debug>=tcsam::dbgAll) {
+    if (debug>=(tcsam::dbgAll+1)) {
         std::cout<<"Enter 1 to continue >>";
         std::cin>>nv;
         if (nv<0) exit(-1);
