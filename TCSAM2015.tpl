@@ -116,7 +116,7 @@
 //              3. Changed command line option "-seed" to "-iSeed"(similar to 2013 ver))
 //  2016-04-05: 1. Changed exp() to mfexp().
 //              2. Incremented version to 2016.04.05.
-//              3. Increased convergence criteria strictness in phases 5+
+//              3. Increased convergence criteria strictness in phases 5+.
 //
 // =============================================================================
 // =============================================================================
