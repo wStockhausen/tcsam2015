@@ -121,6 +121,7 @@
 //              2. Incremented version.
 //              3. Added "0" option to skip effort averaging, even if 
 //                  effort data is available. Added avg F/Eff to R output.
+//  2016-04-11: 1. Added additional cout's to preliminary calcs.
 //
 // =============================================================================
 // =============================================================================
@@ -132,7 +133,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = "TCSAM2015";
-    adstring modVer = "2016.04.06"; 
+    adstring modVer = "2016.04.11"; 
     
     time_t start,finish;
     
@@ -1034,54 +1035,77 @@ PRELIMINARY_CALCS_SECTION
      ofstream echo1; echo1.open("ModelParametersInfo.R", ios::trunc);
      ptrMPI->writeToR(echo1);
      echo1.close();
+     cout<<"finished writing parameters info to R"<<endl;
      
-    //write initial parameter values to csv
-    ofstream os1("TCSAM2015.params.all.init.csv", ios::trunc);
-    writeParameters(os1,0,0);//all parameters
-    os1.close();
-    ofstream os2("TCSAM2015.params.active.init.csv", ios::trunc);
-    writeParameters(os2,0,1);//only parameters that will be active (i.e., phase>0)
-    os2.close();
+     //write initial parameter values to csv
+     cout<<"writing parameters info to csv"<<endl;
+     ofstream os1("TCSAM2015.params.all.init.csv", ios::trunc);
+     writeParameters(os1,0,0);//all parameters
+     os1.close();
+     ofstream os2("TCSAM2015.params.active.init.csv", ios::trunc);
+     writeParameters(os2,0,1);//only parameters that will be active (i.e., phase>0)
+     os2.close();
+     cout<<"finished writing parameters info to csv"<<endl;
     }
     
     //calculate average effort for fisheries over specified time periods
+    cout<<"calculating average effort"<<endl;
+    rpt::echo<<"calculating average effort"<<endl;
+    rpt::echo<<"mapD2MFsh = "<<mapD2MFsh<<endl;
     avgEff = 0.0;
     for (int fd=1;fd<=nFsh;fd++){//fishery data object
+        rpt::echo<<"fd = "<<fd<<endl;
         if (ptrMDS->ppFsh[fd-1]->ptrEff){
+            rpt::echo<<"fishery has effort"<<endl;
             IndexRange* pir = ptrMDS->ppFsh[fd-1]->ptrEff->ptrAvgIR;
             int fm = mapD2MFsh(fd);//index of corresponding model fishery
             int mny = max(mnYr,pir->getMin());
             int mxy = min(mxYr,pir->getMax());
+            rpt::echo<<"fm, mny, mxy = "<<fm<<tb<<pir->getMin()<<tb<<pir->getMax()<<endl;
+            rpt::echo<<"fm, mny, mxy = "<<fm<<tb<<mny<<tb<<mxy<<endl;
             eff_fy(fm).deallocate();
             eff_fy(fm).allocate(mny,mxy);
             eff_fy(fm) = ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(mny,mxy);
-            avgEff(fm) = mean(ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(mny,mxy));
+            rpt::echo<<"eff_fy(fm) = "<<eff_fy(fm)<<endl;
+            avgEff(fm) = mean(eff_fy(fm));
+            rpt::echo<<"avgEff(fm) = "<<avgEff(fm)<<endl;
         }
     }
-    if (debug) {
-        rpt::echo<<"eff_fy = "<<endl<<eff_fy<<endl;
-        rpt::echo<<"avgEff = "<<avgEff<<endl;
-    }
+    rpt::echo<<"eff_fy = "<<endl<<eff_fy<<endl;
+    rpt::echo<<"avgEff = "<<avgEff<<endl;
+    rpt::echo<<"finished calculating average effort"<<endl;
+    cout<<"finished calculating average effort"<<endl;
 
     if (option_match(ad_comm::argc,ad_comm::argv,"-mceval")<0) {
         cout<<"testing calcRecruitment():"<<endl;
+        rpt::echo<<"testing calcRecruitment():"<<endl;
         calcRecruitment(dbgCalcProcs+1,rpt::echo);
+        
+        cout<<"testing calcNatMort():"<<endl;
         rpt::echo<<"testing calcNatMort():"<<endl;
         calcNatMort(dbgCalcProcs+1,rpt::echo);
+        
+        cout<<"testing calcGrowth():"<<endl;
         rpt::echo<<"testing calcGrowth():"<<endl;
         calcGrowth(dbgCalcProcs+1,rpt::echo);
+        
+        cout<<"testing calcMaturity():"<<endl;
         rpt::echo<<"testing calcMaturity():"<<endl;
         calcMaturity(dbgCalcProcs+1,rpt::echo);
 
+        cout<<"testing calcSelectivities():"<<endl;
         rpt::echo<<"testing calcSelectivities():"<<endl;
         calcSelectivities(dbgCalcProcs+1,rpt::echo);
 
+        cout<<"testing calcFisheryFs():"<<endl;
         rpt::echo<<"testing calcFisheryFs():"<<endl;
         calcFisheryFs(dbgCalcProcs+1,rpt::echo);
 
+        cout<<"testing calcSurveyQs():"<<endl;
         rpt::echo<<"testing calcSurveyQs():"<<endl;
         calcSurveyQs(dbgCalcProcs+1,cout);
 
+        cout<<"testing runPopDyMod():"<<endl;
         rpt::echo<<"testing runPopDyMod():"<<endl;
         runPopDyMod(dbgCalcProcs+1,cout);
         rpt::echo<<"n_yxm:"<<endl;
