@@ -122,6 +122,11 @@
 //              3. Added "0" option to skip effort averaging, even if 
 //                  effort data is available. Added avg F/Eff to R output.
 //  2016-04-11: 1. Added additional cout's to preliminary calcs.
+//  2016-04-12: 1. Added additional output in testNaNs().
+//              2. Revised penalty function for non-decreasing maturity parameters.
+//                  posfun() was generating very large penalties.
+//              3. Added option to select penalty function in 2.
+//              4. Added VERSION strings to ModelConstants, ModelConfiguration, ModelOptions
 //
 // =============================================================================
 // =============================================================================
@@ -132,8 +137,8 @@ GLOBALS_SECTION
     #include <admodel.h>
     #include "TCSAM.hpp"
 
-    adstring model  = "TCSAM2015";
-    adstring modVer = "2016.04.11"; 
+    adstring model  = tcsam::MODEL;
+    adstring modVer = "2016.04.13"; 
     
     time_t start,finish;
     
@@ -789,10 +794,12 @@ DATA_SECTION
     !!optsFcAvg = ptrMOs->optsFcAvg;
     matrix eff_fy(1,nFsh,mnYr,mxYr);//effort for averaging over fishery-specific time periods
     vector avgEff(1,nFsh);//average effort over fishery-specific time periods
-    int optsGrowth;    //growth function option
-    !!optsGrowth = ptrMOs->optsGrowth;
-    int optsInitNatZ;  //initial n-at-z option
-    !!optsInitNatZ = ptrMOs->optsInitNatZ;
+    int optGrowth;    //growth function option
+    !!optGrowth = ptrMOs->optGrowth;
+    int optInitNatZ;  //initial n-at-z option
+    !!optInitNatZ = ptrMOs->optInitNatZ;
+    int optPenNonDecLgtPrMat;//option for penalty function on non-decreasing prMat parameters
+    !!optPenNonDecLgtPrMat = ptrMOs->optPenNonDecLgtPrMat;
 
     //number of parameter combinations for various processes
     int npcRec;
@@ -1958,16 +1965,16 @@ FUNCTION void initPopDyMod(int debug, ostream& cout)
     calcFisheryFs(debug,cout);     //calculate fishery F's
     calcSurveyQs(debug,cout);      //calculate survey Q's
     
-    if (optsInitNatZ==0){
+    if (optInitNatZ==0){
         //will build up population from recruitment (like TCSAM2013)
         //do nothing, because n_yxmsz has already been initialized to 0
-    } else if (optsInitNatZ==1){
+    } else if (optInitNatZ==1){
         //use equilibrium calculation to set initial n-at-z (like gmacs)
         //assumes no fishing occurs before model start
         calcEqNatZF100(initMnR,mnYr,debug,cout);//calculate n_xmsz
         n_yxmsz(mnYr) = n_xmsz;
     } else {
-        cout<<"Unrecognized option for initial n-at-z: "<<optsInitNatZ<<endl;
+        cout<<"Unrecognized option for initial n-at-z: "<<optInitNatZ<<endl;
         cout<<"Terminating!"<<endl;
         exit(-1);
     }
@@ -2423,7 +2430,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
         prGr_zz.initialize();
         dvar_vector mnZ = mfexp(grA)*pow(zBs,grB);//mean size after growth from zBs
         mnGrZ_cz(pc) = mnZ;
-        if (optsGrowth==0) {
+        if (optGrowth==0) {
             //old style (TCSAM2013)
             dvar_vector alZ = (mnZ-zBs)/grBeta;//scaled mean growth increment from zBs
             for (int z=1;z<nZBs;z++){//pre-molt growth bin
@@ -2438,7 +2445,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
                 prGr_zz(z)(z,nZBs) = prs;
             }
             prGr_zz(nZBs,nZBs) = 1.0; //no growth from max size
-        } else if (optsGrowth==1){
+        } else if (optGrowth==1){
             //use cumd_gamma function like gmacs
             dvar_vector sclMnZ = mnZ/grBeta;           //scaled mean growth increments
             dvar_vector sclZCs = ptrMC->zCutPts/grBeta;//scaled size bin cut points
@@ -2458,7 +2465,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
             }            
             prGr_zz(nZBs,nZBs) = 1.0; //no growth from max size
         } else {
-            cout<<"Unrecognized growth option: "<<optsGrowth<<endl;
+            cout<<"Unrecognized growth option: "<<optGrowth<<endl;
             cout<<"Terminating!"<<endl;
             exit(-1);
         }
@@ -2972,8 +2979,12 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     if (debug<0) cout<<tb<<tb<<"nondecreasing=list(";//start of non-decreasing penalties list
     for (int i=1;i<npLgtPrMat;i++){
         dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
-        for (int iv=v.indexmin();iv<=v.indexmax();iv++){
-            posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+        if (optPenNonDecLgtPrMat==0){
+            for (int iv=v.indexmin();iv<=v.indexmax();iv++){
+                posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+            } 
+        } else if (optPenNonDecLgtPrMat==1){
+            fPenNonDecLgtPrMat(i) = sum(mfexp(-10.0*v));
         }
         objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtNonDecLgtPrMat<<cc<<"pen="<<fPenNonDecLgtPrMat(i)<<cc<<"objfun="<<penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i)<<"),";
@@ -2981,8 +2992,12 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     {
         int i = npLgtPrMat;
         dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
-        for (int iv=v.indexmin();iv<=v.indexmax();iv++){
-            posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+        if (optPenNonDecLgtPrMat==0){
+            for (int iv=v.indexmin();iv<=v.indexmax();iv++){
+                posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
+            }
+        } else if (optPenNonDecLgtPrMat==1){
+            fPenNonDecLgtPrMat(i) = sum(mfexp(-10.0*v));
         }
         objFun += penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i);
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtNonDecLgtPrMat<<cc<<"pen="<<fPenNonDecLgtPrMat(i)<<cc<<"objfun="<<penWgtNonDecLgtPrMat*fPenNonDecLgtPrMat(i)<<")";
@@ -3204,8 +3219,13 @@ FUNCTION void testNaNs(double v, adstring str)
         os<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
         os<<"----NaN detected: "<<str<<"---"<<endl;
         os<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
-        ReportToR_Params(os,0,cout);
-        ReportToR_ModelFits(os,-1,cout);
+        updateMPI(0,cout);
+        os<<"nanRep=list("<<endl;
+        ReportToR_Params(os,0,cout);         os<<","<<endl;
+        ReportToR_ModelProcesses(os,0,cout); os<<","<<endl;
+        ReportToR_ModelResults(os,0,cout);   os<<","<<endl;
+        ReportToR_ModelFits(os,-1,cout);     os<<endl;
+        os<<")"<<endl;
         os.close();
         exit(-1);
     }
@@ -4354,7 +4374,7 @@ FUNCTION void ReportToR_ModelFits(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Finished ReportToR_ModelFits(...)"<<endl;
 
 //-------------------------------------------------------------------------------------
-//Update MPI for current parameter values (mainly for mfexport))
+//Update MPI for current parameter values (mainly for export))
 FUNCTION void updateMPI(int debug, ostream& cout)
     if (debug) cout<<"Starting updateMPI(...)"<<endl;
 //    NumberVectorInfo::debug=1;
