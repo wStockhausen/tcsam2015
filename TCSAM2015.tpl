@@ -126,7 +126,10 @@
 //              2. Revised penalty function for non-decreasing maturity parameters.
 //                  posfun() was generating very large penalties.
 //              3. Added option to select penalty function in 2.
-//              4. Added VERSION strings to ModelConstants, ModelConfiguration, ModelOptions
+//              4. Added VERSION strings to ModelConstants, ModelConfiguration, ModelOptions.
+//  2016-04-15: 1. Added calcNoneNLL functions to standardize output when NLL choice is NONE.
+//              2. Removed output of T_yxszz in ReportToR_ModelProcesses(). TODO: add option to output.
+//              3. Added ctrPrcCallsInPhase to track procedure calls w/in each phase.
 //
 // =============================================================================
 // =============================================================================
@@ -138,7 +141,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = tcsam::MODEL;
-    adstring modVer = "2016.04.13"; 
+    adstring modVer = "2016.04.15"; 
     
     time_t start,finish;
     
@@ -837,9 +840,11 @@ DATA_SECTION
     //create OFL results object
     !!ptrOFL = new OFLResults();
     
-    //counter for PROCEDURE_SECTION calls
-    int ctrProcCalls;
-    !!ctrProcCalls = 0;
+    //counters for PROCEDURE_SECTION calls
+    int ctrProcCalls;       //all calls
+    int ctrProcCallsInPhase;//within phase
+    !!ctrProcCalls        = 0;
+    !!ctrProcCallsInPhase = 0;
     
  LOCAL_CALCS
     rpt::echo<<"#finished DATA_SECTION"<<endl;
@@ -1199,7 +1204,8 @@ PRELIMINARY_CALCS_SECTION
 // =============================================================================
 PROCEDURE_SECTION
 
-    ctrProcCalls++;//increment procedure section calls counter
+    ctrProcCalls++;       //increment procedure section calls counter
+    ctrProcCallsInPhase++;//increment in-phase procedure section calls counter
 
     runPopDyMod(0,rpt::echo);
 
@@ -3204,8 +3210,9 @@ FUNCTION void calcObjFun(int debug, ostream& cout)
     calcNLLs_Surveys(debug,cout);
     
     if ((debug>=dbgObjFun)||(debug<0)){
-        cout<<"proc call "<<ctrProcCalls<<endl;
-        cout<<"total objFun = "<<objFun<<endl;
+        cout<<"proc call          = "<<ctrProcCalls<<endl;
+        cout<<"proc call in phase = "<<ctrProcCallsInPhase<<endl;
+        cout<<"total objFun       = "<<objFun<<endl;
         cout<<"Finished calcObjFun"<<endl<<endl;
     }
     
@@ -3216,11 +3223,11 @@ FUNCTION void testNaNs(double v, adstring str)
         cout<<"----NaN detected: "<<str<<"---"<<endl;
         cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
         ofstream os("NaNReport.rep");
-        os<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
-        os<<"----NaN detected: "<<str<<"---"<<endl;
-        os<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+        os<<"#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+        os<<"#----NaN detected: "<<str<<"---"<<endl;
+        os<<"#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
         updateMPI(0,cout);
-        os<<"nanRep=list("<<endl;
+        os<<"nanRep=list(phase="<<current_phase()<<",pcCtr="<<ctrProcCalls<<cc<<",pcCtrInPhs="<<ctrProcCallsInPhase<<cc<<endl;
         ReportToR_Params(os,0,cout);         os<<","<<endl;
         ReportToR_ModelProcesses(os,0,cout); os<<","<<endl;
         ReportToR_ModelResults(os,0,cout);   os<<","<<endl;
@@ -3321,6 +3328,17 @@ FUNCTION void calcLognormalNLL(dvar_vector& mod, dvector& obs, dvector& stdv, iv
    if (debug>=dbgAll) cout<<"Finished calcLognormalNLL()"<<endl;
     
 //-------------------------------------------------------------------------------------
+//Pass-through for no NLL contribution to objective function for aggregated catch
+FUNCTION void calcNoneNLL(dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
+    if (debug>=dbgAll) cout<<"Starting calcNoneNLL(agg catch)"<<endl;
+    if (debug<0){
+        adstring obsyrs = wts::to_qcsv(yrs);
+        adstring modyrs = str(mod.indexmin())+":"+str(mod.indexmax());
+        cout<<"list(nll.type='none',wgt="<<0<<cc<<"nll="<<0<<cc<<"objfun="<<0<<")";
+    }
+    if (debug>=dbgAll) cout<<"Finished calcNoneNLL(agg catch)"<<endl;
+    
+//-------------------------------------------------------------------------------------
 //Calculate multinomial NLL contribution to objective function
 FUNCTION void calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
     if (debug>=dbgAll) cout<<"Starting calcMultinomialNLL()"<<endl;
@@ -3344,10 +3362,20 @@ FUNCTION void calcMultinomialNLL(dvar_vector& mod, dvector& obs, double& ss, int
     if (debug>=dbgAll) cout<<"Finished calcMultinomialNLL()"<<endl;
  
 //-------------------------------------------------------------------------------------
+//Pass through for no NLL contribution to objective function for size comps
+FUNCTION void calcNoneNLL(dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
+    if (debug>=dbgAll) cout<<"Starting calcNoneNLL(size comps)"<<endl;
+    if (debug<0){
+        cout<<"list(nll.type='none',wgt="<<0.0<<cc<<"nll="<<0.0<<cc<<"objfun="<<0.0<<cc<<"ss="<<0<<cc<<"effN="<<0<<cout<<")";
+    }
+    if (debug>=dbgAll) cout<<"Finished calcNoneNLL(size comps)"<<endl;
+ 
+//-------------------------------------------------------------------------------------
 //Calculate time series contribution to objective function
 FUNCTION void calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& stdv, ivector& yrs, int debug, ostream& cout)
     switch (llType){
         case tcsam::LL_NONE:
+            calcNoneNLL(mod,obs,stdv,yrs,debug,cout);
             break;
         case tcsam::LL_LOGNORMAL:
             calcLognormalNLL(mod,obs,stdv,yrs,debug,cout);
@@ -3370,6 +3398,7 @@ FUNCTION void calcNLL(int llType, dvar_vector& mod, dvector& obs, dvector& stdv,
 FUNCTION void calcNLL(int llType, dvar_vector& mod, dvector& obs, double& ss, int debug, ostream& cout)
     switch (llType){
         case tcsam::LL_NONE:
+            calcNoneNLL(mod,obs,ss,debug,cout);
             break;
         case tcsam::LL_MULTINOMIAL:
             calcMultinomialNLL(mod,obs,ss,debug,cout);
@@ -4235,7 +4264,11 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
             os<<"mnZAM_cz   ="; wts::writeToR(os,value(mnGrZ_cz),adstring("pc=1:"+str(npcGr )),zbDms);       os<<cc<<endl;
             os<<"T_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
             os<<"mnZAM_yxsz =";  wts::writeToR(os,wts::value(mnGrZ_yxsz),yDms,xDms,sDms,zbDms);              os<<cc<<endl;
-            os<<"T_yxszz    =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms);        os<<endl;
+            if (0){//TDODO: develop option to output
+                os<<"T_yxszz    =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms);    os<<endl;
+            } else {
+                os<<"T_yxszz    =NULL"<<endl;
+            }
         os<<")"<<cc<<endl;
         os<<"R_list=list("<<endl;
             os<<"R_y  ="; wts::writeToR(os,value(R_y), yDms);                                os<<cc<<endl;
@@ -4573,6 +4606,7 @@ REPORT_SECTION
 BETWEEN_PHASES_SECTION
     rpt::echo<<endl<<endl<<"#---------------------"<<endl;
     rpt::echo<<"Starting phase "<<current_phase()<<" of "<<initial_params::max_number_phases<<endl;
+    ctrProcCallsInPhase=0;//reset in-phase counter
 
 // =============================================================================
 // =============================================================================
