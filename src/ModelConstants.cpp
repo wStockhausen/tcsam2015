@@ -213,6 +213,7 @@ int tcsam::getFitType(adstring s){
     if (s==STR_FIT_BY_X_SE) return FIT_BY_X_SE;
     if (s==STR_FIT_BY_XME)  return FIT_BY_XME;
     if (s==STR_FIT_BY_XM_SE) return FIT_BY_XM_SE;
+    if (s==STR_FIT_BY_X_MATONLY) return FIT_BY_X_MATONLY;
     std::cout<<"Unrecognized fit type '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -236,6 +237,7 @@ adstring tcsam::getFitType(int i){
     if (i==FIT_BY_X_SE) return STR_FIT_BY_X_SE;
     if (i==FIT_BY_XME)  return STR_FIT_BY_XME;
     if (i==FIT_BY_XM_SE) return STR_FIT_BY_XM_SE;
+    if (i==FIT_BY_X_MATONLY) return STR_FIT_BY_X_MATONLY;
     std::cout<<"Unrecognized fit type '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);

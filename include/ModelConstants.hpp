@@ -14,6 +14,7 @@
  * 20150417: revised STR_FIT_BY_ string values
  * 20150518: revised FIT_BY_ and STR_FIT_BY_ values
  * 20160413: added tcsam::VERSION string to indicate model version
+ * 20160424: added tcsam:FIT_BY_X_MATONLY to fit by sex for mature crab only
  */
 
 #pragma once
@@ -38,7 +39,7 @@ namespace tcsam{
     /* adstring indicating model name */
     const adstring MODEL = "TCSAM2015";
     /* adstring indicating model version */
-    const adstring VERSION = "2016.04.13";
+    const adstring VERSION = "2016.04.24";
     
     /* minimum debugging level that will print ALL debug info */
     const int dbgAll = 100;
@@ -116,6 +117,7 @@ namespace tcsam{
     const adstring STR_FIT_BY_X_SE = "BY_X_SE";
     const adstring STR_FIT_BY_XME  = "BY_XME";
     const adstring STR_FIT_BY_XM_SE = "BY_XM_SE";
+    const adstring STR_FIT_BY_X_MATONLY = "BY_X_MATONLY";
     const int FIT_NONE    = 0;
     const int FIT_BY_TOT  = 1;
     const int FIT_BY_X    = 2;
@@ -127,6 +129,7 @@ namespace tcsam{
     const int FIT_BY_X_SE = 8;
     const int FIT_BY_XME  = 9;
     const int FIT_BY_XM_SE = 10;
+    const int FIT_BY_X_MATONLY = 11;
     
     //likelihood types
     const adstring STR_LL_NONE        = "NONE";

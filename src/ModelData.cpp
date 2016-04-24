@@ -50,7 +50,7 @@ void AggregateCatchData::aggregateData(void){
         xxmn=1; xxmx=tcsam::ALL_SXs;
         mmmn=mmmx=tcsam::ALL_MSs;
         ssmn=ssmx=tcsam::ALL_SCs;
-    } else if ((optFit==tcsam::FIT_BY_XM)||(optFit==tcsam::FIT_BY_X_ME)||(optFit==tcsam::FIT_BY_XME)){
+    } else if ((optFit==tcsam::FIT_BY_XM)||(optFit==tcsam::FIT_BY_X_ME)||(optFit==tcsam::FIT_BY_XME)||(optFit==tcsam::FIT_BY_X_MATONLY)){
         //aggregate over shell condition
         xxmn=1; xxmx=tcsam::ALL_SXs;
         mmmn=1; mmmx=tcsam::ALL_MSs;
