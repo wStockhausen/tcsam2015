@@ -130,6 +130,14 @@
 //  2016-04-15: 1. Added calcNoneNLL functions to standardize output when NLL choice is NONE.
 //              2. Removed output of T_yxszz in ReportToR_ModelProcesses(). TODO: add option to output.
 //              3. Added ctrPrcCallsInPhase to track procedure calls w/in each phase.
+//  2016-04-22: 1. Incremented version.
+//              2. Recompiled to use logPDF_expnormal() function as priors for
+//                  growth parameters.
+//              3. revised calcNatMort() to correct error in sequence of adding
+//                  parameters to lnM.
+//  2016-04-23: 1. Incremented version.
+//              2. Added added more diagnostics to deal with exp(prevariable(nan)) problems,
+//                  which seem to be linked to asclogistic5095 parameterization.
 //
 // =============================================================================
 // =============================================================================
@@ -141,7 +149,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = tcsam::MODEL;
-    adstring modVer = "2016.04.15"; 
+    adstring modVer = "2016.04.23"; 
     
     time_t start,finish;
     
@@ -958,7 +966,7 @@ PARAMETER_SECTION
     
     //Selectivity (and retention) functions
     matrix sel_cz(1,npcSel,1,nZBs);            //all selectivity functions (fisheries and surveys) by parameter combination (no devs))
-    3darray sel_iyz(1,nSel,mnYr,mxYr+1,1,nZBs);//all selectivity functions (fisheries and surveys) by year
+    3darray sel_cyz(1,nSel,mnYr,mxYr+1,1,nZBs);//all selectivity functions (fisheries and surveys) by year
     
     //fishery-related quantities
     matrix dvsLnC_fy(1,nFsh,mnYr,mxYr);                      //matrix to capture lnC-devs
@@ -1206,10 +1214,16 @@ PROCEDURE_SECTION
 
     ctrProcCalls++;       //increment procedure section calls counter
     ctrProcCallsInPhase++;//increment in-phase procedure section calls counter
+    
+    int dbg = 0; //dbgAll;
+    if (dbg){
+        std::cout<<"---ctrProcCalls = "<<ctrProcCalls<<tb<<ctrProcCallsInPhase<<endl;
+        writeParameters(std::cout,0,1);
+    }
+    
+    runPopDyMod(dbg,rpt::echo);
 
-    runPopDyMod(0,rpt::echo);
-
-    calcObjFun(0,rpt::echo);
+    calcObjFun(dbg,rpt::echo);
     
     if (sd_phase()){
         sdrLnR_y = log(R_y);
@@ -2300,40 +2314,64 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
 
     int y; 
     for (int pc=1;pc<=ptrNM->nPCs;pc++){
+        if (debug>dbgCalcProcs) cout<<"pc = "<<pc<<endl;
         lnM.initialize();
         ivector pids = ptrNM->getPCIDs(pc);
         int k=ptrNM->nIVs+1;//1st parameter variable column
+        if (debug>dbgCalcProcs) cout<<"pids = "<<pids(k,pids.indexmax())<<endl;
         //add in base (ln-scale) natural mortality (immature males)
-        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnM(pids[k]);}   k++;
-        //add in main temporal offsets
-        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x) += pLnDMT(pids[k]);} k++;
-        //add in mature offsets
-        if (pids[k]) {for (int x=1;x<=nSXs;x++) lnM(x,MATURE) += pLnDMM(pids[k]);} k++;
+        if (pids[k]) {
+            if (debug>dbgCalcProcs) cout<<"Adding pLnM["<<pids[k]<<"]: "<<pLnM(pids[k])<<endl;
+            for (int x=1;x<=nSXs;x++) lnM(x) += pLnM(pids[k]);
+        }   k++;
+        //add in main offset from base
+        if (pids[k]) {
+            if (debug>dbgCalcProcs) cout<<"Adding pLnDMT["<<pids[k]<<"]: "<<pLnDMT(pids[k])<<endl;
+            for (int x=1;x<=nSXs;x++) lnM(x) += pLnDMT(pids[k]);
+        } k++;
         if (FEMALE<=nSXs){
-            //add in female offset
-            if (pids[k]) {lnM(FEMALE) += pLnDMX(pids[k]);}                      k++;
-            //add in offset mature females for stanza
-            if (pids[k]) {lnM(FEMALE,MATURE) += pLnDMXM(pids[k]);}            k++; //advance k to zScaling in pids
+            //add in offset for females
+            if (pids[k]) {
+                if (debug>dbgCalcProcs) cout<<"Adding pLnDMX["<<pids[k]<<"]: "<<pLnDMX(pids[k])<<endl;
+                lnM(FEMALE) += pLnDMX(pids[k]);
+            }          k++;
+        }
+        //add in offset for mature crab
+        if (pids[k]) {
+            if (debug>dbgCalcProcs) cout<<"Adding pLnMM["<<pids[k]<<"]: "<<pLnDMM(pids[k])<<endl;
+            for (int x=1;x<=nSXs;x++) lnM(x,MATURE) += pLnDMM(pids[k]);
+        } k++;
+        if (FEMALE<=nSXs){
+            //add in offset for mature females
+            if (pids[k]) {
+                if (debug>dbgCalcProcs) cout<<"Adding pLnDMXM["<<pids[k]<<"]: "<<pLnDMXM(pids[k])<<endl;
+                lnM(FEMALE,MATURE) += pLnDMXM(pids[k]);
+            }  k++; //advance k to zScaling in pids
         }
         
         //convert from ln-scale to arithmetic scale
         M_cxm(pc) = mfexp(lnM);
         if (debug>dbgCalcProcs){
-            cout<<"pc: "<<pc<<tb<<"lnM:"<<endl<<lnM<<endl;
-            cout<<"pc: "<<pc<<tb<<"M_xm:"<<endl<<M_cxm(pc)<<endl;
+            cout<<"lnM:"<<endl;
+            for (int x=1;x<=nSXs;x++) cout<<"lnM("<<x<<")= "<<lnM(x)<<endl;
+            cout<<"M_xm:"<<endl;
+            for (int x=1;x<=nSXs;x++) cout<<"M_xm("<<x<<")= "<<M_cxm(pc,x)<<endl;
         }
         
         //add in size-scaling, if requested
         M_xmz.initialize();
-        for (int x=1;x<=nSXs;x++){
-            for (int m=1;m<=nMSs;m++){
-                if (pids[k]&&(current_phase()>=pids[k])) {
-                    M_xmz(x,m) = M_cxm(pc,x,m)*(zMref/zBs);//factor in size dependence
-                } else {
-                    M_xmz(x,m) = M_cxm(pc,x,m);//no size dependence
-                }
+        if (pids[k]&&(current_phase()>=pids[k])) {
+            if (debug>dbgCalcProcs) cout<<"adding size scaling"<<endl;
+            for (int x=1;x<=nSXs;x++){
+                for (int m=1;m<=nMSs;m++) M_xmz(x,m) = M_cxm(pc,x,m)*(zMref/zBs);//factor in size dependence
+            }
+        } else {
+            if (debug>dbgCalcProcs) cout<<"not adding size scaling"<<endl;
+            for (int x=1;x<=nSXs;x++){
+                for (int m=1;m<=nMSs;m++) M_xmz(x,m) = M_cxm(pc,x,m);//no size dependence
             }
         }
+        if (debug>dbgCalcProcs) cout<<"finished scaling"<<endl;
         
         //loop over model indices as defined in the index blocks
         imatrix idxs = ptrNM->getModelIndices(pc);
@@ -2347,7 +2385,7 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
                 }
             }
         }
-    }
+    }//loop over pcs
     if (debug>dbgCalcProcs) cout<<"Finished calcNatMort()"<<endl;
     
 //-------------------------------------------------------------------------------------
@@ -2476,6 +2514,8 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
             exit(-1);
         }
         
+        testNaNs(value(sum(prGr_zz)),"Calculating growth");
+        
         prGr_czz(pc) = trans(prGr_zz);//transpose so rows are post-molt (i.e., "to") z's so n+ = prGr_zz*n
         
         //loop over model indices as defined in the index blocks
@@ -2505,7 +2545,7 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
 //* Returns:
 //*  void
 //* Alters:
-//*  sel_iyz - selectivity array
+//*  sel_cyz - selectivity array
 //******************************************************************************
 FUNCTION void calcSelectivities(int debug, ostream& cout)  
     if(debug>dbgCalcProcs) cout<<"Starting calcSelectivities()"<<endl;
@@ -2520,9 +2560,10 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
     ivector mniSelDevs(1,6);//min indices of devs vectors
     ivector mxiSelDevs(1,6);//max indices of devs vectors
     dvar_vector params(1,6);//vector for number_vector params
+    dvar_vector paramsp(1,6);//vector for number_vector params + dev offsets
         
     sel_cz.initialize();//selectivities w/out deviations
-    sel_iyz.initialize();//selectivity array
+    sel_cyz.initialize();//selectivity array
 
     int y;
     for (int pc=1;pc<=ptrSel->nPCs;pc++){
@@ -2606,7 +2647,7 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
 //        fsZ   = pids[idxFSZ];
         fsZ   = pXDs[idxFSZ];
         idSel = pids[ptrSel->nIVs+ptrSel->nPVs+idxFSZ+1];
-        if (debug>dbgCalcProcs) cout<<tb<<"fsZ: "<<fsZ<<tb<<"idSel"<<tb<<idSel<<tb<<SelFcns::getSelFcnID(idSel)<<endl;
+        if (debug>dbgCalcProcs) cout<<tb<<"fsZ: "<<fsZ<<tb<<"idSel"<<tb<<idSel<<tb<<SelFcns::getSelFcnID(idSel)<<tb<<params<<endl;
 
         sel_cz(pc) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
         if (debug>dbgCalcProcs) cout<<tb<<"pc = "<<pc<<tb<<"sel_cz: "<<sel_cz(pc)<<endl;
@@ -2616,20 +2657,21 @@ FUNCTION void calcSelectivities(int debug, ostream& cout)
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);//year
             if ((mnYr<=y)&&(y<=mxYr+1)){
+                paramsp = params;//set paramsp equal to base params
                 k=ptrSel->nIVs+1+6;//1st devs vector variable column
                 if (useDevsS1){
                     if (idxDevsS1[y]){
-                        if (debug>dbgCalcProcs) cout<<tb<<idx<<tb<<y<<tb<<useDevsS1<<tb<<idxDevsS1[y]<<endl;
-                        params[1] += devsS1(useDevsS1,idxDevsS1[y]);
+                        if (debug>dbgCalcProcs) cout<<tb<<idx<<tb<<y<<tb<<useDevsS1<<tb<<idxDevsS1[y]<<tb<<paramsp[1]<<tb<<devsS1(useDevsS1,idxDevsS1[y])<<endl;
+                        paramsp[1] += devsS1(useDevsS1,idxDevsS1[y]);
                     }
                 }
-                if (useDevsS2) if (idxDevsS2[y]){params[2] += devsS2(useDevsS2,idxDevsS2[y]);}
-                if (useDevsS3) if (idxDevsS3[y]){params[3] += devsS3(useDevsS3,idxDevsS3[y]);}
-                if (useDevsS4) if (idxDevsS4[y]){params[4] += devsS4(useDevsS4,idxDevsS4[y]);}
-                if (useDevsS5) if (idxDevsS5[y]){params[5] += devsS5(useDevsS5,idxDevsS5[y]);}
-                if (useDevsS6) if (idxDevsS6[y]){params[6] += devsS6(useDevsS6,idxDevsS6[y]);}
-                sel_iyz(pc,y) = SelFcns::calcSelFcn(idSel, zBs, params, fsZ);
-                if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"sel: "<<sel_iyz(pc,y)<<endl;
+                if (useDevsS2) if (idxDevsS2[y]){paramsp[2] += devsS2(useDevsS2,idxDevsS2[y]);}
+                if (useDevsS3) if (idxDevsS3[y]){paramsp[3] += devsS3(useDevsS3,idxDevsS3[y]);}
+                if (useDevsS4) if (idxDevsS4[y]){paramsp[4] += devsS4(useDevsS4,idxDevsS4[y]);}
+                if (useDevsS5) if (idxDevsS5[y]){paramsp[5] += devsS5(useDevsS5,idxDevsS5[y]);}
+                if (useDevsS6) if (idxDevsS6[y]){paramsp[6] += devsS6(useDevsS6,idxDevsS6[y]);}
+                sel_cyz(pc,y) = SelFcns::calcSelFcn(idSel, zBs, paramsp, fsZ);
+                if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"paramsp: "<<paramsp<<tb<<"sel: "<<sel_cyz(pc,y)<<endl;
             } else {
                 if (debug>dbgCalcProcs) cout<<tb<<"y = "<<y<<tb<<"y outside model range--skipping year!"<<endl;
             }
@@ -2703,14 +2745,12 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
             if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x) += pLnC(pids[k]);}   k++;
             //add in main temporal offsets
             if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x) += pLnDCT(pids[k]);} k++;
-            if (FEMALE<=nSXs){
-                //add in female offset
-                if (pids[k]) {lnC(FEMALE) += pLnDCX(pids[k]);}                      k++;
-                //add in immature offsets
-                if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x,IMMATURE) += pLnDCM(pids[k]);} k++;
-                //add in offset immature females for stanza
-                if (pids[k]) {lnC(FEMALE,IMMATURE) += pLnDCXM(pids[k]);}            k++; 
-            }
+            //add in female offset
+            if (FEMALE<=nSXs){ if (pids[k]) {lnC(FEMALE) += pLnDCX(pids[k]);} k++;}
+            //add in immature offsets
+            if (pids[k]) {for (int x=1;x<=nSXs;x++) lnC(x,IMMATURE) += pLnDCM(pids[k]);} k++;
+            //add in offset for immature females
+            if (FEMALE<=nSXs){if (pids[k]) {lnC(FEMALE,IMMATURE) += pLnDCXM(pids[k]);} k++;}
 
             //extract devs vector
             useDevs = pids[k]; k++;
@@ -2749,6 +2789,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
             //loop over model indices as defined in the index blocks
             imatrix idxs = ptrFsh->getModelIndices(pc);
             for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
+                if (debug>dbgCalcProcs) cout<<"idxs(idx) = "<<idxs(idx)<<endl;
                 f = idxs(idx,1);//fishery
                 y = idxs(idx,2);//year
                 if ((mnYr<=y)&&(y<=mxYr)){
@@ -2760,16 +2801,18 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                         idxDevsLnC_fy(f,y) = idxDevsLnC[y];
                         dvsLnC_fy(f,y)     = dvsLnC[idxDevsLnC[y]];
                         C_xm = mfexp(lnC+dvsLnC[idxDevsLnC[y]]);//recalculate C_xm w/ devs
+                        if (debug>dbgCalcProcs) cout<<lnC(MALE)<<tb<<lnC(FEMALE)<<tb<<dvsLnC[idxDevsLnC[y]]<<endl;
                     }
+                    if (debug>dbgCalcProcs) cout<<C_xm(MALE)<<tb<<C_xm(FEMALE)<<endl;
                     for (int m=1;m<=nMSs;m++){
                         for (int s=1;s<=nSCs;s++){
                             cpF_fyxms(f,y,x,m,s)  = C_xm(x,m);                 //fully-selected capture rate
-                            sel_fyxmsz(f,y,x,m,s) = sel_iyz(idSel,y);          //selectivity
-                            cpF_fyxmsz(f,y,x,m,s) = C_xm(x,m)*sel_iyz(idSel,y);//size-specific capture rate
+                            sel_fyxmsz(f,y,x,m,s) = sel_cyz(idSel,y);          //selectivity
+                            cpF_fyxmsz(f,y,x,m,s) = C_xm(x,m)*sel_cyz(idSel,y);//size-specific capture rate
                             if (idRet){//fishery has retention
-                                ret_fyxmsz(f,y,x,m,s) = sel_iyz(idRet,y);      //retention curves
-                                rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_iyz(idRet,y),         cpF_fyxmsz(f,y,x,m,s));//retention mortality
-                                dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_iyz(idRet,y)),cpF_fyxmsz(f,y,x,m,s));//discard mortality
+                                ret_fyxmsz(f,y,x,m,s) = sel_cyz(idRet,y);      //retention curves
+                                rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_cyz(idRet,y),         cpF_fyxmsz(f,y,x,m,s));//retention mortality
+                                dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_cyz(idRet,y)),cpF_fyxmsz(f,y,x,m,s));//discard mortality
                             } else {//discard only
                                 dmF_fyxmsz(f,y,x,m,s) = hm*cpF_fyxmsz(f,y,x,m,s);//discard mortality
                             }
@@ -2797,7 +2840,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                     for (int s=1;s<=nSCs;s++){
                         tot.initialize();
                         cpF_fxmsy(f,x,m,s).deallocate();
-                        cpF_fxmsy(f,x,m,s).allocate(mny,mxy);
+                        cpF_fxmsy(f,x,m,s).allocate(mny,mxy);//TODO: do this in preliminary calcs so it happens once!
                         switch (optsFcAvg(f)){
                             case 0:
                                 //won't use effort to fill in
@@ -2850,7 +2893,7 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                     x = idxs(idx,3);//sex
                     fd = mapM2DFsh(f);//index of corresponding fishery data object
                     eff = ptrMDS->ppFsh[fd-1]->ptrEff->eff_y(y);
-                    if (debug>dbgCalcProcs) cout<<"f,y,x,eff = "<<f<<tb<<y<<tb<<x<<tb<<eff<<endl;
+                    if (debug>dbgCalcProcs) cout<<"f, y, x, eff, avgRatFcp2E, cpF = "<<f<<tb<<y<<tb<<x<<tb<<eff<<tb;
                     for (int m=1;m<=nMSs;m++){
                         for (int s=1;s<=nSCs;s++){
                             //fully-selected capture rate
@@ -2864,15 +2907,18 @@ FUNCTION void calcFisheryFs(int debug, ostream& cout)
                                 case 3:
                                     cpF_fyxms(f,y,x,m,s) = avgRatioFc2Eff(f,x,m,s)*eff; break;
                             }
-                            cpF_fyxmsz(f,y,x,m,s) = cpF_fyxms(f,y,x,m,s)*sel_iyz(idSel,y);//size-specific capture rate
+                            if (debug>dbgCalcProcs) cout<<tb<<avgRatioFc2Eff(f,x,m,s)<<cpF_fyxms(f,y,x,m,s)<<tb;
+                            if (!debug) testNaNs(value(cpF_fyxms(f,y,x,m,s)),"calcFisheryFs: 2nd pass");
+                            cpF_fyxmsz(f,y,x,m,s) = cpF_fyxms(f,y,x,m,s)*sel_cyz(idSel,y);//size-specific capture rate
                             if (idRet){//fishery has retention
-                                rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_iyz(idRet,y),         cpF_fyxmsz(f,y,x,m,s));//retention mortality rate
-                                dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_iyz(idRet,y)),cpF_fyxmsz(f,y,x,m,s));//discard mortality rate
+                                rmF_fyxmsz(f,y,x,m,s) = elem_prod(sel_cyz(idRet,y),         cpF_fyxmsz(f,y,x,m,s));//retention mortality rate
+                                dmF_fyxmsz(f,y,x,m,s) = elem_prod(hm*(1.0-sel_cyz(idRet,y)),cpF_fyxmsz(f,y,x,m,s));//discard mortality rate
                             } else {//discard only
                                 dmF_fyxmsz(f,y,x,m,s) = hm*cpF_fyxmsz(f,y,x,m,s);//discard mortality rate
                             }
-                        }
-                    }
+                        }//s
+                    }//m
+                    if (debug>dbgCalcProcs) cout<<endl;
                 }
             }
         }//useER=TRUE
@@ -2943,8 +2989,8 @@ FUNCTION void calcSurveyQs(int debug, ostream& cout)
                     for (int m=1;m<=nMSs;m++){
                         for (int s=1;s<=nSCs;s++){
                             q_vyxms(v,y,x,m,s)  = Q_xm(x,m);
-                            s_vyxmsz(v,y,x,m,s) = sel_iyz(idSel,y);
-                            q_vyxmsz(v,y,x,m,s) = Q_xm(x,m)*sel_iyz(idSel,y);
+                            s_vyxmsz(v,y,x,m,s) = sel_cyz(idSel,y);
+                            q_vyxmsz(v,y,x,m,s) = Q_xm(x,m)*sel_cyz(idSel,y);
                         }
                     }
                 }
@@ -4520,7 +4566,7 @@ FUNCTION void ReportToR(ostream& os, int debug, ostream& cout)
 
 //----------------------------------------------------------------------
 //Write parameter information to file
-FUNCTION void writeParameters(ofstream& os,int toR, int willBeActive)           
+FUNCTION void writeParameters(ostream& os,int toR, int willBeActive)           
     os<<"index, phase, idx.mn, idx.mx, min, max, value, name, type"<<endl;
     //recruitment parameters
     wts::writeParameter(os,pLnR,toR,willBeActive);      
@@ -4581,7 +4627,12 @@ REPORT_SECTION
         
     //write active parameters to rpt::echo
     rpt::echo<<"Finished phase "<<current_phase()<<endl;
-
+    {
+        //write objective function components only
+        ofstream os0("TCSAM2015.ModelFits."+itoa(current_phase(),10)+".R", ios::trunc);
+        ReportToR_ModelFits(os0,0,cout);
+        os0.close();
+    }
     if (last_phase()) {
         //write report as R file
         ReportToR(report,1,rpt::echo);
@@ -4594,11 +4645,11 @@ REPORT_SECTION
         writeParameters(os2,0,1);
         os2.close();
 
-    if (option_match(ad_comm::argc,ad_comm::argv,"-jitter")>-1) {
-        ofstream fs("jitterInfo.csv");
-        fs<<"seed"<<cc<<"objfun"<<endl;
-        fs<<iSeed<<cc<<objFun<<endl;
-    }
+        if (option_match(ad_comm::argc,ad_comm::argv,"-jitter")>-1) {
+            ofstream fs("jitterInfo.csv");
+            fs<<"seed"<<cc<<"objfun"<<endl;
+            fs<<iSeed<<cc<<objFun<<endl;
+        }
     }
     
 // =============================================================================
