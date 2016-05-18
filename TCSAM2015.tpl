@@ -143,6 +143,7 @@
 //                  somewhat to reflect current arrangement with SEX as an index
 //                  in the parameter group (so pLnCDX does not really refer to a
 //                  female-specific offset, but is more general).
+//  2016-05-18: 1. Changed prMolt2Mat_.. to prM2M_.. in output to R to match R packages.
 //
 // =============================================================================
 // =============================================================================
@@ -4326,12 +4327,11 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Starting ReportToR_ModelProcesses(...)"<<endl;
     
     os<<"mp=list("<<endl;
-        os<<"M_cxm         ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
-        os<<"prMolt2Mat_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
-        os<<"sel_cz        ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
-        
-        os<<"M_yxmsz        =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
-        os<<"prMolt2Mat_yxz =";  wts::writeToR(os,     value(prMat_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
+        os<<"M_cxm    ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
+        os<<"prM2M_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
+        os<<"sel_cz   ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
+        os<<"M_yxmsz  =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
+        os<<"prM2M_yxz ="; wts::writeToR(os,     value(prMat_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
         os<<"T_list=list("<<endl;
             os<<"mnZAM_cz   ="; wts::writeToR(os,value(mnGrZ_cz),adstring("pc=1:"+str(npcGr )),zbDms);       os<<cc<<endl;
             os<<"T_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
