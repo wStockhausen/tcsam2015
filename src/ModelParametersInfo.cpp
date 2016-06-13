@@ -23,7 +23,7 @@ int ParameterGroupInfo::debug   = 0;
 int RecruitmentInfo::debug      = 0;
 int NaturalMortalityInfo::debug = 0;
 int GrowthInfo::debug           = 0;
-int MaturityInfo::debug         = 0;
+int Molt2MaturityInfo::debug         = 0;
 int SelectivityInfo::debug      = 0;
 int FisheriesInfo::debug        = 0;
 int SurveysInfo::debug          = 0;
@@ -792,8 +792,8 @@ void GrowthInfo::writeToR(std::ostream & os){
 /*------------------------------------------------------------------------------
  * MaturityInfo
  -----------------------------------------------------------------------------*/
-adstring MaturityInfo::NAME = "maturity";
-MaturityInfo::MaturityInfo(){
+adstring Molt2MaturityInfo::NAME = "molt_to_maturity";
+Molt2MaturityInfo::Molt2MaturityInfo(){
     name = NAME;//assign static NAME to ParameterGroupInfo::name
     
     int k;
@@ -810,17 +810,17 @@ MaturityInfo::MaturityInfo(){
     nPVs = 1;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
     k=1;
-    lblPVs(k) = "pvLgtPrMat";dscPVs(k++) = "logit-scale parameter vectors for Pr(maturity-at-size)";    
-    pLgtPrMat = 0;
+    lblPVs(k) = "pvLgtPrM2M";dscPVs(k++) = "logit-scale parameter vectors for Pr(molt-to-maturity|size)";    
+    pLgtPrM2M = 0;
     
     nXIs = 0;    
 }
 
-MaturityInfo::~MaturityInfo(){
-    if (pLgtPrMat) delete pLgtPrMat; pLgtPrMat = 0;
+Molt2MaturityInfo::~Molt2MaturityInfo(){
+    if (pLgtPrM2M) delete pLgtPrM2M; pLgtPrM2M = 0;
 }
 
-void MaturityInfo::read(cifstream & is){
+void Molt2MaturityInfo::read(cifstream & is){
     if (debug) cout<<"starting void MaturityInfo::read(cifstream & is)"<<endl;    
     
     adstring str;
@@ -837,8 +837,8 @@ void MaturityInfo::read(cifstream & is){
     rpt::echo<<str<<tb<<"#Required keyword (PARAMETERS)"<<endl;
     if (str=="PARAMETERS"){
         int k=1;
-        pLgtPrMat = ParameterGroupInfo::read(is,lblPVs(k),pLgtPrMat);
-        rpt::echo<<lblPVs(k)<<tb<<"#"<<dscPVs(k)<<endl; rpt::echo<<(*pLgtPrMat)<<endl;  
+        pLgtPrM2M = ParameterGroupInfo::read(is,lblPVs(k),pLgtPrM2M);
+        rpt::echo<<lblPVs(k)<<tb<<"#"<<dscPVs(k)<<endl; rpt::echo<<(*pLgtPrM2M)<<endl;  
     } else {
         cout<<"Error reading MaturityInfo from "<<is.get_file_name()<<endl;
         cout<<"Expected keyword 'PARAMETERS' but got '"<<str<<"'."<<endl;
@@ -855,7 +855,7 @@ void MaturityInfo::read(cifstream & is){
     }
 }
 
-void MaturityInfo::write(std::ostream & os){
+void Molt2MaturityInfo::write(std::ostream & os){
     os<<NAME<<tb<<"#process name"<<endl;
     ParameterGroupInfo::write(os);
     
@@ -863,14 +863,14 @@ void MaturityInfo::write(std::ostream & os){
     
     int k=1;
     os<<lblPVs(k)<<tb<<"#"<<dscPVs(k)<<endl; k++;
-    os<<(*pLgtPrMat)<<endl;
+    os<<(*pLgtPrM2M)<<endl;
 }
 
-void MaturityInfo::writeToR(std::ostream & os){
+void Molt2MaturityInfo::writeToR(std::ostream & os){
     int indent=0;
     os<<"mat=list("<<endl;
         ParameterGroupInfo::writeToR(os);             os<<cc<<endl;
-        pLgtPrMat->writeToR(os,"pLgtPrMat",indent+1); os<<endl;
+        pLgtPrM2M->writeToR(os,"pLgtPrM2M",indent+1); os<<endl;
     os<<")";
 }
 
@@ -1330,7 +1330,7 @@ ModelParametersInfo::ModelParametersInfo(ModelConfiguration& mc){
     ptrRec=0;
     ptrNM =0;
     ptrGr =0;
-    ptrMat=0;
+    ptrM2M=0;
     ptrSel=0;
     ptrFsh=0;
     ptrSrv=0;
@@ -1340,7 +1340,7 @@ ModelParametersInfo::~ModelParametersInfo(){
     if (ptrRec) {delete ptrRec;     ptrRec  = 0;}
     if (ptrNM)  {delete ptrNM;      ptrNM   = 0;}
     if (ptrGr)  {delete ptrGr;      ptrGr   = 0;}
-    if (ptrMat) {delete ptrMat;     ptrMat  = 0;}
+    if (ptrM2M) {delete ptrM2M;     ptrM2M  = 0;}
     if (ptrSel) {delete ptrSel;     ptrSel  = 0;}
     if (ptrFsh) {delete ptrFsh;     ptrFsh  = 0;}
     if (ptrSrv) {delete ptrSrv;     ptrSrv  = 0;}
@@ -1371,10 +1371,10 @@ void ModelParametersInfo::read(cifstream & is){
     if (debug) cout<<"created GrowthInfo object"<<endl;
     
     //read maturity parameters
-    rpt::echo<<"#---reading Maturity Info"<<endl;
-    ptrMat = new MaturityInfo();
-    is>>(*ptrMat);
-    if (debug) cout<<"created MaturityInfo object"<<endl;
+    rpt::echo<<"#---reading Molt2Maturity Info"<<endl;
+    ptrM2M = new Molt2MaturityInfo();
+    is>>(*ptrM2M);
+    if (debug) cout<<"created Molt2MaturityInfo object"<<endl;
     
     //read selectivity function parameters
     rpt::echo<<"#---reading Selectivity Info"<<endl;
@@ -1414,9 +1414,9 @@ void ModelParametersInfo::write(std::ostream & os){
     os<<(*ptrGr)<<endl;
     
     os<<"#-------------------------------"<<endl;
-    os<<"# Maturity parameters  "<<endl;
+    os<<"# Molt-to-maturity parameters  "<<endl;
     os<<"#-------------------------------"<<endl;
-    os<<(*ptrMat)<<endl;
+    os<<(*ptrM2M)<<endl;
     
     os<<"#-------------------------------"<<endl;
     os<<"# Selectivity parameters  "<<endl;
@@ -1440,7 +1440,7 @@ void ModelParametersInfo::writeToR(std::ostream & os){
     ptrRec->writeToR(os); os<<cc<<endl;
     ptrNM->writeToR(os);  os<<cc<<endl;
     ptrGr->writeToR(os);  os<<cc<<endl;
-    ptrMat->writeToR(os); os<<cc<<endl;
+    ptrM2M->writeToR(os); os<<cc<<endl;
     ptrSel->writeToR(os); os<<cc<<endl;
     ptrFsh->writeToR(os); os<<cc<<endl;
     ptrSrv->writeToR(os); os<<endl;

@@ -714,7 +714,7 @@ DATA_SECTION
     //maturity parameters
     int npLgtPrMat; ivector mniLgtPrMat; ivector mxiLgtPrMat; imatrix idxsLgtPrMat;
     vector lbLgtPrMat; vector ubLgtPrMat; ivector phsLgtPrMat;
-    !!tcsam::setParameterInfo(ptrMPI->ptrMat->pLgtPrMat,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,idxsLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat,rpt::echo);
+    !!tcsam::setParameterInfo(ptrMPI->ptrM2M->pLgtPrM2M,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,idxsLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat,rpt::echo);
  
     //growth parameters
     int npLnGrA; ivector phsLnGrA; vector lbLnGrA; vector ubLnGrA;
@@ -824,7 +824,7 @@ DATA_SECTION
     int npcNM;
     !!npcNM = ptrMPI->ptrNM->nPCs;
     int npcMat;
-    !!npcMat = ptrMPI->ptrMat->nPCs;
+    !!npcMat = ptrMPI->ptrM2M->nPCs;
     int npcGr;
     !!npcGr = ptrMPI->ptrGr->nPCs;
     int npcSel;
@@ -897,7 +897,7 @@ PARAMETER_SECTION
     init_bounded_number_vector pLnGrBeta(1,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta);//ln-scale growth scale parameter
     
     //maturity parameters
-    init_bounded_vector_vector pLgtPrMat(1,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat);//logit-scale maturity ogive parameters
+    init_bounded_vector_vector pLgtPrM2M(1,npLgtPrMat,mniLgtPrMat,mxiLgtPrMat,lbLgtPrMat,ubLgtPrMat,phsLgtPrMat);//logit-scale maturity ogive parameters
     
     //selectivity parameters
     init_bounded_number_vector pS1(1,npS1,lbS1,ubS1,phsS1);
@@ -961,8 +961,8 @@ PARAMETER_SECTION
     5darray M_yxmsz(mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//size-specific natural mortality rate
     
     //maturity-related quantities
-    matrix  prMat_cz(1,npcMat,1,nZBs);         //prob. of immature crab molting to maturity by parameter combination
-    3darray prMat_yxz(mnYr,mxYr,1,nSXs,1,nZBs);//prob. of immature crab molting to maturity given sex x, pre-molt size z
+    matrix  prM2M_cz(1,npcMat,1,nZBs);         //prob. of immature crab molting to maturity by parameter combination
+    3darray prM2M_yxz(mnYr,mxYr,1,nSXs,1,nZBs);//prob. of immature crab molting to maturity given sex x, pre-molt size z
     
     //growth related quantities
     matrix mnGrZ_cz(1,npcGr,1,nZBs);           //mean post-molt size by parameter combination, pre-molt size
@@ -1115,9 +1115,9 @@ PRELIMINARY_CALCS_SECTION
         rpt::echo<<"testing calcGrowth():"<<endl;
         calcGrowth(dbgCalcProcs+1,rpt::echo);
         
-        cout<<"testing calcMaturity():"<<endl;
-        rpt::echo<<"testing calcMaturity():"<<endl;
-        calcMaturity(dbgCalcProcs+1,rpt::echo);
+        cout<<"testing calcMolt2Maturity():"<<endl;
+        rpt::echo<<"testing calcMolt2Maturity():"<<endl;
+        calcMolt2Maturity(dbgCalcProcs+1,rpt::echo);
 
         cout<<"testing calcSelectivities():"<<endl;
         rpt::echo<<"testing calcSelectivities():"<<endl;
@@ -1269,7 +1269,7 @@ FUNCTION setInitVals
     setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
 
     //maturity parameters
-    setInitVals(ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,0,rpt::echo);
+    setInitVals(ptrMPI->ptrM2M->pLgtPrM2M,pLgtPrM2M,0,rpt::echo);
 
     //selectivity parameters
     setInitVals(ptrMPI->ptrSel->pS1, pS1,0,rpt::echo);
@@ -1350,7 +1350,7 @@ FUNCTION void writeMCMCtoR(ofstream& mcmc)
         writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrBeta); mcmc<<cc<<endl;
 
         //maturity parameters
-        writeMCMCtoR(mcmc,ptrMPI->ptrMat->pLgtPrMat); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrM2M->pLgtPrM2M); mcmc<<cc<<endl;
 
         //selectivity parameters
         writeMCMCtoR(mcmc,ptrMPI->ptrSel->pS1); mcmc<<cc<<endl;
@@ -1716,7 +1716,7 @@ FUNCTION void calcEqNatZF100(dvariable& R, int yr, int debug, ostream& cout)
         R_z.initialize();    //recruitment size distribution
         R_z = R*R_yx(yr,x)*R_yz(yr);//initial mean recruitment by size
         for (int s=1;s<=nSCs;s++){
-            Th_sz(s) = prMat_yxz(yr,x); //pr(molt to maturity|pre-molt size, molt)
+            Th_sz(s) = prM2M_yxz(yr,x); //pr(molt to maturity|pre-molt size, molt)
             for (int z=1;z<=nZBs;z++) T_szz(s,z) = prGr_yxszz(yr,x,s,z);//growth matrices
             for (int m=1;m<=nMSs;m++){ 
                 S1_msz(m,s) = mfexp(-M_yxmsz(yr,x,m,s)*dtM_y(yr));      //survival until molting/growth/mating
@@ -1813,14 +1813,14 @@ FUNCTION void calcOFL(int yr, int debug, ostream& cout)
     pPIM->w_mz  = ptrMDS->ptrBio->wAtZ_xmz(MALE);
     pPIM->M_msz = value(M_yxmsz(yr,MALE));
     pPIM->T_szz = value(prGr_yxszz(yr,MALE));
-    for (int s=1;s<=nSCs;s++) pPIM->Th_sz(s) = value(prMat_yxz(yr,MALE));
+    for (int s=1;s<=nSCs;s++) pPIM->Th_sz(s) = value(prM2M_yxz(yr,MALE));
     
     PopDyInfo* pPIF = new PopDyInfo(nZBs);//females info
     pPIF->R_z   = value(R_yz(yr));
     pPIF->w_mz  = ptrMDS->ptrBio->wAtZ_xmz(FEMALE);
     pPIF->M_msz = value(M_yxmsz(yr,FEMALE));
     pPIF->T_szz = value(prGr_yxszz(yr,FEMALE));
-    for (int s=1;s<=nSCs;s++) pPIF->Th_sz(s) = value(prMat_yxz(yr,FEMALE));
+    for (int s=1;s<=nSCs;s++) pPIF->Th_sz(s) = value(prM2M_yxz(yr,FEMALE));
     
     //2. Determine fishery conditions for next year based on averages for recent years
         int oflAvgPeriodYrs = 5;
@@ -1985,7 +1985,7 @@ FUNCTION void initPopDyMod(int debug, ostream& cout)
     calcRecruitment(debug,cout);//calculate recruitment
     calcNatMort(debug,cout);    //calculate natural mortality rates
     calcGrowth(debug,cout);     //calculate growth transition matrices
-    calcMaturity(debug,cout);   //calculate maturity ogives
+    calcMolt2Maturity(debug,cout);   //calculate maturity ogives
     
     calcSelectivities(debug,cout); //calculate selectivity functions
     calcFisheryFs(debug,cout);     //calculate fishery F's
@@ -2189,9 +2189,9 @@ FUNCTION dvar4_array applyMGM(dvar4_array& n0_xmsz, int y, int debug, ostream& c
     dvar4_array n1_xmsz(1,nSXs,1,nMSs,1,nSCs,1,nZBs);
     n1_xmsz.initialize();
     for (int x=1;x<=nSXs;x++){
-        n1_xmsz(x,IMMATURE,NEW_SHELL) = prGr_yxszz(y,x,NEW_SHELL)*elem_prod(1.0-prMat_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
+        n1_xmsz(x,IMMATURE,NEW_SHELL) = prGr_yxszz(y,x,NEW_SHELL)*elem_prod(1.0-prM2M_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
         n1_xmsz(x,IMMATURE,OLD_SHELL) = 0.0;
-        n1_xmsz(x,MATURE,NEW_SHELL)   = prGr_yxszz(y,x,NEW_SHELL)*elem_prod(    prMat_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
+        n1_xmsz(x,MATURE,NEW_SHELL)   = prGr_yxszz(y,x,NEW_SHELL)*elem_prod(    prM2M_yxz(y,x),n0_xmsz(x,IMMATURE,NEW_SHELL));
         n1_xmsz(x,MATURE,OLD_SHELL)   = n0_xmsz(x,MATURE,NEW_SHELL)+n0_xmsz(x,MATURE,OLD_SHELL);
     }
     if (debug>dbgApply) cout<<"finished applyNatMGM("<<y<<")"<<endl;
@@ -2405,41 +2405,41 @@ FUNCTION void calcNatMort(int debug, ostream& cout)
     
 //-------------------------------------------------------------------------------------
 //calculate Pr(maturity-at-size)
-FUNCTION void calcMaturity(int debug, ostream& cout)
-    if (debug>dbgCalcProcs) cout<<"starting calcMaturity()"<<endl;
+FUNCTION void calcMolt2Maturity(int debug, ostream& cout)
+    if (debug>dbgCalcProcs) cout<<"starting calcMolt2Maturity()"<<endl;
 
-    MaturityInfo* ptrMI = ptrMPI->ptrMat;
+    Molt2MaturityInfo* ptrM2MI = ptrMPI->ptrM2M;
     
-    prMat_cz.initialize();
-    prMat_yxz.initialize();
+    prM2M_cz.initialize();
+    prM2M_yxz.initialize();
     
     int k; int y; int x;
-    for (int pc=1;pc<=ptrMI->nPCs;pc++){
-        ivector pids = ptrMI->getPCIDs(pc);
-        k=ptrMI->nIVs+1;//first parameter variable column in ParameterComnbinations
-        dvar_vector lgtPrMat = pLgtPrMat(pids[k++]);
-        int vmn = lgtPrMat.indexmin();
-        int vmx = lgtPrMat.indexmax();
+    for (int pc=1;pc<=ptrM2MI->nPCs;pc++){
+        ivector pids = ptrM2MI->getPCIDs(pc);
+        k=ptrM2MI->nIVs+1;//first parameter variable column in ParameterComnbinations
+        dvar_vector lgtPrM2M = pLgtPrM2M(pids[k++]);
+        int vmn = lgtPrM2M.indexmin();
+        int vmx = lgtPrM2M.indexmax();
         if (debug>dbgCalcProcs){
             cout<<"pc = "<<pc<<". mn = "<<vmn<<", mx = "<<vmx<<endl;
-            cout<<"lgtPrMat = "<<lgtPrMat<<endl;
+            cout<<"lgtPrM2M = "<<lgtPrM2M<<endl;
         }
 
-        prMat_cz(pc) = 1.0;//default is 1
-        prMat_cz(pc)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrMat));
+        prM2M_cz(pc) = 1.0;//default is 1
+        prM2M_cz(pc)(vmn,vmx) = 1.0/(1.0+mfexp(-lgtPrM2M));
         if (debug>dbgCalcProcs){
             cout<<"pc = "<<pc<<". mn = "<<vmn<<", mx = "<<vmx<<endl;
-            cout<<"prMat = "<<prMat_cz(pc)<<endl;
+            cout<<"prM2M = "<<prM2M_cz(pc)<<endl;
         }
         
-        imatrix idxs = ptrMI->getModelIndices(pc);
-        if (debug>dbgCalcProcs) cout<<"maturity indices"<<endl<<idxs<<endl;
+        imatrix idxs = ptrM2MI->getModelIndices(pc);
+        if (debug>dbgCalcProcs) cout<<"molt-to-maturity indices"<<endl<<idxs<<endl;
         for (int idx=idxs.indexmin();idx<=idxs.indexmax();idx++){
             y = idxs(idx,1);
             if ((mnYr<=y)&&(y<=mxYr)){
                 x = idxs(idx,2);
                 if (debug>dbgCalcProcs) cout<<"y = "<<y<<tb<<"sex = "<<tcsam::getSexType(x)<<endl;
-                prMat_yxz(y,x) = prMat_cz(pc);//note: this change made a difference, but not sure why!
+                prM2M_yxz(y,x) = prM2M_cz(pc);//note: this change made a difference, but not sure why!
             }
         }
     }
@@ -2447,10 +2447,10 @@ FUNCTION void calcMaturity(int debug, ostream& cout)
     if (debug>dbgCalcProcs) {
         for (int y=mnYr;y<=mxYr;y++){
             for (int x=1;x<=nSXs;x++){
-                cout<<"prMat_yxz("<<y<<tb<<x<<")="<<prMat_yxz(y,x)<<endl;
+                cout<<"prM2M_yxz("<<y<<tb<<x<<")="<<prM2M_yxz(y,x)<<endl;
             }
         }
-        cout<<"finished calcMaturity()"<<endl;
+        cout<<"finished calcMolt2Maturity()"<<endl;
     }
 
 //******************************************************************************
@@ -3036,14 +3036,14 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     fPenSmoothLgtPrMat.initialize();
     if (debug<0) cout<<tb<<tb<<"smoothness=list(";//start of smoothness penalties list
     for (int i=1;i<npLgtPrMat;i++){
-        dvar_vector v; v = 1.0*pLgtPrMat(i);
+        dvar_vector v; v = 1.0*pLgtPrM2M(i);
         fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
         objFun += penWgtSmthLgtPrMat*fPenSmoothLgtPrMat(i);
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtSmthLgtPrMat<<cc<<"pen="<<fPenSmoothLgtPrMat(i)<<cc<<"objfun="<<penWgtSmthLgtPrMat*fPenSmoothLgtPrMat(i)<<"),"<<endl;
     }
     {
         int i = npLgtPrMat;
-        dvar_vector v; v = 1.0*pLgtPrMat(i);
+        dvar_vector v; v = 1.0*pLgtPrM2M(i);
         fPenSmoothLgtPrMat(i) = norm2(calc2ndDiffs(v));
         objFun += penWgtSmthLgtPrMat*fPenSmoothLgtPrMat(i);
         if (debug<0) cout<<tb<<tb<<tb<<"'"<<i<<"'=list(wgt="<<penWgtSmthLgtPrMat<<cc<<"pen="<<fPenSmoothLgtPrMat(i)<<cc<<"objfun="<<penWgtSmthLgtPrMat*fPenSmoothLgtPrMat(i)<<")"<<endl;
@@ -3055,7 +3055,7 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     fPenNonDecLgtPrMat.initialize();
     if (debug<0) cout<<tb<<tb<<"nondecreasing=list(";//start of non-decreasing penalties list
     for (int i=1;i<npLgtPrMat;i++){
-        dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
+        dvar_vector v; v = calc1stDiffs(pLgtPrM2M(i));
         if (optPenNonDecLgtPrMat==0){
             for (int iv=v.indexmin();iv<=v.indexmax();iv++){
                 posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
@@ -3068,7 +3068,7 @@ FUNCTION void calcPenalties(int debug, ostream& cout)
     }
     {
         int i = npLgtPrMat;
-        dvar_vector v; v = calc1stDiffs(pLgtPrMat(i));
+        dvar_vector v; v = calc1stDiffs(pLgtPrM2M(i));
         if (optPenNonDecLgtPrMat==0){
             for (int iv=v.indexmin();iv<=v.indexmax();iv++){
                 posfun2(v(iv),1.0E-2,fPenNonDecLgtPrMat(i));
@@ -4264,7 +4264,7 @@ FUNCTION void calcAllPriors(int debug, ostream& cout)
     
     //maturity parameters
     if (debug<0) cout<<tb<<"maturity=list("<<endl;
-    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrMat->pLgtPrMat,pLgtPrMat,debug,cout); if (debug<0){cout<<endl;}
+    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrM2M->pLgtPrM2M,pLgtPrM2M,debug,cout); if (debug<0){cout<<endl;}
     if (debug<0) cout<<tb<<")"<<cc<<endl;
     
     //selectivity parameters
@@ -4328,10 +4328,10 @@ FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
     
     os<<"mp=list("<<endl;
         os<<"M_cxm    ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
-        os<<"prM2M_cz ="; wts::writeToR(os,value(prMat_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
+        os<<"prM2M_cz ="; wts::writeToR(os,value(prM2M_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
         os<<"sel_cz   ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
         os<<"M_yxmsz  =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
-        os<<"prM2M_yxz ="; wts::writeToR(os,     value(prMat_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
+        os<<"prM2M_yxz ="; wts::writeToR(os,     value(prM2M_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
         os<<"T_list=list("<<endl;
             os<<"mnZAM_cz   ="; wts::writeToR(os,value(mnGrZ_cz),adstring("pc=1:"+str(npcGr )),zbDms);       os<<cc<<endl;
             os<<"T_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
@@ -4508,8 +4508,8 @@ FUNCTION void updateMPI(int debug, ostream& cout)
     ptrMPI->ptrGr->pLnGrBeta->setFinalVals(pLnGrBeta);
     
     //maturity parameters
-    //cout<<"setting final vals for pLgtPrMat"<<endl;
-    for (int p=1;p<=npLgtPrMat;p++) (*ptrMPI->ptrMat->pLgtPrMat)[p]->setFinalVals(pLgtPrMat(p));
+    //cout<<"setting final vals for pLgtPrM2M"<<endl;
+    for (int p=1;p<=npLgtPrMat;p++) (*ptrMPI->ptrM2M->pLgtPrM2M)[p]->setFinalVals(pLgtPrM2M(p));
     
     //selectivity parameters
     ptrMPI->ptrSel->pS1->setFinalVals(pS1);
@@ -4615,7 +4615,7 @@ FUNCTION void writeParameters(ostream& os,int toR, int willBeActive)
     wts::writeParameter(os,pLnGrBeta,toR,willBeActive);      
     
     //maturity parameters
-    wts::writeParameter(os,pLgtPrMat,toR,willBeActive);      
+    wts::writeParameter(os,pLgtPrM2M,toR,willBeActive);      
     
     //selectivity parameters
     wts::writeParameter(os,pS1,toR,willBeActive);      

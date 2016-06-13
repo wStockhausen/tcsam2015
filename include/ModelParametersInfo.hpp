@@ -203,28 +203,29 @@ class GrowthInfo : public ParameterGroupInfo {
 
 /*------------------------------------------------------------------------------
  * MaturityInfo\n
- * Encapsulates the following maturity-related parameters:\n
- *  pvLgtMat: parameter vectors for logit-scale pr(maturity-at-size)
+ * Encapsulates the following molt-to-maturity-related parameters:\n
+ *  pvLgtM2M: parameter vectors for logit-scale pr(molt-to-maturity|pre-molt size)
  * Notes:
- *  1. YEAR_BLOCK is the index variable for the parameters
+ *  1. YEAR_BLOCK is the 1st index variable for the parameters
+ *  1. SEX        is the 2nd index variable for the parameters
 *----------------------------------------------------------------------------*/
-class MaturityInfo: public ParameterGroupInfo {
+class Molt2MaturityInfo: public ParameterGroupInfo {
     public:
         static int debug;
     protected:
-        static adstring NAME;//"maturity"
+        static adstring NAME;//"molt_to_maturity"
     public:        
-        BoundedVectorVectorInfo* pLgtPrMat; //parameter vectors for logit-scale pr(maturity-at-size)
+        BoundedVectorVectorInfo* pLgtPrM2M; //parameter vectors for logit-scale pr(molt-to-maturity|size)
         
-        MaturityInfo();
-        ~MaturityInfo();
+        Molt2MaturityInfo();
+        ~Molt2MaturityInfo();
         
         void read(cifstream & is);
         void write(std::ostream & os);
         void writeToR(std::ostream & os);
         
-        friend cifstream& operator >>(cifstream & is, MaturityInfo & obj){obj.read(is); return is;}
-        friend std::ostream& operator <<(std::ostream & os, MaturityInfo & obj){obj.write(os); return os;}
+        friend cifstream& operator >>(cifstream & is, Molt2MaturityInfo & obj){obj.read(is); return is;}
+        friend std::ostream& operator <<(std::ostream & os, Molt2MaturityInfo & obj){obj.write(os); return os;}
 };
 
 /*------------------------------------------------------------------------------
@@ -362,7 +363,7 @@ class ModelParametersInfo{
         RecruitmentInfo*      ptrRec; //pointer to recruitment info
         NaturalMortalityInfo* ptrNM;  //pointer to natural mortality info
         GrowthInfo*           ptrGr;  //pointer to growth info
-        MaturityInfo*         ptrMat; //pointer to maturity info
+        Molt2MaturityInfo*    ptrM2M; //pointer to molt-to-maturity info
         
         SelectivityInfo*      ptrSel; //pointer to selectivity functions info
         FisheriesInfo*        ptrFsh; //pointer to fisheries info

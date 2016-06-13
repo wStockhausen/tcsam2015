@@ -4,7 +4,6 @@ Makefile
 /docs/
 /nbproject/
 /nbproject/private/
-/test/ModelRuns/
 /test/InputFiles/rsimTCSAM.A2/rsim.devs.csv
 /test/InputFiles/rsimTCSAM.A2/Model.Config.dat
 /test/InputFiles/rsimTCSAM.A2/rsimTCSAM.A2.RData
@@ -30,5 +29,7 @@ Makefile
 /test/InputFiles/rsimTCSAM.A1/devs.csv
 /test/InputFiles/rsimTCSAM.A1/rsim.ParametersInfo.dat
 /tcsam2015-Makefile.mk
+/test/ModelRuns/
 /test/ModelRuns.2015/
 /test/ModelRuns.2016/
+/test/Testing/
