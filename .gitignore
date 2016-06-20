@@ -1,11 +1,11 @@
 Makefile
+TCSAM2015.cpp
+TCSAM2015.htp
 /build/
 /dist/
 /docs/
 /nbproject/
 /nbproject/private/
-TCSAM2015.cpp
-TCSAM2015.htp
 /test/ModelRuns/
 /test/InputFiles/rsimTCSAM.A2/rsim.devs.csv
 /test/InputFiles/rsimTCSAM.A2/Model.Config.dat
