@@ -13,6 +13,7 @@
  * 20150302: added RSTR_... constants and converter
  * 20150417: revised STR_FIT_BY_ string values
  * 20150518: revised FIT_BY_ and STR_FIT_BY_ values
+ * 20160413: added tcsam::VERSION string to indicate model version
  */
 
 #pragma once
@@ -33,9 +34,15 @@ class tcsamDims{
         static adstring getSCsForR(int mn,int mx);
 };
 
-namespace tcsam{    
+namespace tcsam{
+    /* adstring indicating model name */
+    const adstring MODEL = "TCSAM2015";
+    /* adstring indicating model version */
+    const adstring VERSION = "2016.04.13";
+    
     /* minimum debugging level that will print ALL debug info */
     const int dbgAll = 100;
+    /* minimum debugging level that will print debug info for prior calcs */
     const int dbgPriors = 30;
     
     /* Model dimension name for sex */
@@ -56,17 +63,20 @@ namespace tcsam{
     const adstring STR_SELFCN = "selFcn";
     
     //sexes
+    /* number of sexes in model */
     const int nSXs      = 2;//number of model sexes
+    /* integer indicating sex is male */
     const int MALE      = 1;//integer indicating sex=male
+    /* integer indicating sex is female */
     const int FEMALE    = 2;//integer indicating sex=female
+    /* integer indicating all sexes combined */
     const int ALL_SXs   = nSXs+1*(nSXs>1);//integer indicating all sexes combined
+    /* adstring indicating sex is male */
     const adstring STR_MALE    = "MALE";   //string indicating male
+    /* adstring indicating sex is female */
     const adstring STR_FEMALE  = "FEMALE"; //string indicating female
+    /* adstring indicating all sexes combined */
     const adstring STR_ALL_SXs = "ALL_SEX";//string indicating all sexes combined
-//    const adstring RSTR_MALE    = "male";   //string indicating male
-//    const adstring RSTR_FEMALE  = "female"; //string indicating female
-//    const adstring RSTR_ALL_SXs = "all sexes";//string indicating all sexes combined
-//    extern adstring_array STR_SXs(1,nSXs);  //string array
     
     //maturity states
     const int nMSs     = 2; //number of model maturity states

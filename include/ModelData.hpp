@@ -18,6 +18,7 @@
 //      AggregateCatchData
 //      EffortData
 //      SizeFrequencyData
+//      CatchData
 //      BioData
 //      FleetData
 //      ModelDatasets
@@ -86,22 +87,57 @@ class IndexRange;
 //--------------------------------------------------------------------------------
     class EffortData {
     public:
+        /* flag to print debugging info */
         static int debug;
-        const static adstring KW_EFFORT_DATA;//keyword indicating effort data
+        /* keyword indicating effort data */
+        const static adstring KW_EFFORT_DATA;
     public:
-        int ny;               //number of years of effort data
-        IndexRange* ptrAvgIR; //interval to average effort/fishing mortality
-        adstring units;       //units for potlifts
-        dmatrix  inpEff_yc;   //input effort data (year)x(year,potlifts)
-        dvector yrs;          //years w/ effort data
-        dvector eff_y;        //effort data vector
+        /* number of years of effort data */
+        int ny;
+        /* interval to average effort/fishing mortality */
+        IndexRange* ptrAvgIR; 
+        /* units for potlifts */
+        adstring units;   
+        /* input effort data (year)x(year,potlifts) */
+        dmatrix  inpEff_yc;   
+        /* vector of years w/ effort data */
+        dvector yrs;
+        /* effort data vector corresponding to \code{yrs} */
+        dvector eff_y;        
     public:
+        /**
+         * Constructor.
+         */
         EffortData(){ptrAvgIR=0;}
+        /**
+         * Destructor.
+         */
         ~EffortData();
+        /**
+         * Read input data in ADMB format from a file stream
+         * 
+         * @param is - input file stream
+         */
         void read(cifstream & is);//read file in ADMB format
+        /**
+         * Write data to an output stream in ADMB format
+         * 
+         * @param os output stream
+         */
         void write(ostream & os); //write object to file in ADMB format
+        /**
+         * Write data to an output stream as an R-formatted list object
+         * 
+         * @param os output stream
+         */
         void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read ADMB-formatted data from an input stream into an EffortData object.
+         */
         friend cifstream& operator >>(cifstream & is, EffortData & obj){obj.read(is); return is;}
+        /**
+         * Operators to write data to an output stream in ADMB format from an EffortData object.
+         */
         friend ostream&   operator <<(ostream & os,   EffortData & obj){obj.write(os); return os;}
     };
 
@@ -111,26 +147,46 @@ class IndexRange;
     class SizeFrequencyData {
     public:
         static int debug;
-        const static adstring KW_SIZEFREQUENCY_DATA;//keyword indicating size frequency data
+        /* keyword indicating size frequency data */
+        const static adstring KW_SIZEFREQUENCY_DATA;
     private:
-        wts::adstring_matrix factors;//factor combinations for input numbers-at-size
-        d5_array inpNatZ_xmsyc;       //input numbers-at-size data (sex,maturity state,shell condition,year,year+sample_size+nAtZ)
+        /* factor combinations for input numbers-at-size */
+        wts::adstring_matrix factors;
+        /* input numbers-at-size data (sex,maturity state,shell condition,year,year+sample_size+nAtZ) */
+        d5_array inpNatZ_xmsyc;       
     public:
-        int optFit; //objective function fitting option
-        int llType; //likelihood function type
+        /* objective function fitting option */
+        int optFit; 
+        /* likelihood function type */
+        int llType; 
         
-        int nZCs;    //number of size bin cut pts
-        dvector zCs; //cut points for size bins
-        dvector zBs; //size bins
+        /* number of size bin cut pts */
+        int nZCs;    
+        /* vector of cut points for size bins (1:nZCs) */
+        dvector zCs; 
+        /* vector of size bin centers (1:nZCs-1) */
+        dvector zBs; 
         
-        int ny;             //number of years of size frequency data
-        adstring units;     //units for numbers-at-size data
-        ivector  yrs;       //years of size frequency data
-        d4_array ss_xmsy;   //sample sizes for size frequency data
-        d5_array NatZ_xmsyz;//raw size frequency data
-        d5_array PatZ_xmsyz;//normalized size frequency data (sums to 1 over xmsz for each y)
+        /* number of years of size frequency data */
+        int ny;         
+        /* units for numbers-at-size data */
+        adstring units; 
+        /* years of size frequency data */
+        ivector  yrs;       
+        /* sample sizes for size frequency data */
+        d4_array ss_xmsy;   
+        /* raw size frequency data */
+        d5_array NatZ_xmsyz;
+        /* normalized size frequency data (sums to 1 over xmsz for each y) */
+        d5_array PatZ_xmsyz;
     public:
+        /**
+         * Constructor.
+         */
         SizeFrequencyData(){}
+        /**
+         * Destructor.
+         */
         ~SizeFrequencyData(){}
         /**
          * Replace catch-at-size data NatZ_xmsyz with new data. 
@@ -148,12 +204,33 @@ class IndexRange;
          * @param nlls
          */
         void saveNLLs(dvar_matrix& nlls);
+        /**
+         * Read input data in ADMB format from a file stream
+         * 
+         * @param is - input file stream
+         */
         void read(cifstream & is);//read file in ADMB format
+        /**
+         * Write data to an output stream in ADMB format
+         * 
+         * @param os output stream
+         */
         void write(ostream & os); //write object to file in ADMB format
+        /**
+         * Write data to an output stream as an R-formatted list object
+         * 
+         * @param os output stream
+         */
         void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read ADMB-formatted data from an input stream into an SizeFrequencyData object.
+         */
         friend cifstream& operator >>(cifstream & is, SizeFrequencyData & obj){obj.read(is); return is;}
         friend ostream&   operator <<(ostream & os,   SizeFrequencyData & obj){obj.write(os); return os;}
     public:
+        /**
+         * Calculate normalized size compositions PatZ_xmsyz based on NatZ_xmsyz.
+         */
         void normalize(void);
     };
 
@@ -187,6 +264,9 @@ class IndexRange;
         void read(cifstream & is);//read file in ADMB format
         void write(std::ostream & os); //write object to file in ADMB format
         void writeToR(std::ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read ADMB-formatted data from an input stream into a BioData object.
+         */
         friend cifstream& operator >>(cifstream & is, BioData & obj){obj.read(is); return is;}
         friend std::ostream&   operator <<(std::ostream & os,   BioData & obj){obj.write(os); return os;}
     };
@@ -235,6 +315,9 @@ class IndexRange;
         virtual void read(cifstream & is);//read file in ADMB format
         virtual void write(ostream & os); //write object to file in ADMB format
         virtual void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read ADMB-formatted data from an input stream into a CatchData object.
+         */
         friend cifstream& operator >>(cifstream & is, CatchData & obj){obj.read(is); return is;}
         friend ostream&   operator <<(ostream & os,   CatchData & obj){obj.write(os); return os;}
     };
@@ -302,6 +385,9 @@ class IndexRange;
          */
         void write(ostream & os); //write object to file in ADMB format
         void writeToR(ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read ADMB-formatted data from an input stream into a FleetData object.
+         */
         friend cifstream& operator >>(cifstream & is, FleetData & obj){obj.read(is); return is;}
         friend ostream&   operator <<(ostream & os,   FleetData & obj){obj.write(os); return os;}
     };
@@ -330,6 +416,9 @@ class IndexRange;
         void read(cifstream & is);//read file in ADMB format
         void write(std::ostream & os); //write object to file in ADMB format
         void writeToR(std::ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read ADMB-formatted data from an input stream into a ModelDatasets object.
+         */
         friend cifstream& operator >>(cifstream & is, ModelDatasets & obj){obj.read(is); return is;}
         friend std::ostream&   operator <<(std::ostream & os,   ModelDatasets & obj){obj.write(os); return os;}
     };

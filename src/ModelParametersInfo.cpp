@@ -585,11 +585,11 @@ NaturalMortalityInfo::NaturalMortalityInfo(){
     nPVs=5;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
     k=1;
-    lblPVs(k) = "pLnM";      dscPVs(k++) = "ln-scale base natural mortality rate (mature male crab)";
+    lblPVs(k) = "pLnM";      dscPVs(k++) = "ln-scale base natural mortality rate (immature male crab)";
     lblPVs(k) = "pLnDMT";    dscPVs(k++) = "main temporal ln-scale natural mortality offsets";
     lblPVs(k) = "pLnDMX";    dscPVs(k++) = "ln-scale natural mortality offset for female crabs";
-    lblPVs(k) = "pLnDMM";    dscPVs(k++) = "ln-scale natural mortality offset for immature crabs";
-    lblPVs(k) = "pLnDMXM";   dscPVs(k++) = "ln-scale natural mortality offset for immature female crabs";
+    lblPVs(k) = "pLnDMM";    dscPVs(k++) = "ln-scale natural mortality offset for mature crabs";
+    lblPVs(k) = "pLnDMXM";   dscPVs(k++) = "ln-scale natural mortality offset for mature female crabs";
     pLnM    = 0;
     pLnDMT  = 0;
     pLnDMX  = 0;
@@ -598,8 +598,7 @@ NaturalMortalityInfo::NaturalMortalityInfo(){
     
     nXIs=1;
     lblXIs.allocate(1,nXIs);
-    lblXIs(k=1) = "zScaling";
-    
+    lblXIs(k=1) = "zScaling";    
 }
 
 NaturalMortalityInfo::~NaturalMortalityInfo(){

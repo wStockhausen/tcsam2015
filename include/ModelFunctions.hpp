@@ -133,7 +133,8 @@ namespace tcsam{
         const static adstring PDFTYPE_T;
         const static adstring PDFTYPE_TRUNCATED_NORMAL;
         
-        const static adstring PDFTYPE_1STDIFF_NORMAL;
+        const static adstring PDFTYPE_AR1_NORMAL;
+        const static adstring PDFTYPE_EXPNORMAL;
 
         public:
             static ModelPDFInfo* getInfo(adstring pdfType);

@@ -18,6 +18,9 @@
  * 2015-05-12: 1. Added cvFDevsPen, phsDecrFDevsPen,phsZeroFDevsPen for F-devs penalties to ModelOptions
  * 2015-05-13: 1. Added phsLastDevPen, wgtLastDevPen to ModelOptions
  * 2015-05-26: 1. Added penWgtSmthLgtPrMat, penWgtNonDecLgtPrMat to ModelOptions
+ * 2016-04-13: 1. Added optPenNonDecLgtPrMat to ModelOptions
+ *             2. Added version strings to ModelConfiguration, ModelOptions
+ *             3. Updated documentation
  */
 
 #ifndef MODELCONFIGURATION_HPP
@@ -28,34 +31,58 @@
 //--------------------------------------------------------------------------------
     class ModelConfiguration {
     public:
+        /* version string for class */
+        const static adstring VERSION;
+        
         static int debug;  //flag to print debug info
         
+        /* numbr of size bins */
         static int nZBs;//number of size bins 
+        /* min model year */
         static int mnYr;//min model year
+        /* assessment year (final pop numbers given for July 1, asYr) */
         static int asYr;//assessment year (final pop numbers given for July 1, asYr)
+        /* max model year (mxYr = asYr-1) */
         static int mxYr;//max model year (mxYr = asYr-1)
+        /* number of fisheries */
         static int nFsh;//number of fisheries 
+        /* number of surveys */
         static int nSrv;//number of surveys 
         
+        /* flag to jitter initial parameter values */
         static int    jitter;  //flag to jitter initial parameter values
+        /* fraction to jitter bounded parameter values */
         static double jitFrac; //fraction to jitter bounded parameter values
+        /* flag to resample initial parameter values */
         static int    resample;//flag to resample initial parameter values
+        /* variance inflation factor for resampling parameter values */
         static double vif;     //variance inflation factor for resampling parameter values
     public:
+        /* model configuration name */
         adstring cfgName;//model configuration name
 
+        /* flag to run operating model only */
         int runOpMod;    //flag to run operating model only
+        /* flag to fit to priors */
         int fitToPriors; //flag to fit to priors
         
+        /* size bin midpoints (CW in mm) */
         dvector zMidPts;     //size bin midpoints (CW in mm)
+        /* size bin cutpoints (CW in mm) */
         dvector zCutPts;     //size bin cutpoints (CW in mm)
+        /* vector of 1's same size as zMidPts */
         dvector onesZMidPts; //vector of 1's same size as zMidPts
 
+        /* model datasets file name */
         adstring fnMDS; //model datasets file name
+        /* model parameters info file name */
         adstring fnMPI; //model parameters info file name
+        /* model options file name */
         adstring fnMOs; //model options file name
         
+        /* labels for fisheries */
         adstring_array lblsFsh;//labels for fisheries
+        /* labels for surveys */
         adstring_array lblsSrv;//labels for surveys
         
         adstring csvYrs;  //csv string of model years (mnYr:mxYr)
@@ -97,12 +124,45 @@
          * @return 1 if true, 0 if false
          */
         int isModelYear(int yr){if ((mnYr<=yr)&&(yr<=mxYr)) return 1; return 0;}
+        /**
+         * Read input file in ADMB format.
+         * 
+         * @param fn - name of file to read
+         */
         void read(const adstring & fn);   //read file in ADMB format
-        void write(const adstring & fn);  //write object to file in ADMB format
+        /**
+         * Read from input file stream in ADMB format.
+         * 
+         * @param is - input file stream
+         */
         void read(cifstream & is);        //read file in ADMB format
+        /**
+         * Write object to file in ADMB format.
+         * 
+         * @param fn - name of file to write
+         */
+        void write(const adstring & fn);  //write object to file in ADMB format
+        /**
+         * Write object to output stream in ADMB format.
+         * 
+         * @param os - output stream
+         */
         void write(std::ostream & os);         //write object to file in ADMB format
-        void writeToR(std::ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Write object to R file as a list.
+         * 
+         * @param os - output stream to write to
+         * @param nm - name for R object
+         * @param indent - number of tabs to indent
+         */
+        void writeToR(std::ostream& os, std::string nm, int indent=0);
+        /**
+         * Operator to read from input filestream in ADMB format
+         */
         friend cifstream&    operator >>(cifstream & is, ModelConfiguration & obj){obj.read(is);return is;}
+        /**
+         * Operator to write to output stream in ADMB format
+         */
         friend std::ostream& operator <<(std::ostream & os,   ModelConfiguration & obj){obj.write(os);;return os;}
     };
 
@@ -111,31 +171,83 @@
 //--------------------------------------------------------------------------------
     class ModelOptions {
     public:
+        /* version string for class */
+        const static adstring VERSION;
+        /* flag to print debug info */
         static int debug;  //flag to print debug info        
     public:
+        /* pointer to model configuration object */
         ModelConfiguration* ptrMC;      //pointer to model configuration object
+        /* labels for capture rate averaging options */
         adstring_array lblsFcAvgOpts;   //labels for capture rate averaging options
+        /* selected options for averaging capture rate */
         ivector optsFcAvg;              //selected options for averaging capture rate
-        adstring_array lblsGrowthOpts;  //labels for growth options
-        int optsGrowth;                 //selected option for growth calculations
-        adstring_array lblsInitNatZOpts;//labels for initial n-at-z options
-        int optsInitNatZ;               //selected option for initial n-at-z calculations
-        double cvFDevsPen;              //penalty for F-devs
-        int phsDecrFDevsPen;            //phase to start decreasing fpenCV
-        int phsZeroFDevsPen;            //phase at which to turn off penalties on F-devs
-        double wgtLastDevsPen;          //penalty for last dev in each devs vector
-        int phsLastDevsPen;             //phase to start the penalty on the last devs
-        double wgtSmthLgtPrMat;      //penalty on maturity ogive smoothness
-        double wgtNonDecLgtPrMat;    //penalty on maturity ogive non-decreasing
+        /* labels for growth options */
+        adstring_array lblsGrowthOpts;  
+        /* selected option for growth calculations */
+        int optGrowth;                 
+        /* labels for initial n-at-z options */
+        adstring_array lblsInitNatZOpts;
+        /* selected option for initial n-at-z calculations */
+        int optInitNatZ;               
+        /* penalty for F-devs */
+        double cvFDevsPen;              
+        /* phase to start decreasing fpenCV */
+        int phsDecrFDevsPen;            
+        /* phase at which to turn off penalties on F-devs */
+        int phsZeroFDevsPen;            
+        /* penalty for last dev in each devs vector */
+        double wgtLastDevsPen;          
+        /* phase to start the penalty on the last devs */
+        int phsLastDevsPen;             
+        /* penalty on maturity ogive smoothness */
+        double wgtSmthLgtPrMat;      
+        /* penalty on maturity non-decreasing maturity parameters */
+        double wgtNonDecLgtPrMat;    
+        /* labels for options for penalties on non-decreasing logit-scale prMat parameters */
+        adstring_array lblsPenNonDecLgtPrMatOpts;
+        /* integer indicating option for penalty on non-decreasing logit-scale prMat parameters */
+        int optPenNonDecLgtPrMat;
 
     public:
+        /**
+         * Class constructor
+         * 
+         * @param mc - ModelConfiguration object
+         */
         ModelOptions(ModelConfiguration& mc);
+        /**
+         * Class destructor.
+         */
         ~ModelOptions(){}
         
+        /**
+         * Read from input stream in ADMB format.
+         * 
+         * @param is - input stream
+         */
         void read(cifstream & is);        //read file in ADMB format
+        /**
+         * Write to output stream in ADMB format
+         * 
+         * @param os - output stream
+         */
         void write(std::ostream & os);         //write object to file in ADMB format
+        /**
+         * Write object to R file as a list.
+         * 
+         * @param os - output stream to write to
+         * @param nm - name for R object
+         * @param indent - number of tabs to indent
+         */
         void writeToR(std::ostream& os, std::string nm, int indent=0);//write object to R file as list
+        /**
+         * Operator to read from input filestream in ADMB format
+         */
         friend cifstream&    operator >>(cifstream & is, ModelOptions & obj){obj.read(is);return is;}
+        /**
+         * Operator to write to output stream in ADMB format
+         */
         friend std::ostream& operator <<(std::ostream & os,   ModelOptions & obj){obj.write(os);;return os;}
     };
     
