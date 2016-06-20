@@ -144,6 +144,8 @@
 //                  in the parameter group (so pLnCDX does not really refer to a
 //                  female-specific offset, but is more general).
 //  2016-05-18: 1. Changed prMolt2Mat_.. to prM2M_.. in output to R to match R packages.
+//  2016-06-20: 1. Mainly cosmetic changes renaming some variables. Revised some output 
+//                  to facilitate comparison with TCSAM013 model output.
 //
 // =============================================================================
 // =============================================================================
@@ -155,7 +157,7 @@ GLOBALS_SECTION
     #include "TCSAM.hpp"
 
     adstring model  = tcsam::MODEL;
-    adstring modVer = "2016.04.25"; 
+    adstring modVer = "2016.06.20"; 
     
     time_t start,finish;
     
@@ -718,13 +720,13 @@ DATA_SECTION
  
     //growth parameters
     int npLnGrA; ivector phsLnGrA; vector lbLnGrA; vector ubLnGrA;
-    !!tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrA,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA,rpt::echo);
+    !!tcsam::setParameterInfo(ptrMPI->ptrGrw->pLnGrA,npLnGrA,lbLnGrA,ubLnGrA,phsLnGrA,rpt::echo);
     
     int npLnGrB; ivector phsLnGrB; vector lbLnGrB; vector ubLnGrB;
-    !!tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrB,npLnGrB,lbLnGrB,ubLnGrB,phsLnGrB,rpt::echo);
+    !!tcsam::setParameterInfo(ptrMPI->ptrGrw->pLnGrB,npLnGrB,lbLnGrB,ubLnGrB,phsLnGrB,rpt::echo);
     
     int npLnGrBeta; ivector phsLnGrBeta; vector lbLnGrBeta; vector ubLnGrBeta;
-    !!tcsam::setParameterInfo(ptrMPI->ptrGr->pLnGrBeta,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta,rpt::echo);
+    !!tcsam::setParameterInfo(ptrMPI->ptrGrw->pLnGrBeta,npLnGrBeta,lbLnGrBeta,ubLnGrBeta,phsLnGrBeta,rpt::echo);
     
     //selectivity parameters
     !!nSel = ptrMPI->ptrSel->nPCs;//number of selectivity functions defined
@@ -823,10 +825,10 @@ DATA_SECTION
     !!npcRec = ptrMPI->ptrRec->nPCs;
     int npcNM;
     !!npcNM = ptrMPI->ptrNM->nPCs;
-    int npcMat;
-    !!npcMat = ptrMPI->ptrM2M->nPCs;
-    int npcGr;
-    !!npcGr = ptrMPI->ptrGr->nPCs;
+    int npcM2M;
+    !!npcM2M = ptrMPI->ptrM2M->nPCs;
+    int npcGrw;
+    !!npcGrw = ptrMPI->ptrGrw->nPCs;
     int npcSel;
     !!npcSel = ptrMPI->ptrSel->nPCs;
     int npcFsh;
@@ -961,12 +963,12 @@ PARAMETER_SECTION
     5darray M_yxmsz(mnYr,mxYr,1,nSXs,1,nMSs,1,nSCs,1,nZBs);//size-specific natural mortality rate
     
     //maturity-related quantities
-    matrix  prM2M_cz(1,npcMat,1,nZBs);         //prob. of immature crab molting to maturity by parameter combination
+    matrix  prM2M_cz(1,npcM2M,1,nZBs);         //prob. of immature crab molting to maturity by parameter combination
     3darray prM2M_yxz(mnYr,mxYr,1,nSXs,1,nZBs);//prob. of immature crab molting to maturity given sex x, pre-molt size z
     
     //growth related quantities
-    matrix mnGrZ_cz(1,npcGr,1,nZBs);           //mean post-molt size by parameter combination, pre-molt size
-    3darray prGr_czz(1,npcGr,1,nZBs,1,nZBs);   //prob of growth to z (row) from zp (col) by parameter combination
+    matrix mnGrZ_cz(1,npcGrw,1,nZBs);           //mean post-molt size by parameter combination, pre-molt size
+    3darray prGr_czz(1,npcGrw,1,nZBs,1,nZBs);   //prob of growth to z (row) from zp (col) by parameter combination
     4darray mnGrZ_yxsz(mnYr,mxYr,1,nSXs,1,nSCs,1,nZBs); //mean post-molt size by by year, sex, shell condition, pre-molt size
     5darray prGr_yxszz(mnYr,mxYr,1,nSXs,1,nSCs,1,nZBs,1,nZBs); //prob of growth to z (row) from zp (col) by year, sex, shell condition
     
@@ -1189,8 +1191,8 @@ PRELIMINARY_CALCS_SECTION
         calcObjFun(dbgAll,rpt::echo);
         
         {cout<<"writing model results to R"<<endl;
-            rpt::echo<<"writing model results to R"<<endl;
-            ofstream echo1; echo1.open("ModelRes0.R", ios::trunc);
+            rpt::echo<<"writing initial model report to R"<<endl;
+            ofstream echo1; echo1.open("ModelInitReport.rep", ios::trunc);
             ReportToR(echo1,1,cout);
         }
         
@@ -1264,9 +1266,9 @@ FUNCTION setInitVals
     setInitVals(ptrMPI->ptrNM->pLnDMXM,pLnDMXM,0,rpt::echo);
 
     //growth parameters
-    setInitVals(ptrMPI->ptrGr->pLnGrA,   pLnGrA,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrGr->pLnGrB,   pLnGrB,   0,rpt::echo);
-    setInitVals(ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,0,rpt::echo);
+    setInitVals(ptrMPI->ptrGrw->pLnGrA,   pLnGrA,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGrw->pLnGrB,   pLnGrB,   0,rpt::echo);
+    setInitVals(ptrMPI->ptrGrw->pLnGrBeta,pLnGrBeta,0,rpt::echo);
 
     //maturity parameters
     setInitVals(ptrMPI->ptrM2M->pLgtPrM2M,pLgtPrM2M,0,rpt::echo);
@@ -1345,9 +1347,9 @@ FUNCTION void writeMCMCtoR(ofstream& mcmc)
         writeMCMCtoR(mcmc,ptrMPI->ptrNM->pLnDMXM); mcmc<<cc<<endl;
 
         //growth parameters
-        writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrA); mcmc<<cc<<endl;
-        writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrB); mcmc<<cc<<endl;
-        writeMCMCtoR(mcmc,ptrMPI->ptrGr->pLnGrBeta); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrGrw->pLnGrA); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrGrw->pLnGrB); mcmc<<cc<<endl;
+        writeMCMCtoR(mcmc,ptrMPI->ptrGrw->pLnGrBeta); mcmc<<cc<<endl;
 
         //maturity parameters
         writeMCMCtoR(mcmc,ptrMPI->ptrM2M->pLgtPrM2M); mcmc<<cc<<endl;
@@ -2468,7 +2470,7 @@ FUNCTION void calcMolt2Maturity(int debug, ostream& cout)
 FUNCTION void calcGrowth(int debug, ostream& cout)  
     if(debug>dbgCalcProcs) cout<<"Starting calcGrowth()"<<endl;
     
-    GrowthInfo* ptrGrI = ptrMPI->ptrGr;
+    GrowthInfo* ptrGrI = ptrMPI->ptrGrw;
     
     dvariable grA;
     dvariable grB;
@@ -2549,7 +2551,8 @@ FUNCTION void calcGrowth(int debug, ostream& cout)
                 x = idxs(idx,2); //sex index
                 for (int s=1;s<=nSCs;s++){
                     mnGrZ_yxsz(y,x,s) = mnGrZ_cz(pc);
-                    for (int z=1;z<=nZBs;z++) prGr_yxszz(y,x,s,z) = prGr_czz(pc,z);
+                    prGr_yxszz(y,x,s) = prGr_czz(pc);
+                    //for (int z=1;z<=nZBs;z++) prGr_yxszz(y,x,s,z) = prGr_czz(pc,z);
                 }//s
             }
         }//idx
@@ -4257,9 +4260,9 @@ FUNCTION void calcAllPriors(int debug, ostream& cout)
     
     //growth parameters
     if (debug<0) cout<<tb<<"growth=list("<<endl;
-    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrA,   pLnGrA,   debug,cout); if (debug<0){cout<<cc<<endl;}
-    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrB,   pLnGrB,   debug,cout); if (debug<0){cout<<cc<<endl;}
-    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGr->pLnGrBeta,pLnGrBeta,debug,cout); if (debug<0){cout<<endl;}
+    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGrw->pLnGrA,   pLnGrA,   debug,cout); if (debug<0){cout<<cc<<endl;}
+    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGrw->pLnGrB,   pLnGrB,   debug,cout); if (debug<0){cout<<cc<<endl;}
+    if (debug<0) {cout<<tb;} tcsam::calcPriors(objFun,ptrMPI->ptrGrw->pLnGrBeta,pLnGrBeta,debug,cout); if (debug<0){cout<<endl;}
     if (debug<0) cout<<tb<<")"<<cc<<endl;
     
     //maturity parameters
@@ -4325,16 +4328,17 @@ FUNCTION void ReportToR_Params(ostream& os, int debug, ostream& cout)
 //Write model processes to file as R list
 FUNCTION void ReportToR_ModelProcesses(ostream& os, int debug, ostream& cout)
     if (debug) cout<<"Starting ReportToR_ModelProcesses(...)"<<endl;
-    
+//    wts::adstring_matrix aM2M = tcsam::convertPCs(ptrMPI->ptrM2M);
+//    wts::adstring_matrix aGr  = tcsam::convertPCs(ptrMPI->ptrGrw);
     os<<"mp=list("<<endl;
         os<<"M_cxm    ="; wts::writeToR(os,value(M_cxm),   adstring("pc=1:"+str(npcNM )),xDms,mDms);   os<<cc<<endl;
-        os<<"prM2M_cz ="; wts::writeToR(os,value(prM2M_cz),adstring("pc=1:"+str(npcMat)),zbDms);       os<<cc<<endl;
+        os<<"prM2M_cz ="; wts::writeToR(os,value(prM2M_cz),adstring("pc=1:"+str(npcM2M)),zbDms);       os<<cc<<endl;
         os<<"sel_cz   ="; wts::writeToR(os,value(sel_cz),  adstring("pc=1:"+str(npcSel)),zbDms);       os<<cc<<endl;
-        os<<"M_yxmsz  =";  wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
-        os<<"prM2M_yxz ="; wts::writeToR(os,     value(prM2M_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
+        os<<"M_yxmsz  ="; wts::writeToR(os,wts::value(M_yxmsz),   yDms,xDms,mDms,sDms,zbDms);  os<<cc<<endl;
+        os<<"prM2M_yxz =";wts::writeToR(os,     value(prM2M_yxz), yDms,xDms,zbDms);            os<<cc<<endl;
         os<<"T_list=list("<<endl;
-            os<<"mnZAM_cz   ="; wts::writeToR(os,value(mnGrZ_cz),adstring("pc=1:"+str(npcGr )),zbDms);       os<<cc<<endl;
-            os<<"T_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGr )),zbDms,zpDms); os<<cc<<endl;
+            os<<"mnZAM_cz   ="; wts::writeToR(os,value(mnGrZ_cz),adstring("pc=1:"+str(npcGrw )),zbDms);       os<<cc<<endl;
+            os<<"T_czz      ="; wts::writeToR(os,value(prGr_czz),adstring("pc=1:"+str(npcGrw )),zbDms,zpDms); os<<cc<<endl;
             os<<"mnZAM_yxsz =";  wts::writeToR(os,wts::value(mnGrZ_yxsz),yDms,xDms,sDms,zbDms);              os<<cc<<endl;
             if (0){//TDODO: develop option to output
                 os<<"T_yxszz    =";  wts::writeToR(os,wts::value(prGr_yxszz),yDms,xDms,sDms,zbDms,zpDms);    os<<endl;
@@ -4503,9 +4507,9 @@ FUNCTION void updateMPI(int debug, ostream& cout)
     ptrMPI->ptrNM->pLnDMXM->setFinalVals(pLnDMXM);
     
     //growth parameters
-    ptrMPI->ptrGr->pLnGrA->setFinalVals(pLnGrA);
-    ptrMPI->ptrGr->pLnGrB->setFinalVals(pLnGrB);
-    ptrMPI->ptrGr->pLnGrBeta->setFinalVals(pLnGrBeta);
+    ptrMPI->ptrGrw->pLnGrA->setFinalVals(pLnGrA);
+    ptrMPI->ptrGrw->pLnGrB->setFinalVals(pLnGrB);
+    ptrMPI->ptrGrw->pLnGrBeta->setFinalVals(pLnGrBeta);
     
     //maturity parameters
     //cout<<"setting final vals for pLgtPrM2M"<<endl;

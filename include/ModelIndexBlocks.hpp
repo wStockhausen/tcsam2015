@@ -63,13 +63,17 @@ class IndexRange{
          */
         void read(cifstream & is);      //read object in ADMB format
         /*
-         * Writes a range in ADMB format to an output stream.
+         * Writes the range in ADMB format to an output stream.
          */
         void write(std::ostream & os);  //write object to file in ADMB format
         /*
-         * Writes a range as an un-named R list.
+         * Writes the range as an un-named R list.
          */
         void writeToR(std::ostream& os);//write object to R file as list
+        /*
+         * Returns the range as an adstring object.
+         */
+        adstring asString();
         
         friend cifstream&    operator >>(cifstream & is,   IndexRange & obj){obj.read(is);return is;}
         friend std::ostream& operator <<(std::ostream & os,IndexRange & obj){obj.write(os);return os;}
@@ -141,6 +145,10 @@ class IndexBlock{
          * Writes an IndexBlock as an un-named R list.\n
          */
         void writeToR(std::ostream& os);//write object to R file as list
+        /*
+         * Returns an IndexBlock as an adstring object.
+         */
+        adstring asString();
     protected:
         /**
          * Creates vectors of indices that map from block to model (forward)\n

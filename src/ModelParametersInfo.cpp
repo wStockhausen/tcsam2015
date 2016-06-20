@@ -23,12 +23,55 @@ int ParameterGroupInfo::debug   = 0;
 int RecruitmentInfo::debug      = 0;
 int NaturalMortalityInfo::debug = 0;
 int GrowthInfo::debug           = 0;
-int Molt2MaturityInfo::debug         = 0;
+int Molt2MaturityInfo::debug    = 0;
 int SelectivityInfo::debug      = 0;
 int FisheriesInfo::debug        = 0;
 int SurveysInfo::debug          = 0;
 int ModelParametersInfo::debug  = 0;
     
+/*----------------------------------------------------------------------------*/
+/**
+ * Function to convert parameter combinations to R dimensions 
+ * @param pgi
+ * @return wts::adstring_matrix
+ */
+wts::adstring_matrix tcsam::convertPCs(ParameterGroupInfo * pgi){
+    //cout<<"starting tcsam::convertPCs for "<<pgi->name<<endl;
+    int nIVs = pgi->nIVs;
+    int nPCs = pgi->nPCs;
+    //cout<<"nIVs = "<<nIVs<<"; nPCs = "<<nPCs<<endl;
+    //wts::adstring_matrix::debug = 1;
+    wts::adstring_matrix a(1,nIVs,0,nPCs);
+    //wts::adstring_matrix::debug = 0;
+    //cout<<"allocated a"<<endl;
+    int ibsIdx = 1;
+    for (int i=1;i<=nIVs;i++){
+        if (pgi->lblIVs(i)==tcsam::STR_SEX)             {a(i,0)=pgi->lblIVs(i);} else
+        if (pgi->lblIVs(i)==tcsam::STR_MATURITY_STATE)  {a(i,0)=pgi->lblIVs(i);} else
+        if (pgi->lblIVs(i)==tcsam::STR_SHELL_CONDITION) {a(i,0)=pgi->lblIVs(i);} else 
+        if (i==pgi->ibsIdxs(ibsIdx)){
+            a(i,0)=pgi->ppIBSs[ibsIdx-1]->getType();
+            if (ibsIdx<pgi->nIBSs) ibsIdx++;//increment to next
+        }
+    }
+    for (int r=1;r<=nPCs;r++){//loop over rows
+        //cout<<"r = "<<r<<endl;
+        int ibsIdx = 1;
+        for (int i=1;i<=nIVs;i++){//loop over index variables
+            //cout<<tb<<"i = "<<i<<" "<<pgi->lblIVs(i)<<tb<<pgi->in(r,i)<<endl;
+            if (pgi->lblIVs(i)==tcsam::STR_SEX)             {a(i,r)=tcsam::getSexType(pgi->in(r,i));}      else
+            if (pgi->lblIVs(i)==tcsam::STR_MATURITY_STATE)  {a(i,r)=tcsam::getMaturityType(pgi->in(r,i));} else
+            if (pgi->lblIVs(i)==tcsam::STR_SHELL_CONDITION) {a(i,r)=tcsam::getShellType(pgi->in(r,i));}    else 
+            if (i==pgi->ibsIdxs(ibsIdx)){
+                a(i,r)=pgi->ppIBSs[ibsIdx-1]->getIndexBlock(r)->asString();
+                if (ibsIdx<pgi->nIBSs) ibsIdx++;//increment to next
+            } else {a(i,r)=str(pgi->in(r,i));}
+        }
+    }
+    //cout<<a<<endl;
+    //cout<<"finished tcsam::convertPCs for "<<pgi->name<<endl;
+    return a;
+}
 /*----------------------------------------------------------------------------\n
  * ParameterGroupInfo\n
  -----------------------------------------------------------------------------*/
@@ -1329,7 +1372,7 @@ ModelParametersInfo::ModelParametersInfo(ModelConfiguration& mc){
     ptrMC=&mc;
     ptrRec=0;
     ptrNM =0;
-    ptrGr =0;
+    ptrGrw =0;
     ptrM2M=0;
     ptrSel=0;
     ptrFsh=0;
@@ -1339,7 +1382,7 @@ ModelParametersInfo::ModelParametersInfo(ModelConfiguration& mc){
 ModelParametersInfo::~ModelParametersInfo(){
     if (ptrRec) {delete ptrRec;     ptrRec  = 0;}
     if (ptrNM)  {delete ptrNM;      ptrNM   = 0;}
-    if (ptrGr)  {delete ptrGr;      ptrGr   = 0;}
+    if (ptrGrw)  {delete ptrGrw;      ptrGrw   = 0;}
     if (ptrM2M) {delete ptrM2M;     ptrM2M  = 0;}
     if (ptrSel) {delete ptrSel;     ptrSel  = 0;}
     if (ptrFsh) {delete ptrFsh;     ptrFsh  = 0;}
@@ -1366,8 +1409,8 @@ void ModelParametersInfo::read(cifstream & is){
     
     //read growth parameters
     rpt::echo<<"#---reading Growth Info"<<endl;
-    ptrGr = new GrowthInfo();
-    is>>(*ptrGr);
+    ptrGrw = new GrowthInfo();
+    is>>(*ptrGrw);
     if (debug) cout<<"created GrowthInfo object"<<endl;
     
     //read maturity parameters
@@ -1411,7 +1454,7 @@ void ModelParametersInfo::write(std::ostream & os){
     os<<"#-------------------------------"<<endl;
     os<<"# Growth parameters  "<<endl;
     os<<"#-------------------------------"<<endl;
-    os<<(*ptrGr)<<endl;
+    os<<(*ptrGrw)<<endl;
     
     os<<"#-------------------------------"<<endl;
     os<<"# Molt-to-maturity parameters  "<<endl;
@@ -1439,7 +1482,7 @@ void ModelParametersInfo::writeToR(std::ostream & os){
     os<<"mpi=list("<<endl;
     ptrRec->writeToR(os); os<<cc<<endl;
     ptrNM->writeToR(os);  os<<cc<<endl;
-    ptrGr->writeToR(os);  os<<cc<<endl;
+    ptrGrw->writeToR(os);  os<<cc<<endl;
     ptrM2M->writeToR(os); os<<cc<<endl;
     ptrSel->writeToR(os); os<<cc<<endl;
     ptrFsh->writeToR(os); os<<cc<<endl;

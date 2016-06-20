@@ -3,6 +3,7 @@
 #include "ModelConstants.hpp"
 #include "ModelIndexBlocks.hpp"
 #include "ModelConfiguration.hpp"
+#include "ModelData.hpp"
 
 
 int IndexRange::debug = 0;
@@ -81,7 +82,7 @@ void IndexRange::read(cifstream& is){
  * @param os
  */
 void IndexRange::write(std::ostream& os){
-    if (iv.size()>1) os<<mn<<":"<<mx; else os<<mn;
+    os<<asString();
 }
 /**
  * Writes range to file as R vector min:max.
@@ -89,6 +90,15 @@ void IndexRange::write(std::ostream& os){
  */
 void IndexRange::writeToR(std::ostream& os){
     os<<mn<<":"<<mx;
+}
+/*
+ * Returns a range as an adstring object.
+ */
+adstring IndexRange::asString(){
+    adstring a;
+    if (iv.size()>1) a = str(mn)+":"+str(mx);
+    else a = str(mn);
+    return(a);
 }
 
 /**
@@ -192,15 +202,22 @@ void IndexBlock::read(cifstream & is){
  * Writes an IndexBlock in ADMB format to an output stream.
  */
 void IndexBlock::write(std::ostream & os){
-    os<<"[";
-    for (int i=1;i<nRCs;i++) os<<(*ppIRs[i-1])<<";";
-    os<<(*ppIRs[nRCs-1])<<"]";
+    os<<asString();
 }
 /*
  * Writes an IndexBlock as an unnamed character string.
  */
 void IndexBlock::writeToR(std::ostream& os){
-    os<<"'"; write(os); os<<"'";
+    os<<"'"<<asString()<<os<<"'";
+}
+/*
+ * Returns an IndexBlock as an adstring object.
+ */
+adstring IndexBlock::asString(){
+    adstring a = "[";
+    for (int i=1;i<nRCs;i++) a += ppIRs[i-1]->asString()+";";
+    a += ppIRs[nRCs-1]->asString()+"]";
+    return a;
 }
 
 /*----------------------------------------------------------------------------*/

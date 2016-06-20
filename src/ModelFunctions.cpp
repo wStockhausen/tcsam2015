@@ -2,6 +2,8 @@
 #include <wtsADMB.hpp>
 #include "ModelConstants.hpp"
 #include "ModelFunctions.hpp"
+#include "ModelData.hpp"
+#include "ModelParametersInfo.hpp"
 
 //----------------------------------------------------------------------
 //          Model Functions

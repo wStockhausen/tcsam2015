@@ -77,6 +77,15 @@ class ParameterGroupInfo{
         DevsVectorVectorInfo*    read(cifstream& is, adstring& lbl, DevsVectorVectorInfo* pDVVI);
 };
 
+namespace tcsam{
+    /**
+     * Function to convert parameter combinations to R dimensions 
+     * @param pgi
+     * @return wts::adstring_matrix
+     */
+    wts::adstring_matrix convertPCs(ParameterGroupInfo * pgi);
+}//namespace tcsam
+
 /*------------------------------------------------------------------------------
  * RecruitmentInfo\n
  * Encapsulates the following recruitment-related parameters:\n
@@ -362,7 +371,7 @@ class ModelParametersInfo{
         
         RecruitmentInfo*      ptrRec; //pointer to recruitment info
         NaturalMortalityInfo* ptrNM;  //pointer to natural mortality info
-        GrowthInfo*           ptrGr;  //pointer to growth info
+        GrowthInfo*           ptrGrw;  //pointer to growth info
         Molt2MaturityInfo*    ptrM2M; //pointer to molt-to-maturity info
         
         SelectivityInfo*      ptrSel; //pointer to selectivity functions info
