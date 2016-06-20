@@ -30,7 +30,7 @@ void IndexRange::createRangeVector(int min, int max){
     for (int i=0;i<n;i++) iv(i+1)=mn+i;
 }
 /**
- * Parse a range string ("x:y" or "x") to obtain actual min, max for range.
+ * Parse a range string ("x:y" or "y") to obtain actual min, max for range.
  * If result finds x (y) < 0, then x (y) will be substituted using
  *  if x<0, x = modMin+1+x (so x=-1->x=modMin, x=-2->x=modMin-1, etc)
  *  if y<0, y = modMax-1-y (so y=-1->y=modMax, y=-2->y=modMax+1, etc)
@@ -50,10 +50,11 @@ void IndexRange::parse(adstring str){
         if (mx<modMin){mx=modMin;} else
         if (mx>modMax){mx=modMax;}
     } else {
-        mn = ::atoi(str);
-        if (mn<modMin){mn=modMin;} else
-        if (mn>modMax){mn=modMax;}
-        mx = mn;
+        mx = ::atoi(str);
+        if (mx<0){mx=modMax-1-mx;} else
+        if (mx<modMin){mx=modMin;} else
+        if (mx>modMax){mx=modMax;}
+        mn=mx;
     }
     if (debug) cout<<"mn,mx = "<<mn<<cc<<mx<<endl;
     createRangeVector(mn,mx);
@@ -196,10 +197,10 @@ void IndexBlock::write(std::ostream & os){
     os<<(*ppIRs[nRCs-1])<<"]";
 }
 /*
- * Writes an IndexBlock as an un-named R list.
+ * Writes an IndexBlock as an unnamed character string.
  */
 void IndexBlock::writeToR(std::ostream& os){
-    
+    os<<"'"; write(os); os<<"'";
 }
 
 /*----------------------------------------------------------------------------*/
@@ -300,7 +301,10 @@ void IndexBlockSet::write(std::ostream & os){
  * Writes an IndexBlockSet as an un-named R list.
  */
 void IndexBlockSet::writeToR(std::ostream& os){
-    
+    os<<"list(type="<<type<<cc<<"nIBs="<<nIBs<<cc;
+    os<<"IBs=c("; 
+    for (int i=1;i<nIBs;i++) {ppIBs[i-1]->writeToR(os); os<<cc;}
+    ppIBs[nIBs-1]->writeToR(os); os<<")"<<")";
 }
 
 

@@ -155,8 +155,9 @@ void setDevs(dvar_matrix& devs, param_init_bounded_vector_vector& pDevs, int deb
         mxi = pDevs(v).indexmax();
         devs(v)(mni,mxi) = pDevs(v);
         devs(v,mxi+1) = -sum(devs(v)(mni,mxi));
+        if (debug>=(tcsam::dbgAll+1)) cout<<v<<":  "<<devs(v)<<endl;
     }
-    if (debug>=tcsam::dbgAll) {
+    if (debug>=(tcsam::dbgAll+1)) {
         std::cout<<"Enter 1 to continue >>";
         std::cin>>nv;
         if (nv<0) exit(-1);
@@ -222,6 +223,13 @@ void calcPriors(objective_function_value& objFun, BoundedNumberVectorInfo* ptrVI
     if (ptrVI->getSize()){
         dvar_vector tmp = pv*1.0;
         dvar_vector pri = ptrVI->calcLogPriors(tmp);//ln-scale prior (NOT NLL!)
+        if (isnan(value(sum(pri)))){
+            std::cout<<"Found NAN for priors("<<ptrVI->name<<") = "<<pri<<std::endl;
+            std::cout<<"param values = "<<pv<<endl;
+            ptrVI->write(std::cout);
+            std::cout<<"Aborting!!"<<endl;
+            exit(-1);
+        }
         if (debug>=tcsam::dbgPriors) cout<<"priors("<<ptrVI->name<<") = "<<pri<<std::endl;
         objFun += -ptrVI->getPriorWgts()*pri;
         if (debug<0){
@@ -265,6 +273,13 @@ void calcPriors(objective_function_value& objFun, BoundedVectorVectorInfo* ptrVV
         for (int i=pm.indexmin();i<pm.indexmax();i++) {
             dvar_vector tmp = 1.0*pm(i);
             dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
+            if (isnan(value(sum(pri)))){
+                std::cout<<"Found NAN for priors("<<ptrVVI->name<<"["<<i<<"]) = "<<pri<<std::endl;
+                std::cout<<"param values = "<<tmp<<endl;
+                ptrVVI->write(std::cout);
+                std::cout<<"Aborting!!"<<endl;
+                exit(-1);
+            }
             if (debug>=tcsam::dbgPriors){
                 cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<std::endl;
                 cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
@@ -279,6 +294,13 @@ void calcPriors(objective_function_value& objFun, BoundedVectorVectorInfo* ptrVV
             int i = pm.indexmax();
             dvar_vector tmp = 1.0*pm(i);
             dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
+            if (isnan(value(sum(pri)))){
+                std::cout<<"Found NAN for priors("<<ptrVVI->name<<"["<<i<<"]) = "<<pri<<std::endl;
+                std::cout<<"param values = "<<tmp<<endl;
+                ptrVVI->write(std::cout);
+                std::cout<<"Aborting!!"<<endl;
+                exit(-1);
+            }
             if (debug>=tcsam::dbgPriors){
                 cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<std::endl;
                 cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
@@ -317,6 +339,13 @@ void calcPriors(objective_function_value& objFun, DevsVectorVectorInfo* ptrVVI, 
         for (int i=1;i<pm.indexmax();i++) {
             dvar_vector tmp = 1.0*pm(i);
             dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
+            if (isnan(value(sum(pri)))){
+                std::cout<<"Found NAN for priors("<<ptrVVI->name<<"["<<i<<"]) = "<<pri<<std::endl;
+                std::cout<<"param values = "<<tmp<<endl;
+                ptrVVI->write(std::cout);
+                std::cout<<"Aborting!!"<<endl;
+                exit(-1);
+            }
             if (debug>=tcsam::dbgPriors){
                 cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<std::endl;
                 cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
@@ -331,7 +360,14 @@ void calcPriors(objective_function_value& objFun, DevsVectorVectorInfo* ptrVVI, 
             int i = pm.indexmax();
             dvar_vector tmp = 1.0*pm(i);
             dvar_vector pri = (*ptrVVI)[i]->calcLogPrior(tmp);//ln-scale prior (NOT NLL!)
-            if (debug>=tcsam::dbgPriors){
+             if (isnan(value(sum(pri)))){
+                std::cout<<"Found NAN for priors("<<ptrVVI->name<<"["<<i<<"]) = "<<pri<<std::endl;
+                std::cout<<"param values = "<<tmp<<endl;
+                ptrVVI->write(std::cout);
+                std::cout<<"Aborting!!"<<endl;
+                exit(-1);
+            }
+           if (debug>=tcsam::dbgPriors){
                 cout<<"wts["<<ptrVVI->name<<"]("<<i<<") = "<<wts(i)<<std::endl;
                 cout<<"priors["<<ptrVVI->name<<"]("<<i<<") = "<<pri<<std::endl;
             }

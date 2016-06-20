@@ -1,9 +1,9 @@
 #####################################################################                                       
-#TCSAM2015 Model Configuration File                                 #                                       
+#TCSAM2015 Model Configuration File-Retrospective Test              #                                       
 #####################################################################                                       
-Base.case #model case                                                                                       
+Retrospective.Test #model case                                                                                       
 1949 # model start year (pop. model start year)  
-2012 # model end year (final pop model numbers at size are given for July 1, end model year+1)   
+2010 # model end year (final pop model numbers at size are given for July 1, end model year+1)   
 32   #number of size bins
 #size bin cut pts
 25  30  35  40  45  50  55  60  65  70  75  80  85  90  95  100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 185
@@ -15,11 +15,11 @@ AFSC.Trawl.Survey #survey names
 FALSE  #run operating model only
 FALSE  #fit to priors
 
-../input.Tanner2013/Model.ParametersInfo.dat  #model parameters info file
+../input.RetrospectiveTest/Model.ParametersInfo.dat  #model parameters info file
 ../input.Tanner2013/Model.Datasets.dat        #model datasets file
-../input.Tanner2013/Model.Options.dat         #model options file
+../input.RetrospectiveTest/Model.Options.dat         #model options file
 
 ON  #jitter resampling option
-0.5 #jitter range
+0.1 #jitter range
 OFF #prior resampling option
 1   #prior variance inflation factor

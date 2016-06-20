@@ -3,35 +3,86 @@
 #include "ModelConstants.hpp"
 /**
  * Changes:
- * 2014-12-03: 1. Changed std::exit(-1) to exit(-1) for MinGW compatibility.
+ * 20141203: 1. Changed std::exit(-1) to exit(-1) for MinGW compatibility.
+ * 20150113: 1. Added FIT_BY_XSE, FIT_BY_XMSE
+ * 20150210: 1. Added conversion from UNITS_KMT to other units
+ * 20150302: 1. Added tcsamDims::formatForR(adstring).
+ *           2. Revised getDDsForR(...) functions (DD=SX,SC,MS) to use formatForR(...)
 */
 
 using namespace tcsam;
 
 std::ofstream rpt::echo("EchoData.dat",std::ios::trunc);
 
+/**
+ * Format for R output: lower case, replace "_"'s with spaces
+ * @param s
+ * @return 
+ */
+adstring tcsamDims::formatForR(const adstring& s){
+//    rpt::echo<<"In formatForR() with '"<<s<<"'"<<endl;
+    adstring tmp; tmp = s; tmp.to_lower();
+//    rpt::echo<<"tmp = "<<tmp<<endl;
+    int p = tmp.pos('_');
+//    rpt::echo<<"p = "<<p<<endl;
+    while (p>0){
+        tmp(p)=' ';
+        p = tmp.pos('_');
+//        rpt::echo<<"p = "<<p<<endl;
+    }
+//    rpt::echo<<"original: '"<<s<<"'. Re-formatted: '"<<tmp<<"'"<<endl;
+    return tmp;
+}
+
+/**
+ * Convert a vector of model sexes (defined by the input indices) to an
+ * R character vector formatted as part of an R list, using 'x'
+ * as the name.
+ * 
+ * @param mn
+ * @param mx
+ * @return 
+ */
 adstring tcsamDims::getSXsForR(int mn,int mx){
-    adstring dms = "sex=c("+qt+getSexType(mn)+qt;
+    adstring dms = "x=c("+qt+formatForR(getSexType(mn))+qt;
     for (int i=(mn+1);i<=mx;i++) {
-        dms += cc+qt+getSexType(i)+qt;
+        dms += cc+qt+formatForR(getSexType(i))+qt;
     }
     dms += ")";
     return dms;
 }
 
+/**
+ * Convert a vector of model maturity states (defined by the input indices) to an
+ * R character vector formatted as part of an R list, using 'm'
+ * as the name.
+ * 
+ * @param mn
+ * @param mx
+ * @return 
+ */
 adstring tcsamDims::getMSsForR(int mn,int mx){
-    adstring dms = "maturity=c("+qt+getMaturityType(mn)+qt;
+    adstring dms = "m=c("+qt+formatForR(getMaturityType(mn))+qt;
     for (int i=(mn+1);i<=mx;i++) {
-        dms += cc+qt+getMaturityType(i)+qt;
+        dms += cc+qt+formatForR(getMaturityType(i))+qt;
     }
     dms += ")";
     return dms;
 }
 
+/**
+ * Convert a vector of model shell conditions (defined by the input indices) to an
+ * R character vector formatted as part of an R list, using 's'
+ * as the name.
+ * 
+ * @param mn
+ * @param mx
+ * @return 
+ */
 adstring tcsamDims::getSCsForR(int mn,int mx){
-    adstring dms = "'shell condition'=c("+qt+getShellType(mn)+qt;
+    adstring dms = "s=c("+qt+formatForR(getShellType(mn))+qt;
     for (int i=(mn+1);i<=mx;i++) {
-        dms += cc+qt+getShellType(i)+qt;
+        dms += cc+qt+formatForR(getShellType(i))+qt;
     }
     dms += ")";
     return dms;
@@ -65,6 +116,9 @@ int tcsam::getSexType(adstring s){
     if (s==STR_FEMALE)  return FEMALE;  else
     if (s==STR_ALL_SXs) return ALL_SXs; else
     std::cout<<"Unrecognized SexType '"<<s<<"'"<<std::endl;
+    std::cout<<"Potential values are:"<<endl;
+    std::cout<<"'"<<STR_MALE<<"'"<<std::endl;
+    std::cout<<"'"<<STR_FEMALE<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
     return 0;
@@ -142,24 +196,46 @@ adstring tcsam::getScaleType(int i){
     return adstring("");
 }
 
+/**
+ * Translate from adstring fit type to int version.
+ * @param fitType
+ * @return 
+ */
 int tcsam::getFitType(adstring s){
-    if (s==STR_FIT_NONE)     return FIT_NONE;
-    if (s==STR_FIT_BY_TOTAL) return FIT_BY_TOTAL;
-    if (s==STR_FIT_BY_SEX)   return FIT_BY_SEX;
-    if (s==STR_FIT_BY_SEX_EXTENDED)   return FIT_BY_SEX_EXTENDED;
-    if (s==STR_FIT_BY_SEX_MAT_EXTENDED) return FIT_BY_SEX_MAT_EXTENDED;
+    if (s==STR_FIT_NONE)    return FIT_NONE;
+    if (s==STR_FIT_BY_TOT)  return FIT_BY_TOT;
+    if (s==STR_FIT_BY_X)    return FIT_BY_X;
+    if (s==STR_FIT_BY_XM)   return FIT_BY_XM;
+    if (s==STR_FIT_BY_XS)   return FIT_BY_XS;
+    if (s==STR_FIT_BY_XMS)  return FIT_BY_XMS;
+    if (s==STR_FIT_BY_XE)   return FIT_BY_XE;
+    if (s==STR_FIT_BY_X_ME) return FIT_BY_X_ME;
+    if (s==STR_FIT_BY_X_SE) return FIT_BY_X_SE;
+    if (s==STR_FIT_BY_XME)  return FIT_BY_XME;
+    if (s==STR_FIT_BY_XM_SE) return FIT_BY_XM_SE;
     std::cout<<"Unrecognized fit type '"<<s<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
     return -1;
 }
 
+/**
+ * Translate from int fit type to adstring version.
+ * @param fitType
+ * @return 
+ */
 adstring tcsam::getFitType(int i){
-    if (i==FIT_NONE)     return STR_FIT_NONE;
-    if (i==FIT_BY_TOTAL) return STR_FIT_BY_TOTAL;
-    if (i==FIT_BY_SEX)   return STR_FIT_BY_SEX;
-    if (i==FIT_BY_SEX_EXTENDED)   return STR_FIT_BY_SEX_EXTENDED;
-    if (i==FIT_BY_SEX_MAT_EXTENDED) return STR_FIT_BY_SEX_MAT_EXTENDED;
+    if (i==FIT_NONE)    return STR_FIT_NONE;
+    if (i==FIT_BY_TOT)  return STR_FIT_BY_TOT;
+    if (i==FIT_BY_X)    return STR_FIT_BY_X;
+    if (i==FIT_BY_XM)   return STR_FIT_BY_XM;
+    if (i==FIT_BY_XS)   return STR_FIT_BY_XS;
+    if (i==FIT_BY_XMS)  return STR_FIT_BY_XMS;
+    if (i==FIT_BY_XE)   return STR_FIT_BY_XE;
+    if (i==FIT_BY_X_ME) return STR_FIT_BY_X_ME;
+    if (i==FIT_BY_X_SE) return STR_FIT_BY_X_SE;
+    if (i==FIT_BY_XME)  return STR_FIT_BY_XME;
+    if (i==FIT_BY_XM_SE) return STR_FIT_BY_XM_SE;
     std::cout<<"Unrecognized fit type '"<<i<<"'"<<std::endl;
     std::cout<<"Aborting..."<<std::endl;
     exit(-1);
@@ -253,6 +329,14 @@ double tcsam::getConversionMultiplier(adstring from,adstring to){
         if (to==UNITS_KMT)  return 1.0E-3;
         if (to==UNITS_LBS)  return 1.0E+3 * CONV_KGtoLBS;
         if (to==UNITS_MLBS) return 1.0E-3 * CONV_KGtoLBS;
+    }
+    if (from==UNITS_KMT){
+        if (to==UNITS_GM)   return 1.0E+9;
+        if (to==UNITS_KG)   return 1.0E+6;
+        if (to==UNITS_MT)   return 1.0E+3;
+        if (to==UNITS_KMT)  return 1.0E+0;
+        if (to==UNITS_LBS)  return 1.0E+6 * CONV_KGtoLBS;
+        if (to==UNITS_MLBS) return 1.0E+0 * CONV_KGtoLBS;
     }
     if (from==UNITS_LBS){
         if (to==UNITS_GM)   return 1.0E+3/CONV_KGtoLBS;

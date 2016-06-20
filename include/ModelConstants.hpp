@@ -9,6 +9,11 @@
  * 20140918: renamed string constants of form "name_STR" to follow format "STR_name"
  * 20140930: switched MALE, FEMALE so MALE=1, FEMALE=2
  * 20141030: switched ANY to ALL
+ * 20150113: added FIT_BY_XSE, FIT_BY_XMSE
+ * 20150302: added RSTR_... constants and converter
+ * 20150417: revised STR_FIT_BY_ string values
+ * 20150518: revised FIT_BY_ and STR_FIT_BY_ values
+ * 20160413: added tcsam::VERSION string to indicate model version
  */
 
 #pragma once
@@ -23,14 +28,21 @@ class rpt{
 
 class tcsamDims{
     public:
+        static adstring formatForR(const adstring& s);
         static adstring getSXsForR(int mn,int mx);
         static adstring getMSsForR(int mn,int mx);
         static adstring getSCsForR(int mn,int mx);
 };
 
-namespace tcsam{    
+namespace tcsam{
+    /* adstring indicating model name */
+    const adstring MODEL = "TCSAM2015";
+    /* adstring indicating model version */
+    const adstring VERSION = "2016.04.13";
+    
     /* minimum debugging level that will print ALL debug info */
     const int dbgAll = 100;
+    /* minimum debugging level that will print debug info for prior calcs */
     const int dbgPriors = 30;
     
     /* Model dimension name for sex */
@@ -51,14 +63,20 @@ namespace tcsam{
     const adstring STR_SELFCN = "selFcn";
     
     //sexes
+    /* number of sexes in model */
     const int nSXs      = 2;//number of model sexes
+    /* integer indicating sex is male */
     const int MALE      = 1;//integer indicating sex=male
+    /* integer indicating sex is female */
     const int FEMALE    = 2;//integer indicating sex=female
+    /* integer indicating all sexes combined */
     const int ALL_SXs   = nSXs+1*(nSXs>1);//integer indicating all sexes combined
+    /* adstring indicating sex is male */
     const adstring STR_MALE    = "MALE";   //string indicating male
+    /* adstring indicating sex is female */
     const adstring STR_FEMALE  = "FEMALE"; //string indicating female
+    /* adstring indicating all sexes combined */
     const adstring STR_ALL_SXs = "ALL_SEX";//string indicating all sexes combined
-//    extern adstring_array STR_SXs(1,nSXs);  //string array
     
     //maturity states
     const int nMSs     = 2; //number of model maturity states
@@ -68,6 +86,9 @@ namespace tcsam{
     const adstring STR_IMMATURE = "IMMATURE";//string indicating immature
     const adstring STR_MATURE   = "MATURE";  //string indicating mature
     const adstring STR_ALL_MSs  = "ALL_MATURITY"; //string indicating all maturity states combined
+//    const adstring RSTR_IMMATURE = "immature";//string indicating immature
+//    const adstring RSTR_MATURE   = "mature";  //string indicating mature
+//    const adstring RSTR_ALL_MSs  = "all maturity"; //string indicating all maturity states combined
 //    const adstring_array STR_MSs(1,nMSs);  //string array
         
     //shell conditions
@@ -78,19 +99,34 @@ namespace tcsam{
     const adstring STR_NEW_SHELL = "NEW_SHELL"; //string indicating new shell condition
     const adstring STR_OLD_SHELL = "OLD_SHELL"; //string indicating old shell condition
     const adstring STR_ALL_SCs   = "ALL_SHELL"; //string indicating all shell conditions combined
+//    const adstring RSTR_NEW_SHELL = "new shell"; //string indicating new shell condition
+//    const adstring RSTR_OLD_SHELL = "old shell"; //string indicating old shell condition
+//    const adstring RSTR_ALL_SCs   = "all shell"; //string indicating all shell conditions combined
 //    const adstring_array STR_SCs(1,nSCs);  //string array
     
     //objective function fitting option types
-    const adstring STR_FIT_NONE            = "NONE";
-    const adstring STR_FIT_BY_TOTAL        = "BY_TOTAL";
-    const adstring STR_FIT_BY_SEX          = "BY_SEX";
-    const adstring STR_FIT_BY_SEX_EXTENDED = "BY_SEX_EXTENDED";
-    const adstring STR_FIT_BY_SEX_MAT_EXTENDED = "BY_SEX_MATURITY_EXTENDED";
-    const int FIT_NONE            = 0;
-    const int FIT_BY_TOTAL        = 1;
-    const int FIT_BY_SEX          = 2;
-    const int FIT_BY_SEX_EXTENDED = 3;
-    const int FIT_BY_SEX_MAT_EXTENDED = 4;
+    const adstring STR_FIT_NONE    = "NONE";
+    const adstring STR_FIT_BY_TOT  = "BY_TOTAL";
+    const adstring STR_FIT_BY_X    = "BY_X";
+    const adstring STR_FIT_BY_XM   = "BY_XM";
+    const adstring STR_FIT_BY_XS   = "BY_XS";
+    const adstring STR_FIT_BY_XMS  = "BY_XMS";
+    const adstring STR_FIT_BY_XE   = "BY_XE";
+    const adstring STR_FIT_BY_X_ME = "BY_X_ME";
+    const adstring STR_FIT_BY_X_SE = "BY_X_SE";
+    const adstring STR_FIT_BY_XME  = "BY_XME";
+    const adstring STR_FIT_BY_XM_SE = "BY_XM_SE";
+    const int FIT_NONE    = 0;
+    const int FIT_BY_TOT  = 1;
+    const int FIT_BY_X    = 2;
+    const int FIT_BY_XM   = 3;
+    const int FIT_BY_XS   = 4;
+    const int FIT_BY_XMS  = 5;
+    const int FIT_BY_XE   = 6;
+    const int FIT_BY_X_ME = 7;
+    const int FIT_BY_X_SE = 8;
+    const int FIT_BY_XME  = 9;
+    const int FIT_BY_XM_SE = 10;
     
     //likelihood types
     const adstring STR_LL_NONE        = "NONE";

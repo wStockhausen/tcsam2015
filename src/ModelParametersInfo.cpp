@@ -319,6 +319,7 @@ void ParameterGroupInfo::read(cifstream& is){
         //read parameters combinations definition matrix
         int ibsIdx=1;
         in.allocate(1,nPCs,1,nIVs+nPVs+nXIs);
+        if (nXIs) xd.allocate(1,nPCs,1,nXIs);
         for (int r=1;r<=nPCs;r++){//loop over rows
             is>>str; //read id
             rpt::echo<<str<<tb;
@@ -335,19 +336,21 @@ void ParameterGroupInfo::read(cifstream& is){
                 } else {in(r,i)=::atoi(str);}
             }
             for (int p=1;p<=nPVs;p++) {is>>in(r,nIVs+p); rpt::echo<<in(r,nIVs+p)<<tb;}  
-            if (debug) {cout<<"looping over extra variables"<<endl;}
+            //rpt::echo<<"looping over extra variables"<<endl;
             for (int x=1;x<=nXIs;x++) {//loop over "extra" variables
                 is>>str;
                 rpt::echo<<str<<tb;
                 if (lblXIs(x)==tcsam::STR_SELFCN){
                     //identify selectivity function and return function index
                     in(r,nIVs+nPVs+x) = SelFcns::getSelFcnID(str);
-                } else    
-                {in(r,nIVs+nPVs+x)=atoi(str);}
-                if (debug) cout<<"x = "<<x<<tb<<"str = "<<str<<tb<<"in() = "<<in(r,nIVs+nPVs+x)<<endl;
+                } else {
+                    in(r,nIVs+nPVs+x)=::atoi(str);
+                    xd(r,x)=::atof(str);
+                }
+                //rpt::echo<<"x = "<<x<<tb<<"str = "<<str<<tb<<"in() = "<<in(r,nIVs+nPVs+x)<<tb<<"xd() = "<<xd(r,x)<<endl;
             }
             rpt::echo<<endl;
-            if (debug) cout<<"pc row "<<r<<": "<<in(r)<<endl;
+            if (debug) cout<<"pc row "<<r<<": "<<in(r)<<tb<<"xd: "<<xd(r)<<endl;
         }
         //revert reading back to sub-class to read values for parameters
     } else {
@@ -388,7 +391,9 @@ void ParameterGroupInfo::write(std::ostream& os){
         for (int p=1;p<=nPVs;p++) os<<in(r,nIVs+p)<<tb;      //loop over parameter variables
         for (int x=1;x<=nXIs;x++) { //loop over extra indices
             if (lblXIs(x)==tcsam::STR_SELFCN) os<<SelFcns::getSelFcnID(in(r,nIVs+nPVs+x))<<tb; else
-            os<<in(r,nIVs+nPVs+x)<<tb;
+            os<<xd(r,x)<<tb;
+    //        os<<in(r,nIVs+nPVs+x)<<tb;
+            
         }
         os<<endl;
     }
@@ -399,24 +404,37 @@ void ParameterGroupInfo::write(std::ostream& os){
  */
 void ParameterGroupInfo::writeToR(std::ostream& os){
     adstring lbls = "";
-    if (nIVs) lbls += wts::to_qcsv(lblIVs);
-    if (nPVs) {if (lbls=="") lbls += wts::to_qcsv(lblPVs); else lbls += cc+wts::to_qcsv(lblPVs);}
+//    if (nIVs) lbls += wts::to_qcsv(lblIVs);
+//    if (nPVs) {if (lbls=="") lbls += wts::to_qcsv(lblPVs); else lbls += cc+wts::to_qcsv(lblPVs);}
+    if (nPVs) lbls += wts::to_qcsv(lblPVs);
     if (nXIs) {if (lbls=="") lbls += wts::to_qcsv(lblXIs); else lbls += cc+wts::to_qcsv(lblXIs);}
-    os<<"pgi=list("<<endl;
-        os<<"name="<<qt<<name<<qt<<cc;
-        os<<"nIVs="<<nIVs<<cc;
-        os<<"nPVs="<<nPVs<<cc;
-        os<<"nXIs="<<nXIs<<cc;
-        os<<"nPCs="<<nPCs<<cc;
-        os<<endl;
+    os<<"pgi=list(name="<<qt<<name<<qt<<cc<<endl;
+//        if (nIVs) {os<<"IVs=c("<<wts::to_qcsv(lblIVs)<<")"<<cc;} else {os<<"IVs=NULL"<<cc;}
+//        if (nPVs) {os<<"PVs=c("<<wts::to_qcsv(lblPVs)<<")"<<cc;} else {os<<"PVs=NULL"<<cc;}
+//        if (nXIs) {os<<"XIs=c("<<wts::to_qcsv(lblXIs)<<")"<<cc;} else {os<<"XIs=NULL"<<cc;}
+//        os<<"nPVs="<<nPVs<<cc;
+//        os<<"nXIs="<<nXIs<<cc;
+//        os<<"nPCs="<<nPCs<<cc;
+//        os<<endl;
         os<<"pcs=list("<<endl;
             for (int p=1;p<=nPCs;p++){
+                os<<qt<<p<<qt<<"=list(";
+                int ibsIdx = 1;
+                for (int i=1;i<=nIVs;i++){//loop over index variables
+                    os<<lblIVs(i)<<"='";
+                    if (lblIVs(i)==tcsam::STR_SEX)             {os<<tcsam::getSexType(in(p,i))<<"',";} else
+                    if (lblIVs(i)==tcsam::STR_MATURITY_STATE)  {os<<tcsam::getMaturityType(in(p,i))<<"',";} else
+                    if (lblIVs(i)==tcsam::STR_SHELL_CONDITION) {os<<tcsam::getShellType(in(p,i))<<"',";} else 
+                    if (i==ibsIdxs(ibsIdx)){
+                        os<<(*ppIBSs[ibsIdx-1]->getIndexBlock(p))<<"',";
+                        if (ibsIdx<nIBSs) ibsIdx++;//increment to next
+                    } else {os<<in(p,i)<<"',";}
+                }
                 ivector iv = getPCIDs(p);
                 imatrix im = getModelIndices(p);
+                os<<"ids.PC="; wts::writeToR(os,iv(nIVs+1,nIVs+nPVs+nXIs),lbls); os<<cc<<endl;
                 adstring ids = "index=c(1:"+str(im.indexmax())+")";
                 adstring tps = "type=c("+wts::to_qcsv(lblIVs)+")";
-                os<<qt<<p<<qt<<"=list(";
-                os<<"ids.PC="; wts::writeToR(os,iv,lbls); os<<cc<<endl;
                 os<<"ids.Mod="; wts::writeToR(os,im,ids,tps); os<<"),"<<endl;
             }
         os<<"NULL)"<<endl;
@@ -567,11 +585,11 @@ NaturalMortalityInfo::NaturalMortalityInfo(){
     nPVs=5;
     lblPVs.allocate(1,nPVs); dscPVs.allocate(1,nPVs);
     k=1;
-    lblPVs(k) = "pLnM";      dscPVs(k++) = "ln-scale base natural mortality rate (mature male crab)";
+    lblPVs(k) = "pLnM";      dscPVs(k++) = "ln-scale base natural mortality rate (immature male crab)";
     lblPVs(k) = "pLnDMT";    dscPVs(k++) = "main temporal ln-scale natural mortality offsets";
     lblPVs(k) = "pLnDMX";    dscPVs(k++) = "ln-scale natural mortality offset for female crabs";
-    lblPVs(k) = "pLnDMM";    dscPVs(k++) = "ln-scale natural mortality offset for immature crabs";
-    lblPVs(k) = "pLnDMXM";   dscPVs(k++) = "ln-scale natural mortality offset for immature female crabs";
+    lblPVs(k) = "pLnDMM";    dscPVs(k++) = "ln-scale natural mortality offset for mature crabs";
+    lblPVs(k) = "pLnDMXM";   dscPVs(k++) = "ln-scale natural mortality offset for mature female crabs";
     pLnM    = 0;
     pLnDMT  = 0;
     pLnDMX  = 0;
@@ -580,8 +598,7 @@ NaturalMortalityInfo::NaturalMortalityInfo(){
     
     nXIs=1;
     lblXIs.allocate(1,nXIs);
-    lblXIs(k=1) = "zScaling";
-    
+    lblXIs(k=1) = "zScaling";    
 }
 
 NaturalMortalityInfo::~NaturalMortalityInfo(){

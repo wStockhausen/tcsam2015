@@ -74,6 +74,18 @@ CCADMIN=CCadmin
 	@echo " ----------------------------------------------------------"
 	@echo " "
 
+# .tpl2rem
+.tpl2rem:
+	@echo " "
+	@echo " ----------------------------------------------------------"
+	@echo " CND_PLATFORM_${CONF} = ${CND_PLATFORM_${CONF}}"
+	@echo " Creating ${TPL} from ${TPL}.tpl"
+	@echo " PLATFORM = ${PLATFORM}"
+	@echo " ADMB_HOME = ${ADMB_HOME}"
+	"${ADMB_HOME}/bin/tpl2rem" ${TPL}
+	@echo " ----------------------------------------------------------"
+	@echo " "
+
 
 # build
 build: .build-post

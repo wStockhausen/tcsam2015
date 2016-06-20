@@ -10,12 +10,16 @@ using namespace std;
 //      ModelConfiguration
 //      ModelOptions
 //**********************************************************************
+const adstring ModelConfiguration::VERSION = "2016.04.13";
+const adstring ModelOptions::VERSION       = "2016.04.13";
+
 int ModelConfiguration::debug=0;
 int ModelOptions::debug      =0;
 //--------------------------------------------------------------------------------
 //          ModelConfiguration
 //--------------------------------------------------------------------------------
 int    ModelConfiguration::mnYr     = -1;//min model year
+int    ModelConfiguration::asYr     = -1;//model assessment year
 int    ModelConfiguration::mxYr     = -1;//max model year
 int    ModelConfiguration::nSrv     = -1;//number of model surveys
 int    ModelConfiguration::nFsh     = -1;//number of model fisheries
@@ -64,11 +68,24 @@ void ModelConfiguration::write(const adstring & fn) {
 ***************************************************************/
 void ModelConfiguration::read(cifstream & is) {
     if (debug) cout<<"ModelConfiguration::read(cifstream & is)"<<endl;
+    cout<<"ModelConfiguration input file name: '"<<is.get_file_name()<<"'"<<endl;
+    adstring parent = wts::getParentFolder(is);
+    cout<<"parent folder is '"<<parent<<"'"<<endl;
+    adstring ver;
+    is>>ver;
+    if (ver!=ModelConfiguration::VERSION){
+        std::cout<<"Reading Model Configuration file."<<endl;
+        std::cout<<"Model Configuration version does not match!"<<endl;
+        std::cout<<"Got '"<<ver<<"' but expected '"<<ModelConfiguration::VERSION<<"'."<<endl;
+        std::cout<<"Please update '"<<is.get_file_name()<<"'"<<endl;
+        exit(-1);
+    }
     is>>cfgName;
     if (debug) cout<<cfgName<<endl;
-    is>>mnYr; //min model year
-    is>>mxYr; //max model year
-    is>>nZBs; //number of model size bins
+    is>>mnYr;      //min model year
+    is>>asYr;      //assessment year
+    mxYr = asYr-1; //max model year
+    is>>nZBs;      //number of model size bins
     if (debug){
         cout<<mnYr <<tb<<"#model min year"<<endl;
         cout<<mxYr <<tb<<"#model max year"<<endl;
@@ -115,6 +132,10 @@ void ModelConfiguration::read(cifstream & is) {
     is>>fnMDS;//model datasets file
     is>>fnMOs;//model options file
     
+    fnMPI = wts::concatenateFilePaths(parent,fnMPI);
+    fnMDS = wts::concatenateFilePaths(parent,fnMDS);
+    fnMOs = wts::concatenateFilePaths(parent,fnMOs);
+    
     is>>str1; ModelConfiguration::jitter = wts::getOnOffType(str1);
     is>>ModelConfiguration::jitFrac;
     is>>str1; ModelConfiguration::resample = wts::getOnOffType(str1);
@@ -131,15 +152,16 @@ void ModelConfiguration::read(cifstream & is) {
     csvFsh=wts::to_qcsv(lblsFsh);
     csvSrv=wts::to_qcsv(lblsSrv);
     
-    dimYrsToR   = "year=c("+csvYrs+")";
-    dimYrsP1ToR = "year=c("+csvYrsP1+")";
-    dimSXsToR   = "sex=c("+csvSXs+")";
-    dimMSsToR   = "maturity=c("+csvMSs+")";
-    dimSCsToR   = "'shell condition'=c("+csvSCs+")";
-    dimZCsToR   = "size=c("+wts::to_qcsv(zCutPts)+")";
-    dimZBsToR   = "size=c("+wts::to_qcsv(zMidPts)+")";
-    dimFshToR   = "fishery=c("+wts::to_qcsv(lblsFsh)+")";
-    dimSrvToR   = "survey=c("+wts::to_qcsv(lblsSrv)+")";
+    dimYrsToR   = "y=c("+csvYrs+")";
+    dimYrsP1ToR = "y=c("+csvYrsP1+")";
+    dimSXsToR   = tcsamDims::getSXsForR(1,tcsam::nSXs);
+    dimMSsToR   = tcsamDims::getMSsForR(1,tcsam::nMSs);
+    dimSCsToR   = tcsamDims::getSCsForR(1,tcsam::nSCs);
+    dimZCsToR   = "zc=c("+wts::to_qcsv(zCutPts)+")";
+    dimZBsToR   = "z=c("+wts::to_qcsv(zMidPts)+")";
+    dimZPsToR   = "zp=c("+wts::to_qcsv(zMidPts)+")";
+    dimFshToR   = "f=c("+wts::to_qcsv(lblsFsh)+")";
+    dimSrvToR   = "v=c("+wts::to_qcsv(lblsSrv)+")";
     
     if (debug){
         cout<<wts::getBooleanType(runOpMod)   <<"   #run operating model?"<<endl;
@@ -168,8 +190,8 @@ void ModelConfiguration::setMaxModelYear(int yr){
     mxYr = yr;
     csvYrs  =qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=mxYr;    y++) csvYrs  += cc+qt+str(y)+qt;
     csvYrsP1=qt+str(mnYr)+qt; for (int y=(mnYr+1);y<=(mxYr+1);y++) csvYrsP1 += cc+qt+str(y)+qt;
-    dimYrsToR   = "year=c("+csvYrs+")";
-    dimYrsP1ToR = "year=c("+csvYrsP1+")";
+    dimYrsToR   = "y=c("+csvYrs+")";
+    dimYrsP1ToR = "y=c("+csvYrsP1+")";
 }
 /***************************************************************
 *   function to write to file in ADMB format                   *
@@ -177,11 +199,12 @@ void ModelConfiguration::setMaxModelYear(int yr){
 void ModelConfiguration::write(ostream & os) {
     if (debug) cout<<"#start ModelConfiguration::write(ostream)"<<endl;
     os<<"#######################################################"<<endl;
-    os<<"#TCSAM2013 Model Configuration File                   #"<<endl;
+    os<<"#TCSAM2015 Model Configuration File                   #"<<endl;
     os<<"#######################################################"<<endl;
+    os<<ModelConfiguration::VERSION<<tb<<"#ModelConfiguration version"<<endl;
     os<<cfgName<<tb<<"#Model configuration name"<<endl;
     os<<mnYr<<tb<<"#Min model year"<<endl;
-    os<<mxYr<<tb<<"#Max model year"<<endl;
+    os<<asYr<<tb<<"#Assessment year"<<endl;
     os<<nZBs<<tb<<"#Number of model size classes"<<endl;
     os<<"#size bin cut points"<<endl;
     os<<zCutPts <<endl;
@@ -216,30 +239,40 @@ void ModelConfiguration::writeToR(ostream& os, std::string nm, int indent) {
         os<<nm<<"=list("<<endl;
     indent++;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"configName='"<<cfgName<<"'"<<cc;
-        os<<"mnYr="<<mnYr<<", mxYr="<<mxYr<<cc;
-        os<<"SXs=c("<<csvSXs<<")"<<cc;
-        os<<"MSs=c("<<csvMSs<<")"<<cc;
-        os<<"SCs=c("<<csvSCs<<")"<<cc;
-        os<<"nZBs="<<nZBs<<cc<<endl;
+        os<<"version='"<<ModelConfiguration::VERSION<<"'"<<cc<<endl;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"zBs="; wts::writeToR(os,zMidPts);os<<cc<<endl;
+        os<<"configName='"<<cfgName<<"'"<<cc<<endl;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"zCs="; wts::writeToR(os,zCutPts);os<<cc<<endl;
+        os<<"dims=list("<<endl;
+        indent++;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"y=list(n="<<mxYr-mnYr<<cc<<"mny="<<mnYr<<cc<<"asy="<<asYr<<cc<<"mxy="<<mxYr<<cc<<
+                           "nms=c("<<csvYrsP1<<"),vls="<<mnYr<<":"<<asYr<<"),"<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"x=list(n="<<tcsam::nSXs<<",nms=c("<<tcsamDims::formatForR(csvSXs)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"m=list(n="<<tcsam::nMSs<<",nms=c("<<tcsamDims::formatForR(csvMSs)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"s=list(n="<<tcsam::nSCs<<",nms=c("<<tcsamDims::formatForR(csvSCs)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"z=list(n="<<nZBs<<",nms=c("<<csvZBs<<"),vls=c("<<wts::to_csv(zMidPts)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"zc=list(n="<<nZBs+1<<",nms=c("<<csvZCs<<"),vls=c("<<wts::to_csv(zCutPts)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"f=list(n="<<nFsh<<cc<<"nms=c("<<wts::replace('_',' ',csvFsh)<<"))"<<cc<<endl;
+        for (int n=0;n<indent;n++) os<<tb;
+            os<<"v=list(n="<<nSrv<<cc<<"nms=c("<<wts::replace('_',' ',csvSrv)<<"))"<<endl;
+        indent--;
     for (int n=0;n<indent;n++) os<<tb;
-        os<<"nFsh="<<nFsh<<cc;
-        os<<"lbls.fsh="; wts::writeToR(os,lblsFsh); os<<cc<<endl;
-    for (int n=0;n<indent;n++) os<<tb;
-        os<<"nSrv="<<nSrv<<cc;
-        os<<"lbls.srv="; wts::writeToR(os,lblsSrv); os<<cc<<endl;
+        os<<")"<<cc;
     for (int n=0;n<indent;n++) os<<tb;
         os<<"flags=list(";
         os<<"runOpMod="<<runOpMod<<cc;
         os<<"fitToPriors="<<fitToPriors<<"),";
         os<<endl;
-    for (int n=0;n<indent;n++) os<<tb; os<<"fnMPI='"<<fnMPI<<"',"<<endl;
-    for (int n=0;n<indent;n++) os<<tb; os<<"fnMDS='"<<fnMDS<<"',"<<endl;
-    for (int n=0;n<indent;n++) os<<tb; os<<"fnMOs='"<<fnMOs<<"'"<<endl;
+    for (int n=0;n<indent;n++) os<<tb; os<<"fnMPI='"<<wts::replace('\\','/',fnMPI)<<"',"<<endl;
+    for (int n=0;n<indent;n++) os<<tb; os<<"fnMDS='"<<wts::replace('\\','/',fnMDS)<<"',"<<endl;
+    for (int n=0;n<indent;n++) os<<tb; os<<"fnMOs='"<<wts::replace('\\','/',fnMOs)<<"'"<<endl;
     indent--;
     for (int n=0;n<indent;n++) os<<tb;
         os<<")";
@@ -251,12 +284,24 @@ void ModelConfiguration::writeToR(ostream& os, std::string nm, int indent) {
 //--------------------------------------------------------------------------------
 ModelOptions::ModelOptions(ModelConfiguration& mc){
     ptrMC=&mc;
-    
-    lblsFcAvgOpts.allocate(0,2);
+    //capture rate averaging options
+    lblsFcAvgOpts.allocate(0,3);
     lblsFcAvgOpts(0) = "no averaging"; 
     lblsFcAvgOpts(1) = "average capture rate";
     lblsFcAvgOpts(2) = "average exploitation rate";
-    
+    lblsFcAvgOpts(3) = "average mean size-specific capture rate";
+    //growth function options
+    lblsGrowthOpts.allocate(0,1);
+    lblsGrowthOpts(0) = "use gamma probability distribution (like TCSAM2013)"; 
+    lblsGrowthOpts(1) = "use cumulative gamma distribution (like Gmacs)";
+    //initial n-at-z options
+    lblsInitNatZOpts.allocate(0,1);
+    lblsInitNatZOpts(0) = "build up n-at-z from recruitments (like TCSAM2013)"; 
+    lblsInitNatZOpts(1) = "calculate initial n-at-z using equilibrium calculations (like Gmacs)";
+    //penalty options for non-decreasing prMat parameters
+    lblsPenNonDecLgtPrMatOpts.allocate(0,1);
+    lblsPenNonDecLgtPrMatOpts(0) = "use posfun function";
+    lblsPenNonDecLgtPrMatOpts(1) = "use exponential function";    
 }
 /***************************************************************
 *   function to read from file in ADMB format                  *
@@ -265,6 +310,16 @@ void ModelOptions::read(cifstream & is) {
     if (debug) cout<<"ModelOptions::read(cifstream & is)"<<endl;
     int idx;
     adstring str;
+    is>>str;
+    if (str!=ModelOptions::VERSION){
+        std::cout<<"Reading Model Options file."<<endl;
+        std::cout<<"Model Options version does not match!"<<endl;
+        std::cout<<"Got '"<<str<<"' but expected '"<<ModelOptions::VERSION<<"'."<<endl;
+        std::cout<<"Please update '"<<is.get_file_name()<<"'"<<endl;
+        exit(-1);
+    }
+    cout<<ModelOptions::VERSION<<tb<<"# Model Options version"<<endl;
+    
     optsFcAvg.allocate(1,ptrMC->nFsh);
     for (int f=1;f<=ptrMC->nFsh;f++){
         is>>str; cout<<str<<"# fishery"<<tb;
@@ -273,7 +328,26 @@ void ModelOptions::read(cifstream & is) {
         is>>optsFcAvg(idx);
         cout<<"= "<<optsFcAvg(idx)<<endl;
     }
-    if (debug) cout<<"optsFcAvg = "<<optsFcAvg<<endl;
+    is>>optGrowth;
+    cout<<optGrowth<<tb<<"#"<<lblsGrowthOpts(optGrowth)<<endl;
+    is>>optInitNatZ;
+    cout<<optInitNatZ<<tb<<"#"<<lblsInitNatZOpts(optInitNatZ)<<endl;
+    is>>cvFDevsPen;
+    cout<<cvFDevsPen<<tb<<"#initial cv for F-devs penalties"<<endl;
+    is>>phsDecrFDevsPen;
+    cout<<phsDecrFDevsPen<<tb<<"#phase at which to start decreasing the penalties on F-devs"<<endl;
+    is>>phsZeroFDevsPen;
+    cout<<phsZeroFDevsPen<<tb<<"#phase at which to turn off the penalties on F-devs"<<endl;
+    is>>wgtLastDevsPen;
+    cout<<wgtLastDevsPen<<tb<<"#weight for last-devs penalties"<<endl;
+    is>>phsLastDevsPen;
+    cout<<phsLastDevsPen<<tb<<"#min phase to apply penalty"<<endl;
+    is>>wgtSmthLgtPrMat;
+    cout<<wgtSmthLgtPrMat<<tb<<"#weight for maturity ogive smoothness penalties"<<endl;
+    is>>wgtNonDecLgtPrMat;
+    cout<<wgtNonDecLgtPrMat<<tb<<"#weight for maturity ogive non-decreaing penalties"<<endl;
+    is>>optPenNonDecLgtPrMat;
+    cout<<optPenNonDecLgtPrMat<<tb<<"#option for calculating maturity ogive non-decreaing penalties"<<endl;
     if (debug){
         cout<<"enter 1 to continue : ";
         cin>>debug;
@@ -291,9 +365,10 @@ void ModelOptions::write(ostream & os) {
     os<<"#######################################"<<endl;
     os<<"#TCSAM2015 Model Options File         #"<<endl;
     os<<"#######################################"<<endl;
+    os<<ModelOptions::VERSION<<tb<<"# Model Options version"<<endl;
 
     //averaging options for fishery capture rates
-    os<<"#Fishery Capture Rate Averaging Options"<<endl;
+    os<<"#----Fishery Capture Rate Averaging Options"<<endl;
     for (int o=lblsFcAvgOpts.indexmin();o<=lblsFcAvgOpts.indexmax();o++) {
         os<<"#"<<o<<" - "<<lblsFcAvgOpts(o)<<endl;
     }
@@ -301,6 +376,41 @@ void ModelOptions::write(ostream & os) {
     for (int f=1;f<=ptrMC->nFsh;f++){
         os<<ptrMC->lblsFsh(f)<<tb<<tb<<optsFcAvg(f)<<endl;
     }
+
+    //growth options
+    os<<"#----Growth Function Options"<<endl;
+    for (int o=lblsGrowthOpts.indexmin();o<=lblsGrowthOpts.indexmax();o++) {
+        os<<"#"<<o<<" - "<<lblsGrowthOpts(o)<<endl;
+    }
+    os<<optGrowth<<tb<<"#selected option"<<endl;
+
+    //initial n-at-z options
+    os<<"#----Initial Numbers-At-Size Options"<<endl;
+    for (int o=lblsInitNatZOpts.indexmin();o<=lblsInitNatZOpts.indexmax();o++) {
+        os<<"#"<<o<<" - "<<lblsInitNatZOpts(o)<<endl;
+    }
+    os<<optInitNatZ<<tb<<"#selected option"<<endl;
+    
+    //F-devs penalties
+    os<<"#----F-devs penalty options"<<endl;
+    os<<cvFDevsPen<<tb<<"#initial cv for F-devs penalties"<<endl;
+    os<<phsDecrFDevsPen<<tb<<"#phase at which to start decreasing the penalties on F-devs"<<endl;
+    os<<phsZeroFDevsPen<<tb<<"#phase at which to turn off the penalties on F-devs"<<endl;
+    
+    //Last-dev penalties
+    os<<"#----Last dev penalty options"<<endl;
+    os<<wgtLastDevsPen<<tb<<"#weight for last-dev penalties"<<endl;
+    os<<phsDecrFDevsPen<<tb<<"#min phase to apply penalty"<<endl;
+    
+    //Penalties on maturity ogives
+    os<<"#----Penalty weights for maturity ogives"<<endl;
+    os<<wgtSmthLgtPrMat<<tb<<"#weight for maturity ogive smoothness penalties"<<endl;
+    os<<wgtNonDecLgtPrMat<<tb<<"#weight for maturity ogive non-decreasing penalties"<<endl;
+    os<<"#----Options for penalty on non-decreasing maturity ogive parameters"<<endl;
+    for (int o=lblsPenNonDecLgtPrMatOpts.indexmin();o<=lblsPenNonDecLgtPrMatOpts.indexmax();o++) {
+        os<<"#"<<o<<" - "<<lblsPenNonDecLgtPrMatOpts(o)<<endl;
+    }
+    os<<optPenNonDecLgtPrMat<<tb<<"#selected option"<<endl;
     
     if (debug) cout<<"#end ModelOptions::write(ostream)"<<endl;
 }
@@ -312,6 +422,11 @@ void ModelOptions::writeToR(ostream& os, std::string nm, int indent) {
     for (int n=0;n<indent;n++) os<<tb;
         os<<nm<<"=list("<<endl;
     indent++;
+        for (int n=0;n<indent;n++) os<<tb;
+        os<<"growth="<<optGrowth<<cc<<"initNatZ="<<optInitNatZ<<cc
+            <<"cvFDevsPen="<<cvFDevsPen<<cc<<"phsDecr="<<phsDecrFDevsPen<<cc<<"phsZero="<<phsZeroFDevsPen<<cc
+            <<"wgtLastDevPen="<<wgtLastDevsPen<<cc<<"phsLastDevsPen="<<phsLastDevsPen<<cc
+            <<"wgtSmthLgtPrMat="<<wgtSmthLgtPrMat<<cc<<"wgtNonDecLgtPrMat="<<wgtNonDecLgtPrMat<<endl;
     indent--;
     for (int n=0;n<indent;n++) os<<tb;
         os<<")";

@@ -1,0 +1,140 @@
+#====================
+# rsimTCSAM configuration file
+#
+# This file runs the model from 1950 to 2014 to test generate
+# test files for TCSAM2015. Basic configuration is:
+#	1 time period for all biological processes
+#	1 fishery, 1 time period for parameters, same F, selectivity for M/F
+#	1 survey,  1 time period for parameters, same Q, selectivity for M/F
+#====================
+#-----------------------------------------------------------------------------------
+ModelConfiguration #keyword
+TC     #model type (KC or TC for king crab or Tanner crab)
+#---------------------------------------------------------------
+#-----dimensions
+DIMENSIONS  #keyword
+1950   #start year
+2014   #assessment year (=mxy+1)
+25     #min size cutpoint (mm)
+185    #max size cutpoint (mm)
+5      #size bin size (mm)
+2      #number of sexes
+'male' 'female'  #labels for sexes
+2      #number of maturity states
+'immature' 'mature'     #labels for maturity states
+2      #number of shell conditions
+'new shell' 'old shell' #labels for shell conditions
+1      #number of fisheries
+'TCF'  #labels for fisheries: Tanner crab directed fishery
+1      #number of surveys
+'NMFS trawl survey' #names for surveys
+#---------------------------------------------------------------
+#-----parameters
+PARAMETERS  #keyword
+0.625  #mate time
+0.625  #fish time
+#--Weight-at-size
+WatZ  #required keyword
+1       #number of time blocks
+mny:asy #time block 1 (asy=assessment year)
+#sex       maturity      a         b
+'female' 'immature'  0.000637   2.794
+'female'   'mature'  0.000344   2.956
+  'male' 'immature'  0.000163   3.136
+  'male'   'mature'  0.000163   3.136
+#The following 'Probability of fouling' section is not yet implemented
+#--Probability of fouling
+#prFouling  #required keyword
+#1       #number of time blocks
+#mny:asy #time block 1 (asy=assessment year)
+##sex       prFouling
+#  'male'      1.0
+#'female'      1.0
+#--Natural mortality
+NaturalMortality  #required keyword
+1      #number of time blocks
+mny:mxy  #time block 1
+#sex          maturity   M   cv   
+  'male'      'mature' 0.23  0.0
+  'male'    'immature' 0.23  0.0
+'female'      'mature' 0.23  0.0
+'female'    'immature' 0.23  0.0
+#--Molting
+Molting  #required keyword
+1   #number of time blocks
+mny:mxy  #time block 1
+#sex       shell condition   z50    sdv
+  'male'  'new shell'       1000    10
+  'male'  'old shell'       1000    10
+'female'  'new shell'       1000    10
+'female'  'old shell'       1000    10
+#--Molt to maturity
+MoltToMaturity  #required keyword
+1        #number of time blocks
+mny:mxy  #time block 1
+#sex       z50    sdv
+  'male'  100     10
+'female'   80     10
+#--Growth
+Growth  #required keyword
+1         #number of time blocks
+mny:mxy   #time block 1
+#sex          ln(a)           ln(b)            ln(scale)
+  'male'     log(0.43)      log(0.97)          log(0.75)
+'female'     log(0.70)      log(0.88)          log(0.75)
+#--Recruitment
+Recruitment  #required keyword
+#initialization
+#lnR       cvR    lnXR   sdXR   lnAlphaZ      lnBetaZ
+log(71)    0.5     0.0    0.0   log(11.5)     log(4.0)
+1  #number of time blocks
+#years        lnR     cvR    lnXR   sdXR   lnAlphaZ      lnBetaZ
+mny:mxy    log(71)    0.5     0.0    0.0   log(11.5)     log(4.0)
+#--Selectivity/Retention functions
+Selectivity  #required keyword
+3   #number of curves
+#index       function        np   params
+   1   'asclogistic5095'   3     60    120  182  'NMFS trawl survey' #z50    z95  fsz
+   2   'asclogistic5095'   3    138    150  182  'TCF retention'     #z50    z95  fsz
+   3   'asclogistic5095'   3     80    120  182  'TCF selectivity'   #z50    z95  fsz
+#--Fisheries
+Fisheries  #required keyword
+#-fishery 1
+'TCF'  #Tanner crab directed fishery
+#output info: retained catch
+#include   aggregate type   pdf type    cv/ss      weighting
+   TRUE      BY_TOTAL      LOGNORMAL     0.05        1.0     #abundance
+   TRUE      BY_TOTAL      LOGNORMAL     0.10        1.0     #biomass
+   TRUE      BY_TOTAL      MULTINOMIAL    50         1.0     #size comps
+#output info: discard catch
+#include   aggregate type   pdf type    cv/ss      weighting
+  TRUE      BY_XS      LOGNORMAL       0.05        1.0     #abundance
+  TRUE      BY_XS      LOGNORMAL       0.10        1.0     #biomass
+  TRUE      BY_XS      MULTINOMIAL      50         1.0     #size comps
+#output info: total catch
+#include   aggregate type   pdf type    cv/ss      weighting
+ TRUE      BY_XS      LOGNORMAL        0.05        1.0     #abundance
+ TRUE      BY_XS      LOGNORMAL        0.10        1.0     #biomass
+ TRUE      BY_XS      MULTINOMIAL       50         1.0     #size comps
+1   #number of time blocks
+#-----time block 1
+c(1965:1996,2004:2009,2013:mxy)   #years
+#sex      discard mortality   lnF         sd F   SelFcnIndex    RetFcnIndex
+  'male'       0.321        log(0.3)      0.4         3              2
+'female'       0.321        log(0.3)      0.4         3              0
+#--Surveys
+Surveys  #required keyword
+#-survey 1
+'NMFS trawl survey'
+#output info
+#include   aggregate type   pdf type    cv/ss      weighting
+   TRUE      BY_XMS       LOGNORMAL      0.15        1.0     #abundance
+   TRUE      BY_XMS       LOGNORMAL      0.20        1.0     #biomass
+   TRUE      BY_XMS       MULTINOMIAL     25         1.0     #size comps
+1   #number of time blocks
+#-----time block 1
+1975:asy   #years
+#  sex      lnQ        sd Q    selFcnIndex
+   'male' log(1.0)     0.0          1
+ 'female' log(1.0)     0.0          1
+DONE #keyword

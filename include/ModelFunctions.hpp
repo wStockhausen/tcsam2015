@@ -15,12 +15,12 @@
 //          Model Functions
 //----------------------------------------------------------------------
 typedef dvar_vector (*ModFcnPtr)          (dvector&,                dvar_vector,      dvector&);
-typedef double      (*TransformFcnPtr)    (double,                  _CONST dvector&);
-typedef dvariable   (*dvarTransformFcnPtr)(_CONST prevariable&,     _CONST dvector&);
-typedef dvariable   (*PdfFcnPtr)          (_CONST prevariable&,     _CONST dvar_vector&,_CONST dvector&);
-typedef double      (*PdfSamplerPtr)      (random_number_generator&,_CONST dvector&,    _CONST dvector&);
-typedef dvar_vector (*vPdfFcnPtr)         (_CONST dvar_vector&,     _CONST dvar_vector&,_CONST dvector&);
-typedef dvector     (*vPdfSamplerPtr)     (int n, random_number_generator&,_CONST dvector&,    _CONST dvector&);
+typedef double      (*TransformFcnPtr)    (double,                  const dvector&);
+typedef dvariable   (*dvarTransformFcnPtr)(const prevariable&,     const dvector&);
+typedef dvariable   (*PdfFcnPtr)          (const prevariable&,     const dvar_vector&,const dvector&);
+typedef double      (*PdfSamplerPtr)      (random_number_generator&,const dvector&,    const dvector&);
+typedef dvar_vector (*vPdfFcnPtr)         (const dvar_vector&,     const dvar_vector&,const dvector&);
+typedef dvector     (*vPdfSamplerPtr)     (int n, random_number_generator&,const dvector&,    const dvector&);
 
 namespace tcsam{
     /***********************************************************************
@@ -133,7 +133,8 @@ namespace tcsam{
         const static adstring PDFTYPE_T;
         const static adstring PDFTYPE_TRUNCATED_NORMAL;
         
-        const static adstring PDFTYPE_1STDIFF_NORMAL;
+        const static adstring PDFTYPE_AR1_NORMAL;
+        const static adstring PDFTYPE_EXPNORMAL;
 
         public:
             static ModelPDFInfo* getInfo(adstring pdfType);
@@ -206,8 +207,8 @@ namespace tcsam{
             adstring getStringForConstsNames();
             double calcTransform(double val){return (*pFcn)(val,consts);}
             double calcInvTransform(double val){return (*pInv)(val,consts);}
-            dvariable calcTransform(_CONST prevariable& val){RETURN_ARRAYS_INCREMENT();dvariable res = (*pFcnDvar)(val,consts);RETURN_ARRAYS_DECREMENT();return res;}
-            dvariable calcInvTransform(_CONST prevariable& val){RETURN_ARRAYS_INCREMENT();dvariable res = (*pInvDvar)(val,consts);RETURN_ARRAYS_DECREMENT();return res;}
+            dvariable calcTransform(const prevariable& val){RETURN_ARRAYS_INCREMENT();dvariable res = (*pFcnDvar)(val,consts);RETURN_ARRAYS_DECREMENT();return res;}
+            dvariable calcInvTransform(const prevariable& val){RETURN_ARRAYS_INCREMENT();dvariable res = (*pInvDvar)(val,consts);RETURN_ARRAYS_DECREMENT();return res;}
     };
 
 #endif

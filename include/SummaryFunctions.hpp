@@ -11,6 +11,98 @@
 namespace tcsam {
     
     /**
+     * Compute marginal weighted sums over last dimension.
+     * 
+     * @param  n_ij - dmatrix
+     * @param  w    - weighting vector
+     * @return n_i  - dvector
+     */
+    dvector sumOverLastDim(const dmatrix& n_ij, dvector& w);
+    
+    /**
+     * Compute marginal weighted sums over last dimension.
+     * 
+     * @param  n_ijk - d3_array
+     * @param  w    - weighting vector
+     * @return n_ij  - dmatrix
+     */
+    dmatrix sumOverLastDim(const d3_array& n_ijk, dvector& w);
+    
+    /**
+     * Compute marginal weighted sums over last dimension.
+     * 
+     * @param n_ijkl - d4_array
+     * @param  w    - weighting vector
+     * @return n_ijk - d3_array
+     */
+    d3_array sumOverLastDim(const d4_array& n_ijkl, dvector& w);
+    
+    /**
+     * Compute marginal weighted sums over last dimension.
+     * 
+     * @param  n_ijklm - d5_array
+     * @param  w    - weighting vector
+     * @return n_ijkl  - d4_array
+     */
+    d4_array sumOverLastDim(const d5_array& n_ijklm, dvector& w);
+    
+    /**
+     * Compute marginal weighted sums over last dimension.
+     * 
+     * @param  n_ijklmn - d6_array
+     * @param  w    - weighting vector
+     * @return n_ijklm  - d4_array
+     */
+    d5_array sumOverLastDim(const d6_array& n_ijklmn, dvector& w);
+    
+    /**
+     * Compute marginal weighted sums over last dimension.
+     * 
+     * @param  n_ijklmno - d7_array
+     * @param  w         - weighting vector
+     * @return n_ijklmn  - d6_array
+     */
+    d6_array sumOverLastDim(const d7_array& n_ijklmno, dvector& w);
+    
+    /**
+     * Calculate the sub-array n_iyx from full array n_iyxmsz by
+     * summing over indices m, s and z.
+     * @param n_iyxmsz
+     * @return d3_array of resulting sums
+     */
+    d3_array calcIYXfromIYXMSZ(d6_array& n_iyxmsz);
+    
+    /**
+     * Calculate the biomass-weighted sub-array b_ixy 
+     * from full abundance array n_iyxmsz by summing over 
+     * indices m, s and z weighted by weight-at-sex/maturity/size.
+     * @param n_iyxmsz - full abundance array (1000's)
+     * @param w_xmz    - weight (kg) at sex/maturity/size.
+     * @return - biomass for index i, year, sex in mt.
+     */
+    d3_array calcIYXfromIYXMSZ(d6_array& n_iyxmsz, d3_array w_xmz);
+    
+    /**
+     * Calculate the biomass-weighted sub-array b_yxms 
+     * from full abundance array n_yxmsz by summing over 
+     * indices m, s and z weighted by weight-at-sex/maturity/size.
+     * @param n_yxmsz - full abundance array (1000's)
+     * @param w_xmz   - weight (kg) at sex/maturity/size.
+     * @return - biomass for index i, year, sex in mt.
+     */
+    d4_array calcYXMSfromYXMSZ(d5_array& n_yxmsz, d3_array w_xmz);
+    
+    /**
+     * Calculate the biomass-weighted sub-array b_iyxms 
+     * from full abundance array n_iyxmsz by summing over 
+     * indices m, s and z weighted by weight-at-sex/maturity/size.
+     * @param n_iyxmsz - full abundance array (1000's)
+     * @param w_xmz    - weight (kg) at sex/maturity/size.
+     * @return - biomass for index i, year, sex in mt.
+     */
+    d5_array calcIYXMSfromIYXMSZ(d6_array& n_iyxmsz, d3_array w_xmz);
+    
+    /**
      * Calculate the sub-array n_ixy from full array n_iyxmsz by
      * summing over indices m, s and z.
      * @param n_iyxmsz
@@ -88,6 +180,19 @@ namespace tcsam {
      * @return extracted vector (indices consistent with z)
      */
     dvector extractFromXMSYZ(int x, int m, int s, int y, d5_array& n_xmsyz);
+    
+    /**
+     * Extract (possibly summary) value from 4d array w/ indices
+     * y,x,m,s.
+     * 
+    * @param y
+    * @param x
+    * @param m
+    * @param s
+    * @param n_yxms
+     * @return extracted value
+     */
+    double extractFromYXMS(int y, int x, int m, int s, d4_array& n_yxms);
     
     /**
      * Extract (possibly summary) vector from 5d array w/ indices
